@@ -468,6 +468,13 @@ function kundenVorgang() {
   ok("ERKLÄRUNG: Text fürs mailto trägt Betreff und alle Abschnitte, keine Unterschrift", /Verschwiegenheits/.test(m.betreff) && m.text.includes("7. Ihre Rechte") && !m.text.includes("data:image"));
   ok("ERKLÄRUNG: Bedarfsprotokoll nennt die Erklärung vom Datum", A.kundenProtokoll(v, f, {}).erklaerungVom === "2026-10-07");
   ctx.firma.name = "Prüf-Firma"; v.kunde.firma = "Kundin Prüf GmbH";
+  /* Kopf mit beiden Parteien, „Für den Auftragnehmer“ (Klaus' Tablet 2026-10-07) */
+  const PA = A.parteien(er2);
+  ok("PARTEIEN: Auftragnehmer und Auftraggeber stehen mit Namen da", PA.auftragnehmer[0] === "Prüf-Firma" && PA.auftraggeber[0] === "Kundin Prüf GmbH" && PA.auftraggeber.join(" ").includes("kundin@pruef.example"));
+  ok("PARTEIEN: im mailto-Text und in der Übergabe-Datei", m.text.includes("Auftragnehmer: Prüf-Firma") && m.text.includes("Auftraggeber: Kundin Prüf GmbH") && /Auftraggeber<\/b><br>Kundin Prüf GmbH/.test(A.alsHtml(er2)));
+  ok("PARTEIEN: in der Übergabe-Datei liegt die Linie UNTER der Unterschrift", /<div class="s"><img[^>]*><\/div>Für Prüf-Firma/.test(A.alsHtml(er2)));
+  const ohneFirma = A.erklaerungExtern(F.neuerVorgang(10, E73, "2026-10-07"), { firma: {} });
+  ok("PARTEIEN: ohne Firmenname „Für den Auftragnehmer“, nicht „Für der“", ohneFirma.text.links.startsWith("Für den Auftragnehmer") && A.linksText("Für der Auftragnehmer (verpflichtet sich)") === "Für den Auftragnehmer (verpflichtet sich)");
   const vb = A.vereinbarungExtern(v, ctx), vj = JSON.stringify(vb);
   ok("VEREINBARUNG: nennt Angebot, Fassung und die Kennungen des Ziels (nur freigegebene)", vb.fassung === 1 && vb.text.bezug.ziel.join() === b1.id && vj.includes("Fassung 1") && !vj.includes(b2.id));
   ok("VEREINBARUNG: kein Stundensatz (73 €)", !/7300|73,00|satzCent|Stundensatz/.test(vj));

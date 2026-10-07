@@ -1537,26 +1537,50 @@
     b.append(fuss(d.firma));
     return b;
   }
+  /* Wer mit wem (Klaus 2026-10-07: „im Kopf … wer der Auftraggeber, Auftragnehmer ist“):
+     beide Parteien nebeneinander, leere Angaben als Schreiblinie zum Ausfüllen von Hand. */
+  function parteienBlock(d) {
+    var P = WN.aussen.parteien(d);
+    var spalte = function (titel, zeilen, rolle) {
+      var z = zeilen.filter(Boolean);
+      return h("div", { "data-partei": rolle }, h("b", { text: titel }), h("br"),
+        z.length ? z.join("\n") : h("span", { class: "schreiblinie", "data-schreiblinie": "", "aria-label": t("von Hand ausfüllen") }));
+    };
+    return h("div", { class: "parteien", "data-parteien": "" },
+      spalte("Auftragnehmer", P.auftragnehmer, "auftragnehmer"), spalte("Auftraggeber", P.auftraggeber, "auftraggeber"));
+  }
   function blattRecht(d) {
     var b = h("article", { class: "blatt", "data-blatt": d.art, lang: "de" });
     b.append(h("div", { class: "kopfzeile" },
       h("div", null, h("h1", { text: d.titel }),
-        h("div", { class: "meta", style: "white-space:pre-line" }, (d.vorhaben ? d.vorhaben + "\n" : ""), fuer(d.kunde),
+        h("div", { class: "meta", style: "white-space:pre-line" }, (d.vorhaben ? d.vorhaben + "\n" : ""),
           (d.fassung ? "Angebot " + d.text.bezug.nummer + " · Fassung " + d.fassung + " · " : "") + d.vorgang)),
-      absender(d.firma)));
+      d.firma.logo ? h("div", { class: "absender" }, h("img", { src: d.firma.logo, alt: "" })) : null));
+    b.append(parteienBlock(d));
     b.append(h("p", { text: d.text.einleitung }));
-    d.text.abschnitte.forEach(function (a) {
-      b.append(h("h2", { text: a.nr + ". " + a.titel }), h("p", { text: a.text }));
+    var abschnittEl = function (a) {
+      var w = h("div", { class: "abschnitt" }, h("h2", { text: a.nr + ". " + a.titel }), h("p", { text: a.text }));
       if (a.tabelle && a.tabelle.length) {
         var tb = h("table", null, h("tr", null, h("th", { text: "Kennung" }), h("th", { text: "Leistung" }), h("th", { text: "deckt Bedarf" }), h("th", { class: "r", text: "Netto" })));
         a.tabelle.forEach(function (z) { tb.append(h("tr", null, h("td", { text: z.kennung }), h("td", { text: z.leistung }), h("td", { text: z.deckt || "–" }), h("td", { class: "r", text: G.formatEuro(z.nettoCent, "de") }))); });
-        b.append(tb);
+        w.append(tb);
       }
-    });
-    if (d.text.schluss) b.append(h("p", { text: d.text.schluss }));
-    var feld = function (bild, txt) { return h("div", null, bild ? h("img", { src: bild, alt: "", class: "unterschrift-bild", "data-unterschrift-bild": "" }) : null, h("b", { text: txt }), h("br"), "Ort, Datum, Unterschrift"); };
-    b.append(h("div", { class: "unterschriften" }, feld(d.unterschriftBetrieb, d.text.links), feld(d.unterschriftKunde, d.text.rechts)));
-    b.append(h("p", { class: "klein", "data-recht-stand": d.aktiviert ? "aktiviert" : "offen", text: (d.aktiviert ? "Unterschrieben" + (d.papier ? " auf Papier" : "") + " am " + datumText(d.aktiviert) + " · " : "") + "Textfassung " + d.textFassung + " (" + datumText(d.textStand) + ")" }));
+      return w;
+    };
+    var ab = d.text.abschnitte;
+    ab.slice(0, -1).forEach(function (a) { b.append(abschnittEl(a)); });
+    /* Unterschriften stehen nie allein auf einer Seite: letzter Abschnitt, Schluss und
+       Unterschriften bleiben beim Seitenumbruch zusammen. Die Linie liegt UNTER der Unterschrift. */
+    var schluss = h("div", { class: "schlussblock", "data-schlussblock": "" });
+    if (ab.length) schluss.append(abschnittEl(ab[ab.length - 1]));
+    if (d.text.schluss) schluss.append(h("p", { text: d.text.schluss }));
+    var feld = function (bild, txt, rolle) {
+      return h("div", { "data-unterschrift-feld": rolle }, h("div", { class: "strich" }, bild ? h("img", { src: bild, alt: "", class: "unterschrift-bild", "data-unterschrift-bild": "" }) : null),
+        h("b", { text: txt }), h("br"), "Ort, Datum, Unterschrift");
+    };
+    schluss.append(h("div", { class: "unterschriften mit-strich" }, feld(d.unterschriftBetrieb, WN.aussen.linksText(d.text.links), "betrieb"), feld(d.unterschriftKunde, d.text.rechts, "kunde")));
+    schluss.append(h("p", { class: "klein", "data-recht-stand": d.aktiviert ? "aktiviert" : "offen", text: (d.aktiviert ? "Unterschrieben" + (d.papier ? " auf Papier" : "") + " am " + datumText(d.aktiviert) + " · " : "") + "Textfassung " + d.textFassung + " (" + datumText(d.textStand) + ")" }));
+    b.append(schluss);
     b.append(fuss(d.firma));
     return b;
   }
