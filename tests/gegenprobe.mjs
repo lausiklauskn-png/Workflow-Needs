@@ -119,8 +119,11 @@ const FAELLE = [
     an: [["assets/kern/bauauftrag.js", '    L.push("## Summe");', '    L.push("## Summe"); (v.anhaenge || []).forEach(function (a) { L.push("Anhang " + a.name); });']] },
   { name: "UEB: Stundensatz in der Übergabe", probe: K, erwartet: "ÜBERGABE: kein Stundensatz",
     an: [["assets/kern/uebergabe.js", '    zeilen.push("", "Aus Workflow-Needs übernommen.");', '    zeilen.push("", "Aus Workflow-Needs übernommen. Satz " + eur(f.satzCent) + "/h");']] },
+  /* Seit Stufe 3 decken zwei Riegel einander: kundeExtern (aussen.js) gibt kein ⟦ mehr heraus, rein() (uebergabe.js)
+     entfernt es ein zweites Mal. Ein Fall nimmt deshalb BEIDE weg — einer allein misst nichts (gemessen 2026-10-07). */
   { name: "UEB: Platzhalter bleibt im Kundenfeld", probe: K, erwartet: "ÜBERGABE: Kunde im Klartext",
-    an: [["assets/kern/uebergabe.js", '  function rein(s) { return String(s == null ? "" : s).replace(PLATZHALTER, "").trim(); }', '  function rein(s) { return String(s == null ? "" : s).trim(); }']] },
+    an: [["assets/kern/uebergabe.js", '  function rein(s) { return String(s == null ? "" : s).replace(PLATZHALTER, "").trim(); }', '  function rein(s) { return String(s == null ? "" : s).trim(); }'],
+         ["assets/kern/aussen.js", 'k[f.id] = String((v.kunde && v.kunde[f.id]) || "").replace(/⟦[^⟧]*⟧/g, "").trim();', 'k[f.id] = String((v.kunde && v.kunde[f.id]) || "").trim() || f.token;']] },
   { name: "UEB: Datei verliert ihre Art", probe: K, erwartet: "ÜBERGABE: Anhänge als data-URL",
     an: [["assets/kern/uebergabe.js", 'return { name: x.name, mime: x.typ || "", size: x.groesse || 0, data: d };', 'return { name: x.name, mime: "", size: x.groesse || 0, data: d };']] },
   { name: "UEB: Kennung je Übergabe neu (WorkFloh verdoppelt)", probe: K, erwartet: "ÜBERGABE: feste Kennung",

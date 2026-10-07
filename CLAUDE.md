@@ -184,7 +184,9 @@ Brief `docs/BRIEF_2026-10-07_stufe3-beispiele-verschwiegenheit.md`, alle Fragen 
 
 Gemessen (2026-10-07, Stufe 3): `kern` **224 grün · 0 ROT** · `browser` **113 grün · 0 ROT** · `NUR_ANKER` 83 · 0 tot ·
 neue Fälle `S3` (26): erst **24 gefangen · 2 aus falschem Grund** (zwei Proben stürzten beim fehlenden Teil ab statt zu
-melden), beide geschärft und einzeln nachgefahren: gefangen. Voller Lauf: siehe unten.
+melden), beide geschärft und einzeln nachgefahren: gefangen. Voller Lauf über alle 83: **82 gefangen · 0 blind ·
+1 aus falschem Grund · 0 tote Anker** — der alte Fall „UEB: Platzhalter bleibt im Kundenfeld“ fing nur noch über den
+Cache: seit § 1b decken `kundeExtern` und `rein()` einander. Der Fall nimmt jetzt beide weg, einzeln nachgefahren: gefangen.
 
 ## Benannte Grenzen
 
