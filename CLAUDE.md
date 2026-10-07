@@ -158,7 +158,12 @@ NUR_FALL="MD:" node tests/gegenprobe.mjs
 Ohne Browser endet `npm test` mit **2** („nicht lauffähig" ist nie grün).
 Die Gegenprobe arbeitet in Wegwerf-Kopien unter `/tmp`, nie im echten Baum.
 
-Zuletzt gemessen (2026-10-07, Endstand): `kern` **104 grün · 0 ROT** · `browser` **62 grün ·
+Zuletzt gemessen (2026-10-07, Stufe 2): `kern` **133 grün · 0 ROT** · `browser` **90 grün · 0 ROT** ·
+Gegenprobe, voller Lauf **57 gefangen · 0 blind · 0 aus falschem Grund · 0 tote Anker**. Vorher einzeln
+gefahren: zwei neue Fälle waren erst „aus falschem Grund“ (die Probe stürzte bei fehlendem Blob bzw.
+fehlendem Download-Knopf ab) — beide Proben geschärft und nachgefahren.
+
+Davor (2026-10-07, Endstand Stufe 1): `kern` **104 grün · 0 ROT** · `browser` **62 grün ·
 0 ROT** · Gegenprobe **36 gefangen · 0 blind · 0 aus falschem Grund · 0 tote Anker**. Beim
 ersten vollen Lauf: 34 gefangen, 2 aus falschem Grund (ein Sabotage-Fall ließ die Probe
 abstürzen statt rot zu werden; die Offline-Probe stolperte), beim Nachfahren war der
