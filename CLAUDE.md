@@ -126,6 +126,11 @@ die in das Angebot mit einfließen … PDF als PDF, EML als E-Mail … Screensho
 - ⚠ **Offen:** Klaus' Sichttest-Befunde vom Tablet (Brief Punkt 1) lagen dieser Sitzung nicht vor.
   Der Marktplatz-Eintrag ist nur als Text da (`docs/MARKTPLATZ_EINTRAG.md`): kein Schreibzugriff auf PWA-Toolpoint.
 
+**Nächste Stufe:** `docs/BRIEF_2026-10-07_stufe3-beispiele-verschwiegenheit.md` — zuerst der Befund
+„Platzhalter auf dem Kundenblatt“ (§ 1b), dann vier Beispiele aus den eigenen Repos, die
+Verschwiegenheits- und Datenschutzerklärung, die Vereinbarung zu Zahlung und Rechten, Sterne der
+Mitarbeiter. Die offenen Fragen (§ 6) vor dem Bauen stellen.
+
 ## Benannte Grenzen
 
 - Platzhalter sind **keine Verschlüsselung**: der Klartext geht nur gar nicht erst hinaus. Was
