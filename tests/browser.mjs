@@ -146,12 +146,107 @@ try {
   ok("SPRACHE: Ausdruck in der gewählten Sprache", en.h1 === "Needs record" && en.text.includes("Client"));
   await p.click("#sprache");
 
+  /* ── Ist-Stunden (intern) und Kalibrierung ── */
+  await reiter(p, "fassungen");
+  ok("IST: Feld nur an unterschriebenen Fassungen", await p.locator("[data-ist]").count() >= 1 && await p.locator('[data-fassung="3"] ~ [data-ist-zeile="3"]').count() === 0);
+  await p.fill('[data-ist="1"]', "31,5".replace(",", ".")); await p.press('[data-ist="1"]', "Tab");
+  await reiter(p, "tabellen");
+  ok("IST: Tabelle „Eigene Aufträge“ zeigt Schätzung, Ist und Abweichung", (await p.getAttribute('[data-tabelle="eigene-auftraege"]', "data-anzahl")) === "1" && /31,5/.test(await p.textContent('[data-tabelle="eigene-auftraege"]')) && /%/.test(await p.textContent('[data-tabelle="eigene-auftraege"]')));
+  const kal = await p.textContent('[data-tabelle="kalibrierung"]');
+  ok("BILDSCHIRME: gezählte Zahlen und die Regel stehen da", /Gezählt im Code/.test(kal) && (kal.match(/nicht gezählt/g) || []).length === 1, (kal.match(/nicht gezählt/g) || []).length);
+  await reiter(p, "angebot");
+  const anI = await druck(p, "#druck-angebot");
+  ok("IST: nicht im Angebot", !/31,5/.test(anI.text));
+
   /* ── Gespeichert über Neuladen ── */
   await p.evaluate(() => window.WNApp.jetztSpeichern());
   await p.reload(); await p.waitForSelector("body[data-bereit]");
   await reiter(p, "umfang");
   ok("SPEICHER: Satz des Vorgangs übersteht Neuladen (IndexedDB)", (await p.inputValue("#satz-vorgang")) === "73");
   await ctx.close();
+
+  /* ── Anhänge am Vorgang und verschlüsselte Sicherung ── */
+  {
+    const fsm = await import("node:fs");
+    const pdf = Buffer.concat([Buffer.from("%PDF-1.4\n% Anhangpruefwort\n"), Buffer.from(Array.from({ length: 3000 }, (_, i) => (i * 13) & 255))]);
+    const eml = Buffer.from("From: a@kunde.example\r\nSubject: Bitte\r\n\r\nText\r\n");
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+    const s = await seite(1100, { acceptDownloads: true });
+    await s.p.goto(url); await s.p.waitForSelector("body[data-bereit]");
+    ok("ERINNERUNG: nur das Beispiel → keine Sicherungs-Erinnerung", await s.p.locator("[data-sicherung-erinnerung]").count() === 0);
+    await s.p.click("#neuer-vorgang");
+    ok("ERINNERUNG: eigener Vorgang, nie gesichert → Erinnerung steht da", (await s.p.getAttribute("[data-sicherung-erinnerung]", "data-sicherung-erinnerung")) === "nie");
+    await s.p.setInputFiles("#anhang-datei", [
+      { name: "Anhangpruefwort-Plan.pdf", mimeType: "application/pdf", buffer: pdf },
+      { name: "Mail vom Kunden.eml", mimeType: "message/rfc822", buffer: eml }]);
+    await s.p.waitForFunction(() => document.querySelectorAll("[data-anhang]").length === 2);
+    await s.p.evaluate((b64) => {
+      const bin = atob(b64), a = new Uint8Array(bin.length); for (let i = 0; i < a.length; i++) a[i] = bin.charCodeAt(i);
+      const dt = new DataTransfer(); dt.items.add(new File([a], "image.png", { type: "image/png" }));
+      document.getElementById("anhaenge").dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+    }, png.toString("base64"));
+    await s.p.waitForFunction(() => document.querySelectorAll("[data-anhang]").length === 3);
+    const arten = await s.p.$$eval("[data-anhang]", (z) => z.map((x) => x.dataset.art + "|" + x.textContent));
+    ok("ANHANG: PDF bleibt PDF, .eml bleibt E-Mail, Screenshot wird Bild", arten[0].startsWith("PDF|") && arten[1].startsWith("E-Mail|") && arten[2].startsWith("Bild|") && /Screenshot-\d{4}-\d{2}-\d{2}-\d{6}\.png/.test(arten[2]), arten);
+    ok("ANHANG: Kennungen A-01…A-03 aus dem Zähler", arten.every((a, i) => a.includes("A-0" + (i + 1))), arten);
+    ok("ANHANG: Bild hat eine Vorschau", await s.p.locator("[data-anhang] img.anhang-bild").count() === 1);
+    await s.p.evaluate(() => window.WNApp.jetztSpeichern());
+    await s.p.reload(); await s.p.waitForSelector("body[data-bereit]");
+    let zurueck = Buffer.alloc(0), zname = "";
+    if (await s.p.locator('[data-anhang-laden="A-01"]').count() === 1) {
+      const [dlA] = await Promise.all([s.p.waitForEvent("download"), s.p.click('[data-anhang-laden="A-01"]')]);
+      zurueck = fsm.readFileSync(await dlA.path()); zname = dlA.suggestedFilename();
+    }
+    ok("ANHANG: übersteht Neuladen und kommt Byte für Byte heraus, unter seinem Namen", zurueck.equals(pdf) && zname === "Anhangpruefwort-Plan.pdf", [zurueck.length, zname]);
+    await reiter(s.p, "fassungen");
+    const [dlM] = await Promise.all([s.p.waitForEvent("download"), s.p.click("#md-speichern")]);
+    ok("ANHANG: weder Name noch Inhalt in der Bauauftrags-MD", !fsm.readFileSync(await dlM.path(), "utf8").includes("Anhangpruefwort"));
+    await reiter(s.p, "angebot");
+    const anA = await druck(s.p, "#druck-angebot");
+    ok("ANHANG: nicht im Angebot", !anA.html.includes("Anhangpruefwort") && !anA.html.includes("A-01"));
+    const [dlU] = await Promise.all([s.p.waitForEvent("download"), s.p.click("#uebergabe-speichern")]);
+    const ueb = JSON.parse(fsm.readFileSync(await dlU.path(), "utf8"));
+    const uf = (ueb.auftraege && ueb.auftraege[0] && ueb.auftraege[0].files) || [];
+    ok("ÜBERGABE: Auftragsdatei für WorkFloh mit allen Anhängen (Name und Art bleiben)", ueb.wf === "forward" && /^Auftrag_V-\d{4}-\d{4}-F1\.json$/.test(dlU.suggestedFilename()) &&
+      uf.length === 3 && uf[0].name === "Anhangpruefwort-Plan.pdf" && Buffer.from(uf[0].data.split(",")[1], "base64").equals(pdf) && uf[1].mime === "message/rfc822" && uf[2].mime === "image/png", [dlU.suggestedFilename(), uf.map((x) => x.name + "|" + x.mime)]);
+    /* Sichern */
+    await reiter(s.p, "einstellungen");
+    await s.p.fill('[data-firma="name"]', "Sicherung Prüf-Firma");
+    await s.p.fill("#sicherung-pw", "ein-langes-pw-1"); await s.p.fill("#sicherung-pw2", "anders-langes-pw");
+    await s.p.click("#sicherung-machen");
+    ok("SICHERUNG: ungleiche Passwörter → kein Download, Meldung", (await s.p.textContent("#sicherung-meldung")).includes("nicht gleich"));
+    await s.p.fill("#sicherung-pw2", "ein-langes-pw-1");
+    const [dlS] = await Promise.all([s.p.waitForEvent("download", { timeout: 20000 }), s.p.click("#sicherung-machen")]);
+    const sich = fsm.readFileSync(await dlS.path(), "utf8");
+    ok("SICHERUNG: Datei heißt Workflow-Needs-Sicherung-JJJJ-MM-TT.json", /^Workflow-Needs-Sicherung-\d{4}-\d{2}-\d{2}\.json$/.test(dlS.suggestedFilename()));
+    ok("SICHERUNG: kein Klartext in der Datei (Kunde, Anhang, Firma)", !sich.includes("Anhangpruefwort") && !sich.includes("Boutique") && !sich.includes("Prüf-Firma") && !sich.includes("V-20") && JSON.parse(sich).paket.ct.length > 1000);
+    ok("SICHERUNG: Passwortfelder sind danach leer", (await s.p.inputValue("#sicherung-pw")) === "" && (await s.p.inputValue("#sicherung-pw2")) === "");
+    await reiter(s.p, "vorgaenge");
+    ok("ERINNERUNG: nach dem Sichern verschwunden", await s.p.locator("[data-sicherung-erinnerung]").count() === 0);
+    await s.ctx.close();
+    /* Zurückholen auf einem frischen Gerät */
+    const z = await seite(1100, { acceptDownloads: true });
+    await z.p.goto(url); await z.p.waitForSelector("body[data-bereit]");
+    await reiter(z.p, "einstellungen");
+    await z.p.setInputFiles("#sicherung-datei", { name: dlS.suggestedFilename(), mimeType: "application/json", buffer: Buffer.from(sich) });
+    await z.p.waitForFunction(() => !document.getElementById("sicherung-zurueck-meldung").hidden);
+    await z.p.fill("#sicherung-pw-zurueck", "falsches-pw-123"); await z.p.click("#sicherung-holen");
+    await z.p.waitForFunction(() => /passt nicht/.test(document.getElementById("sicherung-zurueck-meldung").textContent), null, { timeout: 20000 }).catch(() => {});
+    ok("SICHERUNG: falsches Passwort → eigene Meldung, nichts dazu", (await z.p.textContent("#sicherung-zurueck-meldung")).includes("passt nicht") && await z.p.evaluate(() => window.WNApp.S.vorgaenge.length) === 1);
+    await z.p.fill("#sicherung-pw-zurueck", "ein-langes-pw-1"); await z.p.click("#sicherung-holen");
+    await z.p.waitForFunction(() => /Vorgänge dazu/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 20000 }).catch(() => {});
+    const mz = await z.p.textContent("[data-meldung]").catch(() => "");
+    ok("SICHERUNG: Zurückholen fügt hinzu, das Beispiel bleibt (1 dazu, 1 schon da)", /1 Vorgänge dazu, 1 schon da/.test(mz) && await z.p.evaluate(() => window.WNApp.S.vorgaenge.length) === 2, mz);
+    ok("SICHERUNG: Firmendaten kommen mit, wo noch keine standen", (await z.p.inputValue('[data-firma="name"]')) === "Sicherung Prüf-Firma", await z.p.inputValue('[data-firma="name"]'));
+    await reiter(z.p, "vorgaenge");
+    const neuId = await z.p.evaluate(() => window.WNApp.S.vorgaenge.filter((v) => !v.beispiel)[0].id);
+    await z.p.click(`[data-vorgang="${neuId}"] button`);
+    const [dlZ] = await Promise.all([z.p.waitForEvent("download"), z.p.click('[data-anhang-laden="A-01"]')]);
+    ok("SICHERUNG: Anhang kommt auf dem frischen Gerät Byte für Byte zurück", fsm.readFileSync(await dlZ.path()).equals(pdf) && dlZ.suggestedFilename() === "Anhangpruefwort-Plan.pdf");
+    await z.p.reload(); await z.p.waitForSelector("body[data-bereit]");
+    ok("SICHERUNG: Zurückgeholtes übersteht Neuladen (samt Anhängen)", await z.p.evaluate(() => window.WNApp.S.vorgaenge.some((v) => (v.anhaenge || []).length === 3 && v.anhaenge.every((a) => a.blob instanceof Blob))));
+    await z.ctx.close();
+  }
 
   /* ── 360 px ohne Querlaufen ── */
   for (const breite of [360, 380]) {
@@ -194,6 +289,20 @@ try {
     await p2.waitForSelector("body[data-bereit]", { timeout: 8000 }).catch(() => {});
     ok("OFFLINE: App lädt nach dem ersten Laden ohne Netz", await p2.evaluate(() => !!document.body && !!document.body.dataset.bereit && !!window.WN && !!window.SbkimPseudonym).catch(() => false));
     await s.ctx.close();
+  }
+
+  /* ── Impressum und Datenschutz ── */
+  {
+    const r = await seite(380);
+    await r.p.goto(url); await r.p.waitForSelector("body[data-bereit]");
+    ok("RECHT: Impressum und Datenschutz sind von der App aus verlinkt", await r.p.locator('a[href="impressum.html"]').count() >= 1 && await r.p.locator('a[href="datenschutz.html"]').count() >= 1);
+    for (const [seiteName, muss] of [["impressum.html", ["Angaben gemäß § 5 DDG", "Klaus Nitzsche", "info@family-projekt.de"]], ["datenschutz.html", ["GitHub", "WorkflowNeeds1", "keine Verschlüsselung"]]]) {
+      await r.p.goto(url + seiteName);
+      const txt = await r.p.textContent("body");
+      ok(`RECHT: ${seiteName} trägt ${muss.join(", ")}`, muss.every((m) => txt.includes(m)), muss.filter((m) => !txt.includes(m)));
+      ok(`RECHT: ${seiteName} läuft bei 380 px nicht quer und führt zur App zurück`, await r.p.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0 && await r.p.locator('a[href="index.html"]').count() >= 1);
+    }
+    await r.ctx.close();
   }
 
   ok("FEHLER: keine Skriptfehler auf der Seite", fehler.length === 0, fehler);
