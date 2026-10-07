@@ -379,9 +379,10 @@
         h("span", { class: "gedaempft klein", text: t(anhangArt(a)) + " · " + groesse(a.groesse || 0) + (a.blob ? "" : " · " + t("Inhalt fehlt")) }));
       if (a.blob && /^image\/(png|jpeg|webp|gif)$/.test(a.typ || "")) {
         var u = URL.createObjectURL(a.blob);
-        mitte.append(h("div", null, h("img", { src: u, alt: a.name, class: "anhang-bild", onload: function () { URL.revokeObjectURL(u); } })));
+        mitte.append(h("div", null, h("img", { src: u, alt: a.name, class: "anhang-bild", title: t("Ansehen"), style: "cursor:zoom-in", onclick: function () { anhangAnsehen(a); }, onload: function () { URL.revokeObjectURL(u); } })));
       }
       z.append(mitte, h("div", { class: "band" },
+        a.blob ? knopf("👁 " + t("Ansehen"), function () { anhangAnsehen(a); }, "klein", { "data-anhang-ansehen": a.id, "aria-label": t("Ansehen") + ": " + a.name }) : null,
         a.blob ? knopf("⬇ " + t("Speichern"), function () { laden(a.blob, a.name); }, "klein", { "data-anhang-laden": a.id }) : null,
         knopf("✕", function () {
           if (!confirm(t("Diesen Anhang entfernen?") + "\n" + a.name)) return;
@@ -391,6 +392,108 @@
     });
     if (L.length) k.append(h("p", { class: "gedaempft klein", "data-anhang-summe": String(summe), text: L.length + " " + t("Anhang/Anhänge") + " · " + groesse(summe) }));
     return k;
+  }
+
+
+  /* ════ 👁 Ansicht eines Anhangs (Klaus 2026-10-08: „mit einem Auge … als Voransicht größer gemacht
+     werden … ob es die richtigen Dokumente sind … komplett drauf“) ════
+     Bild in voller Größe (Tipp = Originalgröße) · PDF: alle Seiten, gezeichnet mit pdf.js (Android-Chrome
+     zeigt PDFs nicht in einem Rahmen) · E-Mail: Kopf, Text, Anhänge (die man wieder ansehen kann) ·
+     Text/CSV als Text. NICHTS wird ausgeführt: HTML und SVG-Quelltext erscheinen als Text, nie als Seite. */
+  var PDFJS = "vendor/pdfjs/", pdfjsHolen = null;
+  function pdfjs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfjsHolen) return pdfjsHolen;
+    pdfjsHolen = new Promise(function (ok, nein) {
+      var sc = document.createElement("script"), uhr = setTimeout(function () { nein(new Error("pdf.js kam nicht an")); }, 20000);
+      sc.src = PDFJS + "pdf.min.js";
+      sc.onload = function () { clearTimeout(uhr); if (!window.pdfjsLib) return nein(new Error("pdf.js meldet sich nicht")); window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; ok(window.pdfjsLib); };
+      sc.onerror = function () { clearTimeout(uhr); nein(new Error("pdf.js kam nicht an")); };
+      document.head.appendChild(sc);
+    });
+    pdfjsHolen.catch(function () { pdfjsHolen = null; });
+    return pdfjsHolen;
+  }
+  function ansichtArt(typ, name) {
+    typ = String(typ || "").toLowerCase(); name = String(name || "").toLowerCase();
+    if (/^image\/(png|jpeg|webp|gif|bmp)$/.test(typ) || /\.(png|jpe?g|webp|gif|bmp)$/.test(name)) return "bild";
+    if (typ === "application/pdf" || /\.pdf$/.test(name)) return "pdf";
+    if (typ === "message/rfc822" || /\.eml$/.test(name)) return "mail";
+    if (/^text\//.test(typ) || /(json|xml|svg)/.test(typ) || /\.(txt|csv|md|json|xml|svg|html?|log)$/.test(name)) return "text";
+    return "";
+  }
+  function blobLatin1(blob) { return blob.arrayBuffer().then(function (ab) { var u = new Uint8Array(ab), s = ""; for (var i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return s; }); }
+  function ansichtInhalt(blob, typ, name, ziel, ebene) {
+    var art = ansichtArt(typ, name);
+    ziel.dataset.ansichtArt = art || "keine";
+    if (art === "bild") {
+      var u = URL.createObjectURL(blob);
+      var img = h("img", { src: u, alt: name, class: "ansicht-bild", "data-ansicht-bild": "", title: t("Tippen: Originalgröße / einpassen"),
+        onclick: function () { img.classList.toggle("voll"); } });
+      ziel.append(img); return Promise.resolve();
+    }
+    if (art === "pdf") {
+      var hin = h("p", { class: "gedaempft", "data-ansicht-laedt": "", text: t("PDF wird gezeichnet …") });
+      ziel.append(hin);
+      return Promise.all([pdfjs(), blob.arrayBuffer()]).then(function (r) {
+        return r[0].getDocument({ data: new Uint8Array(r[1]), isEvalSupported: false }).promise;
+      }).then(function (doc) {
+        hin.textContent = doc.numPages + " " + t("Seite(n)");
+        var breite = Math.max(320, Math.min(1400, (ziel.clientWidth || 800) - 8)), dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var kette = Promise.resolve();
+        for (var n = 1; n <= doc.numPages; n++) (function (n) {
+          kette = kette.then(function () { return doc.getPage(n); }).then(function (pg) {
+            var v1 = pg.getViewport({ scale: 1 }), sc = breite / v1.width, vp = pg.getViewport({ scale: sc * dpr });
+            var c = h("canvas", { class: "ansicht-seite", "data-ansicht-seite": String(n), width: String(Math.round(vp.width)), height: String(Math.round(vp.height)), "aria-label": t("Seite") + " " + n, title: t("Tippen: Originalgröße / einpassen") });
+            c.addEventListener("click", function () { c.classList.toggle("voll"); });
+            ziel.append(c);
+            return pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+          });
+        })(n);
+        return kette;
+      }).catch(function (e) {
+        hin.textContent = t("Die PDF ließ sich hier nicht zeichnen") + " (" + (e && e.message || e) + "). " + t("Über „Speichern“ öffnet sie das PDF-Programm des Geräts.");
+        hin.dataset.ansichtFehler = "";
+      });
+    }
+    if (art === "mail") {
+      return blobLatin1(blob).then(function (roh) {
+        var m = WN.mail.lesen(roh);
+        var kopf = h("table", { class: "ansicht-kopf klein", "data-ansicht-mail": "" });
+        [["Von", m.kopf.von], ["An", m.kopf.an], ["Cc", m.kopf.cc], ["Betreff", m.kopf.betreff], ["Datum", m.kopf.datum]].forEach(function (z) {
+          if (z[1]) kopf.append(h("tr", null, h("th", { text: t(z[0]) }), h("td", { text: z[1] })));
+        });
+        ziel.append(kopf, h("pre", { class: "ansicht-text", "data-ansicht-mailtext": "", text: m.text || t("(kein Text)") }));
+        if (m.anhaenge.length) {
+          var liste = h("div", { class: "ansicht-anhaenge", "data-ansicht-mailanhaenge": String(m.anhaenge.length) }, h("b", { text: "📎 " + t("Anhänge der E-Mail") }));
+          m.anhaenge.forEach(function (a, i) {
+            var b = new Blob([a.bytes], { type: a.typ });
+            liste.append(h("div", { class: "eintrag" }, h("span", { text: a.name + " · " + groesse(a.groesse) }),
+              h("div", { class: "band" },
+                ansichtArt(a.typ, a.name) && ebene < 3 ? knopf("👁 " + t("Ansehen"), function () { var sub = h("div", { class: "ansicht-unter", "data-ansicht-unter": String(i) }); liste.after(sub); ansichtInhalt(b, a.typ, a.name, sub, ebene + 1); }, "klein", { "data-mailanhang-ansehen": String(i) }) : null,
+                knopf("⬇ " + t("Speichern"), function () { laden(b, a.name); }, "klein"))));
+          });
+          ziel.append(liste);
+        }
+      });
+    }
+    if (art === "text") {
+      return blob.text().then(function (s) { ziel.append(h("pre", { class: "ansicht-text", "data-ansicht-text": "", text: s.length > 200000 ? s.slice(0, 200000) + "\n…" : s })); });
+    }
+    ziel.append(h("p", { class: "gedaempft", "data-ansicht-keine": "", text: t("Für diese Dateiart gibt es keine Voransicht. Über „Speichern“ öffnet das passende Programm sie.") }));
+    return Promise.resolve();
+  }
+  function anhangAnsehen(a) {
+    var dlg = document.getElementById("ansicht");
+    var inhalt = h("div", { class: "ansicht-inhalt" });
+    dlg.replaceChildren(h("div", { class: "vorschau-kopf" },
+      h("b", { text: a.name, style: "overflow-wrap:anywhere" }), h("span", { class: "gedaempft klein", text: t(anhangArt(a)) + " · " + groesse(a.groesse || 0) }),
+      h("div", { class: "band" }, knopf("⬇ " + t("Speichern"), function () { laden(a.blob, a.name); }, "klein"),
+        knopf("✕", function () { dlg.close(); }, "klein", { "aria-label": t("Schließen"), "data-ansicht-zu": "" }))), inhalt);
+    dlg.dataset.anhang = a.id;
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+    dlg.dataset.fertig = "";
+    return ansichtInhalt(a.blob, a.typ, a.name, inhalt, 0).then(function () { dlg.dataset.fertig = "1"; });
   }
 
   function alleTexte(f) {

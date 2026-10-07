@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
   "assets/kern/bedarf.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
-  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
+  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
 console.log = stumm;
@@ -42,6 +42,29 @@ ok("PIN: Modul 25 ist byte-gleich mit Sage", sha("modules/25_pseudonym.js") === 
 ok("PIN: installieren.js ist byte-gleich mit Sage", sha("assets/installieren.js") === INSTALLIEREN_SHA);
 const TRESOR_SHA = "eaed30e8f3921835a3f58b69f89d9b008831f69f164ad1dfec630fa43161f666"; // Sende-Pruefer assets/schluesseltresor.js (74af186, aus kim-hub-company 1a4528d)
 ok("PIN: schluesseltresor.js ist byte-gleich mit dem Sende-Prüfer", sha("assets/schluesseltresor.js") === TRESOR_SHA);
+/* pdf.js für die 👁 Ansicht: byte-gleich aus dem Auslieferungsprüfer, nur mit isEvalSupported:false (CVE-2024-4367) */
+const PDFJS_SHA = { "vendor/pdfjs/pdf.min.js": "978fd1b2d134a98e98966186a97777bebf87d8e770dadab1ece3687e21a5aa6c", "vendor/pdfjs/pdf.worker.min.js": "38cde5311957b86bc3669f93e7d2566de333a90055ed6635bef60d9bf00e96f2" };
+ok("PIN: pdf.js ist byte-gleich mit dem Auslieferungsprüfer (3.11.174)", Object.entries(PDFJS_SHA).every(([f, h]) => sha(f) === h));
+ok("PDFJS: die App öffnet PDFs nur mit isEvalSupported: false", /getDocument\(\{ data: new Uint8Array\(r\[1\]\), isEvalSupported: false \}\)/.test(readFileSync(join(WURZEL, "assets/app.js"), "utf8")));
+ok("PDFJS: nicht im Installations-Vorrat (1,5 MB), aber in THIRD_PARTY.md genannt", !/vendor\/pdfjs/.test(readFileSync(join(WURZEL, "sw.js"), "utf8")) && /PDF\.js 3\.11\.174/.test(readFileSync(join(WURZEL, "THIRD_PARTY.md"), "utf8")));
+/* E-Mail lesen für die Ansicht (assets/kern/mail.js) */
+{
+  const M = WN.mail;
+  const roh = ["From: =?utf-8?B?SsO8cmdlbiBCZWlzcGllbA==?= <j@x.example>", "To: a@x.example", "Subject: =?utf-8?Q?Gr=C3=BC=C3=9Fe_aus?=", "  =?utf-8?Q?_M=C3=BCnchen?=",
+    "MIME-Version: 1.0", 'Content-Type: multipart/mixed; boundary="AAA"', "", "--AAA", 'Content-Type: multipart/alternative; boundary="BBB"', "", "--BBB",
+    "Content-Type: text/plain; charset=utf-8", "Content-Transfer-Encoding: quoted-printable", "", "Sch=C3=B6ne Gr=C3=BC=C3=9Fe=", " und mehr", "--BBB",
+    "Content-Type: text/html; charset=utf-8", "", "<p>HTML <script>alert(1)</script></p>", "--BBB--", "--AAA",
+    'Content-Type: application/pdf; name="Rechnung.pdf"', "Content-Disposition: attachment; filename*=utf-8''R%C3%BCckfrage.pdf", "Content-Transfer-Encoding: base64", "",
+    Buffer.from("%PDF-1.4 test").toString("base64"), "--AAA--", ""].join("\r\n");
+  const m = M.lesen(roh);
+  ok("MAIL: Kopf mit RFC 2047 (B und Q, gefaltet)", m.kopf.von === "Jürgen Beispiel <j@x.example>" && m.kopf.betreff === "Grüße aus München", m.kopf);
+  ok("MAIL: Text aus quoted-printable, Zeichensatz UTF-8, text/plain hat Vorrang vor HTML", m.text === "Schöne Grüße und mehr", m.text);
+  ok("MAIL: Anhang mit Namen nach RFC 2231, Bytes genau", m.anhaenge.length === 1 && m.anhaenge[0].name === "Rückfrage.pdf" && Buffer.from(m.anhaenge[0].bytes).toString() === "%PDF-1.4 test", m.anhaenge.map((a) => a.name));
+  const nurHtml = M.lesen("Subject: x\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<p>Hallo<br>Welt</p><script>boese()</script>");
+  ok("MAIL: nur HTML → als Text ohne Tags und ohne Skript", nurHtml.text === "Hallo\nWelt" && !/boese|<script/.test(nurHtml.text), nurHtml.text);
+  const bsp = M.lesen(readFileSync(join(WURZEL, "beispiele/tomys-gesamt/Anfrage-Tomys-Hub.eml")).toString("latin1"));
+  ok("MAIL: Beispiel-Mail — Bild-Anhang kommt Byte für Byte heraus", bsp.anhaenge.length === 1 && bsp.anhaenge[0].typ === "image/jpeg" && Buffer.from(bsp.anhaenge[0].bytes).equals(readFileSync(join(WURZEL, "beispiele/tomys-gesamt/Auftragszettel-Papier.jpg"))));
+}
 ok("PIN: pruefer-mail.js (Probe) ist byte-gleich mit dem Sende-Prüfer", sha("tests/pruefer-mail.js") === PRUEFERMAIL_SHA);
 ok("PIN: die App trägt keine eigenen Muster (kein find/pseudonymize-Nachbau)", !/new RegExp\([^)]*@/.test(readFileSync(join(WURZEL, "assets/kern/bauauftrag.js"), "utf8")));
 
