@@ -39,6 +39,11 @@ das „weggelassen", nicht „null"), `verdeckt: ja|nein`. Der Stundensatz steht
 | `assets/kern/fassungen.js` | Vorgang, Fassung, Unterschreiben (friert Satz + USt ein), Vergleich, Kundenfeld-Platzhalter |
 | `assets/kern/aussen.js` | **Whitelist** für Bedarfsprotokoll, Angebot, Nachtrag (Muster: BookLedgerPro `externesAngebot`) |
 | `assets/kern/bauauftrag.js` | MD erzeugen (Modul 25 + letzte Sicherung), einlesen, Platzhalter aufdecken |
+| `assets/kern/sicherung.js` | verschlüsselte Sicherung: verschließen, öffnen, zusammenführen (fügt hinzu, überschreibt nie), Anhänge ⟷ base64, Erinnerung |
+| `assets/kern/uebergabe.js` | 📤 Auftragsdatei für Mein WorkFloh / Tomys Hub — **nur aus `aussen.angebotExtern`** |
+| `assets/schluesseltresor.js` | **byte-1:1 aus dem Sende-Prüfer** (`74af186`, aus kim-hub-company `1a4528d`), `TRESOR_SHA` in `tests/kern.mjs`. Nie hier abwandeln |
+| `impressum.html` · `datenschutz.html` | wie im Auslieferungsprüfer, echte Angaben nach § 5 DDG — nie durch Platzhalter ersetzen |
+| `werbung.html` | Werbeseite mit `icons/werbung-1200.jpg` (nicht im Vorrat) · `docs/MARKTPLATZ_EINTRAG.md` |
 | `assets/daten/*.js` | Baustein-Katalog, Faktoren, Markt, Kalibrierung, Beispiel „Boutique" |
 | `assets/app.js` · `app.css` · `texte.js` | Oberfläche, Glas-Knöpfe, englische Texte |
 | `assets/installieren.js` | byte-1:1 aus Sage (`INSTALLIEREN_SHA`) |
@@ -46,7 +51,11 @@ das „weggelassen", nicht „null"), `verdeckt: ja|nein`. Der Stundensatz steht
 **Speicher (nie ändern):** IndexedDB `WorkflowNeeds1` / Store `vorgaenge` (Vorgänge samt
 Zuordnung Platzhalter ⟷ Klartext) · localStorage `workflowneeds_einstellungen`,
 `workflowneeds_tabellen`, `workflowneeds_thema`, `workflowneeds_lang`, `workflowneeds_aktiv`,
-`workflowneeds_reiter`, `workflowneeds_beispiel_v1`. Nicht `toolpoint_lang` — github.io ist geteilt.
+`workflowneeds_reiter`, `workflowneeds_beispiel_v1`, `workflowneeds_sicherung_zuletzt` (seit Stufe 2;
+sessionStorage `workflowneeds_sicherung_spaeter`). Nicht `toolpoint_lang` — github.io ist geteilt.
+Am Vorgang neu, ohne neue DB-Fassung: `v.anhaenge = [{id: "A-nn", name, typ, groesse, datum, blob}]`
+(der Blob liegt direkt in IndexedDB — `ablage(v)` in `app.js` klont alles als JSON und hängt die Blobs
+wieder an), `v.ist = {"<Fassung>": Stunden}`, `v.beispiel` (nur das Beispiel).
 
 ## Was hier leicht kaputtgeht
 
@@ -81,6 +90,42 @@ Zuordnung Platzhalter ⟷ Klartext) · localStorage `workflowneeds_einstellungen
   der Fall „Worker legt nichts in den Vorrat" blind. Die Probe schaltet deshalb einen eigenen
   Server ganz ab und öffnet eine frische Seite.
 
+## Stufe 2 (2026-10-07, zweite Sitzung)
+
+Brief: „Workflow-Needs Stufe 2" (im Chat). Dazu Klaus im Chat: *„Workflow Needs soll mit Workflow
+zusammenarbeiten … Tomys Workflow nimmt den Auftrag an … bis zur Buchhaltung"* · *„die Dateianhänge,
+die in das Angebot mit einfließen … PDF als PDF, EML als E-Mail … Screenshots als Datei oder Bild"*.
+
+- **🔐 Sicherung** (Einstellungen): Passwort ≥ 8 Zeichen zweimal → Datei
+  `Workflow-Needs-Sicherung-JJJJ-MM-TT.json` = `{art: "workflowneeds-sicherung-verschluesselt", fassung: 1,
+  erstellt, paket}` — **kein Klartext** darin. Mit drin: Vorgänge samt Anhängen und Zuordnung,
+  Einstellungen (Firma, Satz), Tabellen. Zurückholen fügt hinzu; Einstellungen/Tabellen nur, wo auf dem
+  Gerät noch keine stehen. ⚠ **Tafel-Evolution:** geschrieben wird nur noch verschlüsselt; eine alte
+  Klartext-Sicherung (`workflowneeds-sicherung`) wird weiter gelesen. Erinnerung in „Vorgänge", sobald
+  eigene (nicht Beispiel-)Vorgänge da sind und die letzte Sicherung fehlt oder ≥ 14 Tage alt ist.
+  `sicherung.js` des Sende-Prüfers ist **nicht** byte-1:1 übernommen (liest dessen MAILS/Ordner) —
+  nur das Schloss; das Muster ist nachgebaut.
+- **📎 Anhänge am Vorgang** (Reiter Vorgänge, „intern" gestrichelt): Datei wählen, „Screenshot einfügen"
+  (Zwischenablage) oder Strg+V im Abschnitt; höchstens 25 MB je Datei (gewählt). Byte für Byte, Name und
+  Art bleiben. Gehen **nicht** in Bauauftrag, Angebot, Bedarfsprotokoll — wohl in Sicherung und Übergabe.
+- **📤 Als Auftrag übergeben** (Reiter Angebot): schreibt das Weiterleitungs-Bündel, das Mein WorkFloh
+  und Tomys Hub/workfloh mit „📥 Importieren" lesen (`applyForwardBundle`, in beiden byte-gleich).
+  Status `angebot` (gibt es in beiden), feste Kennung `wn-<Vorgang>-F<n>` (zweimal einlesen =
+  aktualisieren), Datum TT.MM.JJJJ, Anhänge als data-URL. **Gemessen 2026-10-07:** eine so gebaute Datei
+  in beiden WorkFlohs über deren eigenes `applyForwardBundle` eingelesen — Auftrag mit Kunde, Positionen,
+  Preis, PDF als `application/pdf`, .eml als `message/rfc822`. ⚠ Nicht gemessen: Tomys `?angebotNeu=`-Weg
+  (trägt keine Dateien) und die Weitergabe WorkFloh → BookLedgerPro mit einem Workflow-Needs-Auftrag.
+  ⚠ Das Angebot selbst geht nicht als PDF mit — „Als PDF speichern" im Druckdialog und dann anhängen.
+- **Vorlagen nachgesehen** (10 Bausteine, Hinweis nennt Stand-Commit). Workfloh-PDF-Page und
+  Perfect-Skin-Fashion: nicht nachgesehen (steht im Hinweis).
+- **Bildschirme gezählt** im Code (`markt.js` `GEZAEHLT`, Regel `bildschirmRegel`): Ordner, die nur
+  dieselbe Liste filtern, zählen einzeln (Sende-Prüfer 7, Küchenzettel 7 — sonst je 2). mycel-karte lag
+  nicht vor → „nicht gezählt".
+- **Ist-Stunden** je unterschriebener Fassung (Reiter Fassungen, 🔒) → Tabellen: „Eigene Aufträge:
+  Schätzung und Ist (intern)", Abweichung gegen die Mitte. Nie in Ausdruck, Angebot, MD, Übergabe.
+- ⚠ **Offen:** Klaus' Sichttest-Befunde vom Tablet (Brief Punkt 1) lagen dieser Sitzung nicht vor.
+  Der Marktplatz-Eintrag ist nur als Text da (`docs/MARKTPLATZ_EINTRAG.md`): kein Schreibzugriff auf PWA-Toolpoint.
+
 ## Benannte Grenzen
 
 - Platzhalter sind **keine Verschlüsselung**: der Klartext geht nur gar nicht erst hinaus. Was
@@ -89,11 +134,12 @@ Zuordnung Platzhalter ⟷ Klartext) · localStorage `workflowneeds_einstellungen
 - Interne **Notizen** gehen nicht in die MD; interne **Einträge** schon (als „nur intern"
   gekennzeichnet) — die MD geht an Klaus' eigene Sitzung, nicht an den Kunden.
 - Alle Stunden-Spannen, Faktoren und Wiederverwendungs-Anteile sind **Schätzungen**, keine
-  Messung. Vorlage-Zuordnung je Baustein: nachgesehen nur Sende-Prüfer, Auslieferungsprüfer,
-  BookLedgerPro; die übrigen stehen „laut Brief, nicht nachgesehen" in der App.
-- Kalibrierung: die Stunden sind aus dem Brief übernommen (dort gemessen); **Bildschirme sind
-  nicht nachgezählt** und stehen als „nicht gezählt" da.
-- Sicherung ist JSON im Klartext (mit Zuordnung). Verschlüsselt wie im Sende-Prüfer: später.
+  Messung. Vorlage-Zuordnung je Baustein: seit Stufe 2 alle 13 mit Vorlage nachgesehen; die
+  zweitgenannten Workfloh-PDF-Page und Perfect-Skin-Fashion nicht (steht im Hinweis).
+- Kalibrierung: die Stunden sind aus dem Brief übernommen (dort gemessen); **Bildschirme sind im
+  Code gezählt**, nicht in der laufenden App; mycel-karte steht als „nicht gezählt" da.
+- Sicherung: verschlüsselt (seit Stufe 2). ⚠ Ein kurzes Passwort lässt sich durchprobieren, wenn
+  jemand die Datei hat. Die ganze Sicherung liegt beim Bauen einmal als Text im Speicher (große Anhänge).
 - Mindestpreis je Auftrag: **nicht gebaut** (Klaus 2026-10-07: „nicht jetzt").
 - Die Entwürfe vorab (Brief § 11) sind nicht als eigene Vorschau gebaut worden — die
   Gestaltung steht direkt in der App.
