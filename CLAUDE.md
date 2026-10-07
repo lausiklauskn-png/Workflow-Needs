@@ -40,6 +40,8 @@ das „weggelassen", nicht „null"), `verdeckt: ja|nein`. Der Stundensatz steht
 | `assets/kern/aussen.js` | **Whitelist** für Bedarfsprotokoll, Angebot, Nachtrag, Rechtsblätter (Erklärung, Vereinbarung, Wartung) und Sternebogen (Muster: BookLedgerPro `externesAngebot`) |
 | `assets/kern/bauauftrag.js` | MD erzeugen (Modul 25 + letzte Sicherung), einlesen, Platzhalter aufdecken |
 | `assets/kern/sicherung.js` | verschlüsselte Sicherung: verschließen, öffnen, zusammenführen (fügt hinzu, überschreibt nie), Anhänge ⟷ base64, Erinnerung |
+| `assets/kern/mail.js` | .eml lesen für die 👁 Ansicht: Kopf (RFC 2047), multipart, base64/QP, Anhänge Byte für Byte; HTML nur als Text |
+| `vendor/pdfjs/` | **byte-1:1 aus dem Auslieferungsprüfer** (PDF.js 3.11.174, `PDFJS_SHA` in `tests/kern.mjs`), nur für die Ansicht, `isEvalSupported: false`, nicht im Vorrat |
 | `assets/kern/uebergabe.js` | 📤 Auftragsdatei für Mein WorkFloh / Tomys Hub — **nur aus `aussen.angebotExtern`** |
 | `assets/schluesseltresor.js` | **byte-1:1 aus dem Sende-Prüfer** (`74af186`, aus kim-hub-company `1a4528d`), `TRESOR_SHA` in `tests/kern.mjs`. Nie hier abwandeln |
 | `impressum.html` · `datenschutz.html` | wie im Auslieferungsprüfer, echte Angaben nach § 5 DDG — nie durch Platzhalter ersetzen |
@@ -218,6 +220,13 @@ Einstellungen“*): neben „+ Neuer Vorgang“ stehen Auswahl, „Laden“ und 
 für beide Orte; Kennungen `vg-beispiel-*` hier, `beispiel-*` in den Einstellungen). Geladene tragen ✓, vorausgewählt ist das
 erste noch nicht geladene. Die Vorgangsliste zeigt bei leerem Kunden „ohne Kunde“/„eigenes Vorhaben“ statt `⟦KUNDE-1⟧`.
 Anschrift im Gesamtbeispiel einzeilig (das Feld ist einzeilig). Gegenprobe `VORGÄNGE:` 2 gefangen · browser 127 grün.
+
+**👁 Ansicht der Anhänge** (Klaus 2026-10-08: *„mit einem Auge … als Voransicht größer … ob es die richtigen Dokumente
+sind … komplett drauf“*): an jedem Anhang „👁 Ansehen“ (und Tipp aufs Vorschaubild) → Fenster `#ansicht`. Bild groß (Tipp =
+Originalgröße) · PDF: alle Seiten mit pdf.js gezeichnet (Android-Chrome zeigt PDFs nicht im Rahmen; Tipp = volle Auflösung) ·
+E-Mail: Von/An/Betreff/Datum, Text, Anhänge — die man darin wieder ansehen kann · Text/CSV/HTML/SVG-Quelltext als Text, **nie
+ausgeführt**. Sonst „keine Voransicht“ + Speichern. Gemessen: kern 262 · browser 134 grün · Gegenprobe `ANSICHT:` 4 gefangen.
+⚠ Am Tablet nicht gemessen (Zeit für große PDFs, Speicher bei vielen Seiten).
 
 ## Benannte Grenzen
 

@@ -270,6 +270,35 @@ try {
     await s.p.waitForFunction(() => /Beispiel geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
     const nach = await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv) || {}; return { bid: v.bid, reiter: window.WNApp.S.reiter, anh: (v.anhaenge || []).length, haken: [...document.querySelectorAll("#vg-beispiel-wahl option")].filter((o) => o.textContent.startsWith("✓")).map((o) => o.value) }; });
     ok("VORGÄNGE: „Laden“ legt das Beispiel an, öffnet es und hakt es in der Auswahl ab", nach.bid === "tomys-gesamt" && nach.reiter === "vorgaenge" && nach.anh === 7 && nach.haken.includes("tomys-gesamt"), nach);
+    /* 👁 Ansicht der Anhänge (Klaus 2026-10-08) */
+    const idVon = (name) => s.p.evaluate((n) => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); return (v.anhaenge.find((a) => a.name === n) || {}).id; }, name);
+    const oeffne = async (name) => { const id = await idVon(name); await s.p.click(`[data-anhang-ansehen="${id}"]`); await s.p.waitForFunction(() => document.getElementById("ansicht").dataset.fertig === "1", null, { timeout: 30000 }).catch(() => {}); };
+    const zu = async () => { await s.p.click("[data-ansicht-zu]").catch(() => {}); };
+    ok("ANSICHT: jeder Anhang hat einen 👁-Knopf", await s.p.locator("[data-anhang-ansehen]").count() === 7);
+    await oeffne("Auftragszettel-Papier.jpg");
+    const bild = await s.p.evaluate(() => { const d = document.getElementById("ansicht"), i = d.querySelector("[data-ansicht-bild]"); return { offen: d.open, art: d.querySelector(".ansicht-inhalt").dataset.ansichtArt, w: i ? i.naturalWidth : 0, sicht: i ? i.getBoundingClientRect().width : 0 }; });
+    ok("ANSICHT: Bild groß im Fenster (breiter als das Vorschaubild in der Liste)", bild.offen && bild.art === "bild" && bild.w === 750 && bild.sicht > 300, bild);
+    await zu();
+    await oeffne("Ablauf-Motiv-bis-Rechnung.pdf");
+    const pdf = await s.p.evaluate(() => { const d = document.getElementById("ansicht"), c = d.querySelectorAll("[data-ansicht-seite]");
+      let tinte = 0; if (c[0]) { const g = c[0].getContext("2d").getImageData(0, 0, c[0].width, c[0].height).data; for (let i = 0; i < g.length; i += 4 * 97) if (g[i] < 128) tinte++; }
+      return { seiten: c.length, tinte, fehler: !!d.querySelector("[data-ansicht-fehler]"), hin: (d.querySelector("[data-ansicht-laedt]") || {}).textContent }; });
+    ok("ANSICHT: PDF komplett gezeichnet — jede Seite als Bild, mit Schrift darauf", pdf.seiten === 1 && pdf.tinte > 50 && !pdf.fehler && /1 Seite/.test(pdf.hin), pdf);
+    await zu();
+    await oeffne("Anfrage-Tomys-Hub.eml");
+    const mail = await s.p.evaluate(() => { const d = document.getElementById("ansicht"); return { kopf: (d.querySelector("[data-ansicht-mail]") || {}).textContent || "", text: (d.querySelector("[data-ansicht-mailtext]") || {}).textContent || "", anh: (d.querySelector("[data-ansicht-mailanhaenge]") || {}).dataset ? d.querySelector("[data-ansicht-mailanhaenge]").dataset.ansichtMailanhaenge : "" }; });
+    ok("ANSICHT: E-Mail mit Von, Betreff, Text und ihrem Anhang", /Max Beispiel/.test(mail.kopf) && /Anfrage: ein System/.test(mail.kopf) && /kleiner Betrieb für Digitaldruck/.test(mail.text) && mail.anh === "1", mail);
+    await s.p.click('[data-mailanhang-ansehen="0"]');
+    await s.p.waitForFunction(() => { const i = document.querySelector("[data-ansicht-unter] img"); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 8000 }).catch(() => {});
+    ok("ANSICHT: der Anhang IN der E-Mail lässt sich ebenfalls ansehen (das Foto des Auftragszettels)", await s.p.evaluate(() => { const i = document.querySelector("[data-ansicht-unter] img"); return !!i && i.naturalWidth === 750; }));
+    await zu();
+    ok("ANSICHT: ✕ schließt das Fenster", !(await s.p.evaluate(() => document.getElementById("ansicht").open)));
+    await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); v.anhaenge.push({ id: "A-99", name: "boese.html", typ: "text/html", groesse: 60, datum: "2026-10-08", blob: new Blob(["<script>window.__boese=1</script><b>Hallo</b>"], { type: "text/html" }) }); window.WNApp.zeichne && window.WNApp.zeichne(); });
+    await reiter(s.p, "vorgaenge");
+    await s.p.click('[data-anhang-ansehen="A-99"]'); await s.p.waitForFunction(() => document.getElementById("ansicht").dataset.fertig === "1", null, { timeout: 5000 }).catch(() => {});
+    ok("ANSICHT: eine HTML-Datei erscheint als Text, nichts wird ausgeführt", await s.p.evaluate(() => !window.__boese && /<script>/.test((document.querySelector("[data-ansicht-text]") || {}).textContent || "")));
+    await zu();
+    await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); v.anhaenge = v.anhaenge.filter((a) => a.id !== "A-99"); });
     await s.p.click("#vg-beispiel-alle");
     await s.p.waitForFunction(() => /Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 15000 }).catch(() => {});
     ok("VORGÄNGE: „Alle laden“ von hier ergänzt den Rest ohne Doppel", await s.p.evaluate(() => window.WNApp.S.vorgaenge.filter((v) => v.beispiel).map((v) => v.bid).sort().join()) === "alis,boutique,eigene,psb,tomys,tomys-gesamt");
