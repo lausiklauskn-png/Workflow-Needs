@@ -100,7 +100,7 @@ Angebot. Dazu **mindestens zwei Fassungen**, wo die echte Geschichte das hergibt
 - Daten in `assets/daten/beispiel-*.js` (eine Datei je Beispiel), Aufbau wie `boutique()`;
   `?v=` + CORE + Cache-Bump über `tools/cache-stand.mjs`.
 
-## 4 · Die Verschwiegenheits- und Datenschutzerklärung
+## 4 · Die Verschwiegenheits- und Datenschutzerklärung (und in 4e: Zahlung und Rechte)
 
 ### 4a · Was sie ist
 
@@ -162,6 +162,45 @@ fragen (§ 6, Frage 5). **Nicht** bauen: einen Mail-Dienst oder Server.
 - In die **Übergabe an WorkFloh** — als Datei mit (`files[]`, z. B. das Druckblatt als HTML),
   damit sie beim Auftrag liegt. Klaus fragen.
 
+## 4e · Zweite Erklärung: Zahlung erst nach Erfolg · Rechte am Bau (Klaus 2026-10-07, Nachtrag)
+
+> „Da muss auch noch eine Erklärung, sobald der Kunde etwas bekommt, unterschrieben von mir und
+> von ihm, dass … Zahlung [erst] stattfindet bei erfolgreicher Umsetzung des Projektes. Das Ziel
+> ist festgesetzt, es ist alles festgelegt. … wenn das Projekt beendet ist, erst dann kommt es zu
+> einer Zahlung, wenn überhaupt, je nachdem, was der Kunde als praktisch empfindet oder nützlich
+> für ihn. Lizenzen und ähnliche Sachen bleiben bei mir für den Bau selber, den ich ja dann später
+> auch noch für andere Firmen nutzen kann.“
+
+**Wann:** „sobald der Kunde etwas bekommt“ — Vorschlag: zusammen mit dem **Angebot** (Stufe 3), als
+eigenes Blatt „Vereinbarung zu Zahlung und Nutzungsrechten“, unterschrieben von **beiden** (gleiche
+Bauart wie 4b: zwei Unterschriftsfelder, Aktivieren friert ein, danach Druck / Mail wie 4c).
+Gilt je **Fassung**: ein Nachtrag (F2, F3 …) verweist auf sie oder bekommt eine neue — Klaus fragen.
+
+**Inhalt (Entwurf, ⚠ kein Rechtsrat — Wortlaut vor dem ersten Kunden prüfen lassen):**
+
+1. **Das Ziel steht fest:** Grundlage ist das unterschriebene Bedarfsprotokoll und das Angebot in
+   Fassung *n* (Kennungen B-nn/K-nn nennen — sie sind das, woran „erfolgreich“ gemessen wird).
+2. **Zahlung erst nach Abschluss:** vor dem Ende des Projekts wird nichts fällig. Erst nach der
+   Abnahme (Ende des Praxistests, Phasen aus Stufe 2) entscheidet der Kunde.
+3. **„Wenn überhaupt“:** ist das Ziel nicht erreicht oder empfindet der Kunde das Ergebnis nicht als
+   nützlich, entfällt die Zahlung — **ganz** oder **je Baustein** (der Kunde zahlt nur, was er
+   behält)? ⚠ **Klaus' Entscheidung** (§ 6, Frage 7). Die App hat dafür schon den Haken „Zahlung nach
+   bestandenem Praxistest“ (`angebot.zahlungNachTest`, `app.js` und `aussen.js`) — darauf aufbauen,
+   nicht daneben ein zweites Feld.
+4. **Rechte am Bau bleiben bei Klaus:** Urheberrecht und alle Rechte an Code, Bausteinen, Vorlagen und
+   Werkzeugen bleiben bei Klaus; er darf sie für andere Kunden weiterverwenden. Der Kunde erhält —
+   **erst mit der Zahlung** — ein **einfaches, nicht übertragbares Nutzungsrecht** für den eigenen
+   Betrieb. ⚠ Klaus fragen: zeitlich unbegrenzt? darf der Kunde ändern lassen? was gilt ohne Zahlung
+   (Vorschlag: kein Nutzungsrecht, die App wird nicht weiter betrieben)?
+5. **Was dem Kunden gehört, bleibt seins:** seine Daten, Texte, Bilder, Logos, Kundenlisten — Klaus
+   verwendet sie für niemanden sonst (Verbindung zur Verschwiegenheit, § 4a).
+6. Kein Stundensatz, keine internen Sätze, nicht das Wort „Analyse“ (Kundenblatt, Whitelist).
+
+**Proben dazu:** Blatt nur über die Whitelist (neue Funktion, z. B. `vereinbarungExtern`); nennt Fassung
+und die Kennungen des Ziels; ohne beide Unterschriften nicht „aktiviert“; aktiviert = eingefroren;
+der Satz zur Zahlung folgt dem gewählten Modell (ganz / je Baustein); kein Satz/Preis-Leck außer den
+Summen des Angebots.
+
 ## 5 · Proben und Gegenprobe
 
 - **kern:** jedes Beispiel lädt, hat 18 Bereiche gültig, Kennungen lückenlos aus dem Zähler,
@@ -184,6 +223,11 @@ fragen (§ 6, Frage 5). **Nicht** bauen: einen Mail-Dienst oder Server.
    nur Klaus (einseitige Erklärung) oder beide (Vereinbarung)?
 5. „Per E-Mail“: reicht `mailto` mit Text + PDF von Hand angehängt?
 6. Soll die Erklärung mit in die WorkFloh-Übergabe?
+7. Zahlung nach Erfolg: entfällt sie **ganz**, wenn der Kunde das Ergebnis nicht nützlich findet,
+   oder zahlt er **je Baustein**, den er behält? Wer stellt „erfolgreich“ fest — der Kunde allein,
+   oder gegen die Kennungen des Bedarfsprotokolls?
+8. Nutzungsrecht des Kunden: zeitlich unbegrenzt? Änderungen durch Dritte erlaubt? Was gilt ohne Zahlung?
+9. Die Vereinbarung zu Zahlung und Rechten: einmal je Vorgang oder je Fassung (Nachtrag)?
 
 ## 7 · Zugriff (gemessen in dieser Sitzung)
 
