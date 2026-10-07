@@ -1,0 +1,7 @@
+{
+  "name": "workflow-needs",
+  "private": true,
+  "description": "Workflow Bedarfsanalyse: Bedarfsprotokoll, Schätzung, Fassungen und Angebot (PWA)",
+  "scripts": { "test": "node tests/alle.mjs", "gegenprobe": "node tests/gegenprobe.mjs" },
+  "devDependencies": { "playwright-core": "^1.62.1" }
+}

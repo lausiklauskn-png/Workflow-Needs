@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Workflow Bedarfsanalyse</title>
+<meta name="description" content="Bedarfsprotokoll, Schätzung, Fassungen und Angebot — offline, ohne Server. Kundendaten gehen nie hinaus.">
+<meta name="theme-color" content="#0d1218">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="icons/favicon-48.png" sizes="48x48">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/app.css?v=1">
+</head>
+<body>
+<header class="kopf">
+  <div class="marke">
+    <img src="icons/icon-192.png" alt="" width="34" height="34">
+    <div style="min-width:0"><b id="app-name">Workflow Bedarfsanalyse</b><small id="app-unter"></small></div>
+  </div>
+  <div class="kopf-knoepfe">
+    <button type="button" class="btn rund" id="sprache" title="English">EN</button>
+    <button type="button" class="btn rund" id="thema" title="Hell">☀</button>
+    <button type="button" class="btn rund" id="neuladen" title="Neu laden" aria-label="Neu laden">⟳</button>
+  </div>
+</header>
+<nav class="reiter" id="reiter" aria-label="Reiter"></nav>
+<main id="inhalt">
+  <noscript><div class="hinweis bad">Diese App braucht JavaScript. Ohne Skript wird nichts gerechnet und nichts gespeichert.</div></noscript>
+</main>
+<dialog id="vorschau" aria-label="Vorschau"></dialog>
+<div id="druck" aria-hidden="true"></div>
+
+<script src="modules/25_pseudonym.js"></script>
+<script src="assets/kern/geld.js?v=1"></script>
+<script src="assets/daten/bausteine.js?v=1"></script>
+<script src="assets/daten/markt.js?v=1"></script>
+<script src="assets/kern/bedarf.js?v=1"></script>
+<script src="assets/kern/rechnen.js?v=1"></script>
+<script src="assets/kern/fassungen.js?v=1"></script>
+<script src="assets/kern/aussen.js?v=1"></script>
+<script src="assets/kern/bauauftrag.js?v=1"></script>
+<script src="assets/daten/beispiel.js?v=1"></script>
+<script src="assets/texte.js?v=1"></script>
+<script src="assets/app.js?v=1"></script>
+<script src="assets/installieren.js" data-name="Workflow Bedarfsanalyse" data-vor="sprache"></script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+</script>
+</body>
+</html>
