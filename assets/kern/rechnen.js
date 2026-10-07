@@ -252,8 +252,26 @@
     if (zahl(h.nettoCent) != null) { p.nettoCent = Math.round(zahl(h.nettoCent)); p.manuell = true; }
   }
 
+  /* Kalibrierung gegen echte Aufträge (Brief Stufe 2, Punkt 5) — INTERN. Ist-Stunden stehen am
+     Vorgang (v.ist = { "<Fassung>": Stunden }), nicht an der eingefrorenen Fassung, und nur für
+     unterschriebene Fassungen. Abweichung gegen die Mitte der Schätzung. */
+  function istVergleich(vorgaenge, tabellen) {
+    var out = [];
+    (vorgaenge || []).forEach(function (v) {
+      Object.keys(v.ist || {}).forEach(function (nr) {
+        var ist = zahl(v.ist[nr]); if (ist == null || ist < 0) return;
+        var f = (v.fassungen || []).filter(function (x) { return String(x.nr) === String(nr) && x.unterschrieben; })[0];
+        if (!f) return;
+        var s = schaetze(f, tabellen), mitte = (s.stundenVon + s.stundenBis) / 2;
+        out.push({ vorgang: v.id, titel: v.titel || "", fassung: f.nr, von: s.stundenVon, bis: s.stundenBis, ist: ist,
+          abweichungPct: mitte > 0 ? Math.round((ist - mitte) / mitte * 100) : null, imRahmen: ist >= s.stundenVon && ist <= s.stundenBis });
+      });
+    });
+    return out;
+  }
+
   WN.rechnen = { schaetze: schaetze, bausteinRechnen: bausteinRechnen, sichten: sichten, ust: ust,
     kostenNutzen: kostenNutzen, bedarfNutzenMonat: bedarfNutzenMonat, phasen: phasen, datumPlus: datumPlus,
     positionen: positionen, tage: tage, katalogVon: katalogVon, faktorVon: faktorVon, bausteinName: bausteinName,
-    SCHWELLEN: SCHWELLEN };
+    istVergleich: istVergleich, SCHWELLEN: SCHWELLEN };
 })(typeof window !== "undefined" ? window : globalThis);

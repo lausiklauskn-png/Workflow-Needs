@@ -11,6 +11,7 @@
     var F = WN.fassungen, B = WN.bedarf;
     var v = F.neuerVorgang(nr, einst, "2026-10-01");
     v.titel = "Internetseite für ein Modegeschäft";
+    v.beispiel = true;   // zählt nicht für die Sicherungs-Erinnerung
     v.kunde.firma = "Boutique Beispiel";
     v.kunde.ansprechpartner = "Erika Muster";
     v.kunde.mail = "kontakt@boutique.example";

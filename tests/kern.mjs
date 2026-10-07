@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
   "assets/kern/bedarf.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
-  "assets/kern/bauauftrag.js", "assets/daten/beispiel.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
+  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/daten/beispiel.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
 console.log = stumm;
@@ -40,6 +40,8 @@ const INSTALLIEREN_SHA = "6de57ef331b5deb55b18ca7745da402f16b4401f22259d466b8d82
 const PRUEFERMAIL_SHA = "cdf3ca7881bfa68763a2c0be7436d35a65bea4dbd03f606e02eaec5c613632d7"; // Sende-Pruefer assets/pruefer-mail.js (78dde3d), nur für die Probe
 ok("PIN: Modul 25 ist byte-gleich mit Sage", sha("modules/25_pseudonym.js") === MODUL25_SHA, sha("modules/25_pseudonym.js"));
 ok("PIN: installieren.js ist byte-gleich mit Sage", sha("assets/installieren.js") === INSTALLIEREN_SHA);
+const TRESOR_SHA = "eaed30e8f3921835a3f58b69f89d9b008831f69f164ad1dfec630fa43161f666"; // Sende-Pruefer assets/schluesseltresor.js (74af186, aus kim-hub-company 1a4528d)
+ok("PIN: schluesseltresor.js ist byte-gleich mit dem Sende-Prüfer", sha("assets/schluesseltresor.js") === TRESOR_SHA);
 ok("PIN: pruefer-mail.js (Probe) ist byte-gleich mit dem Sende-Prüfer", sha("tests/pruefer-mail.js") === PRUEFERMAIL_SHA);
 ok("PIN: die App trägt keine eigenen Muster (kein find/pseudonymize-Nachbau)", !/new RegExp\([^)]*@/.test(readFileSync(join(WURZEL, "assets/kern/bauauftrag.js"), "utf8")));
 
@@ -301,6 +303,91 @@ function kundenVorgang() {
   const f3b = kopie(f3); f3b.umfang.bausteine.find((b) => b.name === "Warenwirtschaft").groesse = null;
   ok("BOUTIQUE: Warenwirtschaft erst NOCH NICHT GESCHÄTZT", F.vergleich(f2, f3b).bausteine.some((x) => x.aktion === "NOCH NICHT GESCHÄTZT"));
   ok("BOUTIQUE: keine echten Adressen (nur .example)", !/@(?![a-z.]*\.example)/.test(JSON.stringify(v)));
+}
+
+/* ── SICHERUNG (verschlüsselt, Anhänge Byte für Byte) ── */
+{
+  const SI = WN.sicherung;
+  const v = vorgang(); v.kunde.firma = "Sicherungsprüfwort GmbH";
+  const bytes = new Uint8Array(70000); for (let i = 0; i < bytes.length; i++) bytes[i] = (i * 31 + 7) & 255;
+  v.anhaenge = [{ id: "A-01", name: "Angebot Kunde.pdf", typ: "application/pdf", groesse: bytes.length, blob: new Blob([bytes], { type: "application/pdf" }) }];
+  const d = await SI.verschliessen("richtig-langes-pw", { vorgaenge: [v], speicher: { einstellungen: '{"satzCent":7300}' } }, "2026-10-07T10:00:00.000Z");
+  const roh = JSON.stringify(d);
+  ok("SICHERUNG: in der Datei steht kein Klartext (Kunde, Satz, Anhang-Name)", !roh.includes("Sicherungsprüfwort") && !roh.includes("7300") && !roh.includes("Angebot Kunde") && !roh.includes("V-2026"), roh.slice(0, 200));
+  ok("SICHERUNG: Kopf nennt Art, Fassung, Datum — und das Paket", d.art === SI.ART && d.fassung === 1 && d.erstellt === "2026-10-07T10:00:00.000Z" && Object.keys(d).sort().join() === "art,erstellt,fassung,paket");
+  let falsch = null; try { await SI.oeffnen("falsches-passwort", d); } catch (e) { falsch = e.message; }
+  ok("SICHERUNG: falsches Passwort → „passwort“", falsch === "passwort", falsch);
+  let kurz = null; try { await SI.verschliessen("kurz", { vorgaenge: [] }); } catch (e) { kurz = e.message; }
+  ok("SICHERUNG: Passwort unter 8 Zeichen wird abgelehnt", kurz === "kurz", kurz);
+  const r = await SI.oeffnen("richtig-langes-pw", d);
+  const rb = r.vorgaenge[0].anhaenge[0].blob;
+  const zurueck = new Uint8Array(rb && rb.arrayBuffer ? await rb.arrayBuffer() : new ArrayBuffer(0));
+  ok("SICHERUNG: Rundlauf bringt Vorgang und Einstellungen zurück", r.vorgaenge[0].kunde.firma === "Sicherungsprüfwort GmbH" && r.speicher.einstellungen.includes("7300"));
+  ok("SICHERUNG: Anhang kommt Byte für Byte zurück, Name und Art bleiben", zurueck.length === bytes.length && zurueck.every((b, i) => b === bytes[i]) &&
+    r.vorgaenge[0].anhaenge[0].name === "Angebot Kunde.pdf" && !!rb && rb.type === "application/pdf");
+  const da = kopie(v); da.titel = "schon hier";
+  const z = SI.zusammenfuehren([da], r.vorgaenge.concat([vorgang(), { id: "kaputt" }]));
+  ok("SICHERUNG: Zurückholen fügt hinzu, überschreibt nie", z.neu.length === 0 && z.schonDa === 3 && da.titel === "schon hier", z);
+  const w = kopie(d); w.fassung = 2; let fs = null; try { await SI.oeffnen("richtig-langes-pw", w); } catch (e) { fs = e.message; }
+  ok("SICHERUNG: fremde Fassung hat eine eigene Meldung", fs === "fassung", fs);
+  ok("SICHERUNG: alte Klartext-Sicherung wird erkannt", SI.istAlt({ art: "workflowneeds-sicherung", vorgaenge: [] }) && !SI.istAlt(d));
+  const jetzt = Date.parse("2026-10-21T10:00:00Z");
+  ok("ERINNERUNG: nie gesichert → erinnern", SI.erinnernNoetig([v], null, jetzt));
+  ok("ERINNERUNG: 13 Tage → nicht, 14 Tage → ja", !SI.erinnernNoetig([v], "2026-10-08T11:00:00Z", jetzt) && SI.erinnernNoetig([v], "2026-10-07T10:00:00Z", jetzt));
+  ok("ERINNERUNG: nur das Beispiel → nicht erinnern", !SI.erinnernNoetig([WN.beispiel.boutique(1, EINST)], null, jetzt));
+}
+
+/* ── ANHÄNGE gehen nicht in die MD ── */
+{
+  const v = vorgang(); const f = F.aktuelle(v);
+  v.anhaenge = [{ id: "A-01", name: "Anhangprüfwort-Kunde.png", typ: "image/png", groesse: 3 }];
+  const m = BA.erzeuge(v, null, f, { stunden: true, euro: false }, P);
+  ok("ANHANG: Name eines Anhangs steht nicht in der Bauauftrags-MD", m.ok && !m.md.includes("Anhangprüfwort"));
+  const ang = JSON.stringify([A.angebotExtern(v, f, {}), A.kundenProtokoll(v, f, {})]);
+  ok("ANHANG: Angebot und Bedarfsprotokoll (Whitelist) tragen keinen Anhang", ang.length > 50 && !ang.includes("Anhangprüfwort") && !ang.includes("A-01"));
+}
+
+/* ── ÜBERGABE an WorkFloh (Weiterleitungs-Bündel, nur aus der Whitelist) ── */
+{
+  const U = WN.uebergabe;
+  const v = WN.beispiel.boutique(3, EINST); const f = F.aktuelle(v);
+  f.satzCent = 7300; v.kunde.telefon = "";
+  const pdfB = new Uint8Array([37, 80, 68, 70, 45, 1, 2, 3, 250]);
+  v.anhaenge = [{ id: "A-01", name: "Plan vom Kunden.pdf", typ: "application/pdf", groesse: 9, blob: new Blob([pdfB], { type: "application/pdf" }) },
+    { id: "A-02", name: "Mail.eml", typ: "message/rfc822", groesse: 4, blob: new Blob(["Hi\r\n"], { type: "message/rfc822" }) }];
+  const a = U.auftrag(v, f, Object.assign({ firma: {} }, EINST), null, "2026-10-07T10:00:00.000Z");
+  a.files = await U.dateien(v.anhaenge);
+  const b = U.buendel([a], "2026-10-07T10:00:00.000Z");
+  const txt = JSON.stringify(b);
+  ok("ÜBERGABE: Form des WorkFloh-Bündels (wf forward, v 1, auftraege, status angebot)", b.wf === "forward" && b.v === 1 && b.count === 1 && a.status === "angebot" && Array.isArray(a.files) && typeof a.data === "object");
+  ok("ÜBERGABE: kein Stundensatz (gestellt 73 €), keine Stunden", !/73,00|7300|Stundensatz|€\/h|\d+–\d+ h\b/.test(txt), txt.match(/.{0,30}(73,00|7300|Stundensatz).{0,30}/));
+  ok("ÜBERGABE: keine internen Einträge (B-05 bleibt draußen)", !txt.includes("Vorgänger-Agentur"));
+  ok("ÜBERGABE: Kunde im Klartext, leeres Feld ohne Platzhalter", a.data.nameFirma === "Boutique Beispiel" && a.data.email === "kontakt@boutique.example" && a.data.erreichbarkeit === "" && !txt.includes("⟦"));
+  ok("ÜBERGABE: Datum TT.MM.JJJJ wie WorkFloh, Preis brutto", /^\d\d\.\d\d\.\d{4}$/.test(a.data.datum) && /brutto$/.test(a.data.preis));
+  ok("ÜBERGABE: feste Kennung je Vorgang und Fassung", a.id === "wn-" + v.id + "-F" + f.nr && U.auftrag(v, f, EINST, null).id === a.id);
+  const back = Buffer.from(a.files[0].data.split(",")[1], "base64");
+  ok("ÜBERGABE: Anhänge als data-URL, Name und Art bleiben, Byte für Byte", a.files.length === 2 && a.files[0].name === "Plan vom Kunden.pdf" && a.files[0].mime === "application/pdf" &&
+    a.files[0].data.startsWith("data:application/pdf;base64,") && back.equals(Buffer.from(pdfB)) && a.files[1].mime === "message/rfc822");
+  ok("ÜBERGABE: unterschriebene Fassung sagt das in der Beschreibung", !f.unterschrieben || a.data.beschreibung.includes("Unterschrieben am"));
+}
+
+/* ── KALIBRIERUNG gegen eigene Aufträge (intern) ── */
+{
+  const v = WN.beispiel.boutique(4, EINST);
+  const f1 = v.fassungen[0], f3 = F.aktuelle(v);
+  const s1 = R.schaetze(f1);
+  v.ist = { [f1.nr]: 31.5, [f3.nr]: 99 };
+  const z = R.istVergleich([v]);
+  const mitte = (s1.stundenVon + s1.stundenBis) / 2;
+  ok("IST: nur unterschriebene Fassungen zählen", !!f1.unterschrieben && z.length === (f3.unterschrieben ? 2 : 1) && z[0].fassung === f1.nr, z);
+  ok("IST: Abweichung gegen die Mitte der Schätzung", z[0].abweichungPct === Math.round((31.5 - mitte) / mitte * 100) && z[0].von === s1.stundenVon, z[0]);
+  ok("IST: leerer oder negativer Wert zählt nicht", R.istVergleich([Object.assign(kopie(v), { ist: { [f1.nr]: "", 2: -3 } })]).length === 0);
+  const md = BA.erzeuge(v, null, f3, { stunden: true }, P);
+  const ang = JSON.stringify(A.angebotExtern(v, f1, {})), ueb = JSON.stringify(WN.uebergabe.auftrag(v, f1, EINST));
+  ok("IST: Ist-Stunden gehen nicht in MD, Angebot oder Übergabe", md.ok && !/31[,.]5/.test(md.md) && !/31[,.]5/.test(ang) && !/31[,.]5/.test(ueb));
+  const K = WN.KALIBRIERUNG;
+  ok("BILDSCHIRME: gezählte Zeilen tragen eine Zahl, mycel-karte bleibt „nicht gezählt“", K.zeilen.filter((x) => x.bildschirme == null).map((x) => x.repo).join() === "mycel-karte" && typeof K.bildschirmRegel === "string" && K.bildschirmRegel.length > 40);
+  ok("KATALOG: jeder nachgesehene Baustein nennt Datum und Stand im Hinweis", WN.BAUSTEINE.filter((b) => b.geprueft).every((b) => /^nachgesehen 2026-\d\d-\d\d/.test(b.hinweis)));
 }
 
 /* ── TEXTE (DE/EN) ── */

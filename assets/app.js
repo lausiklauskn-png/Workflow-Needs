@@ -10,6 +10,7 @@
   var LS = {
     einst: "workflowneeds_einstellungen", tab: "workflowneeds_tabellen", thema: "workflowneeds_thema",
     lang: "workflowneeds_lang", aktiv: "workflowneeds_aktiv", beispiel: "workflowneeds_beispiel_v1", reiter: "workflowneeds_reiter",
+    sicherung: "workflowneeds_sicherung_zuletzt",
   };
   var DB_NAME = "WorkflowNeeds1", STORE = "vorgaenge";
 
@@ -66,10 +67,16 @@
   function dbPut(v) {
     return db().then(function (d) {
       return new Promise(function (ok, nein) {
-        var tx = d.transaction(STORE, "readwrite"); tx.objectStore(STORE).put(JSON.parse(JSON.stringify(v)));
+        var tx = d.transaction(STORE, "readwrite"); tx.objectStore(STORE).put(ablage(v));
         tx.oncomplete = function () { ok(); }; tx.onerror = function () { nein(tx.error); };
       });
     });
+  }
+  /* Klon für IndexedDB: alles als JSON, nur die Anhänge behalten ihren Blob (IndexedDB speichert Blobs selbst) */
+  function ablage(v) {
+    var k = JSON.parse(JSON.stringify(v, function (key, w) { return key === "blob" ? undefined : w; }));
+    if (Array.isArray(v.anhaenge)) k.anhaenge = k.anhaenge.map(function (a, i) { return Object.assign(a, { blob: v.anhaenge[i].blob }); });
+    return k;
   }
   function dbDel(id) {
     return db().then(function (d) {
@@ -208,6 +215,7 @@
       h("img", { src: "assets/bild-prisma.webp", alt: "", width: "120", height: "120" }),
       h("div", null, h("h2", { text: appName() }),
         h("p", { class: "gedaempft", text: t("Bedarf erfassen, Umfang schätzen, Angebot drucken — Kundendaten gehen nie hinaus.") }))));
+    erinnerungSicherung(main);
     main.append(h("div", { class: "band", style: "margin-bottom:12px" },
       knopf("＋ " + t("Neuer Vorgang"), neuerVorgang, "pri", { id: "neuer-vorgang" })));
     var liste = h("div", { class: "karte", "data-vorgangsliste": "" }, h("h2", { text: t("Vorgänge") }));
@@ -224,6 +232,8 @@
             var k = F.kopie(x); k.id = F.neuerVorgang(naechsteNr(), S.einst).id; k.titel = (x.titel || "") + " (" + t("Kopie") + ")";
             k.fassungen = [F.kopie(F.aktuelle(x))]; k.fassungen[0].nr = 1; k.fassungen[0].unterschrieben = null; k.fassungen[0].ust = null; k.fassungen[0].anlass = ""; k.fassungen[0].von = "";
             k.fassungen[0].angebot.nummer = "AN-" + k.id.slice(2);
+            if (Array.isArray(x.anhaenge)) k.anhaenge = k.anhaenge.map(function (a, i) { return Object.assign(a, { blob: x.anhaenge[i].blob }); });
+            delete k.beispiel;
             S.vorgaenge.unshift(k); merken(k); zeichne();
           }, "klein"),
           knopf(t("Löschen"), function () {
@@ -272,7 +282,92 @@
     }
     k.append(box);
     main.append(k);
+    main.append(anhaengeKarte(v));
   }
+
+  /* ── Anhänge am Vorgang (Klaus 2026-10-07): Bilder, PDFs, Mails, Screenshots — damit der Umfang
+     sichtbar wird. Byte für Byte, Name und Art bleiben (PDF bleibt PDF, .eml bleibt Mail). Sie gehen
+     NICHT in die Bauauftrags-MD (dort stünde Klartext) und NICHT in Angebot oder Bedarfsprotokoll. ── */
+  var ANHANG_MAX = 25 * 1024 * 1024;
+  function groesse(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return Math.round(n / 1024) + " KB";
+    var x = (n / 1048576).toFixed(1); return (S.lang === "en" ? x : x.replace(".", ",")) + " MB";
+  }
+  function anhangArt(a) {
+    var ty = a.typ || "", n = (a.name || "").toLowerCase();
+    if (/^image\//.test(ty)) return "Bild";
+    if (ty === "application/pdf" || /\.pdf$/.test(n)) return "PDF";
+    if (ty === "message/rfc822" || /\.eml$/.test(n)) return "E-Mail";
+    return "Datei";
+  }
+  function anhaengeDazu(v, dateien) {
+    var zuGross = [], dazu = 0;
+    v.anhaenge = v.anhaenge || [];
+    Array.prototype.forEach.call(dateien || [], function (d) {
+      if (!d) return;
+      if (d.size > ANHANG_MAX) { zuGross.push(d.name); return; }
+      v.anhaenge.push({ id: BD.neueKennung(v, "A"), name: d.name || "anhang", typ: d.type || "", groesse: d.size, datum: F.heute(), blob: d });
+      dazu++;
+    });
+    if (dazu) { merken(v); jetztSpeichern(); }
+    melde(dazu + " " + t("Anhang/Anhänge dazu.") + (zuGross.length ? " " + t("Zu groß (höchstens 25 MB), nicht übernommen:") + " " + zuGross.join(", ") : ""), zuGross.length ? "warn" : "");
+  }
+  function screenshotName() {
+    var d = new Date(), z = function (n) { return ("0" + n).slice(-2); };
+    return "Screenshot-" + F.heute() + "-" + z(d.getHours()) + z(d.getMinutes()) + z(d.getSeconds());
+  }
+  function ausZwischenablage(v) {
+    if (!navigator.clipboard || !navigator.clipboard.read) { melde(t("Dieser Browser gibt die Zwischenablage nicht her — Strg+V im Abschnitt oder „Datei wählen“ nehmen."), "warn"); return; }
+    navigator.clipboard.read().then(function (items) {
+      var holen = [];
+      items.forEach(function (it) {
+        var ty = it.types.filter(function (x) { return /^image\//.test(x); })[0];
+        if (ty) holen.push(it.getType(ty).then(function (b) { return new File([b], screenshotName() + "." + (ty.split("/")[1] || "png"), { type: ty }); }));
+      });
+      if (!holen.length) { melde(t("In der Zwischenablage liegt kein Bild."), "warn"); return; }
+      Promise.all(holen).then(function (fs) { anhaengeDazu(v, fs); });
+    }, function () { melde(t("Dieser Browser gibt die Zwischenablage nicht her — Strg+V im Abschnitt oder „Datei wählen“ nehmen."), "warn"); });
+  }
+  function anhaengeKarte(v) {
+    var k = h("div", { class: "karte intern", id: "anhaenge", "data-anhaenge": String((v.anhaenge || []).length), tabindex: "0" },
+      h("h2", { text: "📎 " + t("Anhänge zum Vorgang") }),
+      h("p", { class: "gedaempft klein", text: t("Bilder, Screenshots, PDFs, Mails, Dateien vom Kunden — damit der Umfang sichtbar wird. Jede Datei bleibt, wie sie ist (PDF als PDF, Mail als .eml). Nur auf diesem Gerät und in der verschlüsselten Sicherung; nie in Bauauftrag, Angebot oder Bedarfsprotokoll.") }));
+    var ein = h("input", { type: "file", multiple: true, hidden: true, id: "anhang-datei", onchange: function (e) { anhaengeDazu(v, e.target.files); e.target.value = ""; } });
+    k.append(h("div", { class: "band" },
+      h("label", { class: "btn" }, "📎 " + t("Datei wählen"), ein),
+      knopf("📋 " + t("Screenshot einfügen"), function () { ausZwischenablage(v); }, "", { id: "anhang-einfuegen" })));
+    k.addEventListener("paste", function (e) {
+      var fs = Array.prototype.slice.call((e.clipboardData && e.clipboardData.files) || []);
+      if (!fs.length) return;
+      e.preventDefault();
+      anhaengeDazu(v, fs.map(function (d) { return d.name && d.name !== "image.png" ? d : new File([d], screenshotName() + ".png", { type: d.type || "image/png" }); }));
+    });
+    var L = v.anhaenge || [];
+    if (!L.length) k.append(h("p", { class: "gedaempft", text: t("Noch keine Anhänge.") }));
+    var summe = 0;
+    L.forEach(function (a) {
+      summe += a.groesse || 0;
+      var z = h("div", { class: "eintrag", "data-anhang": a.id, "data-art": anhangArt(a) },
+        h("span", { class: "badge kennung", text: a.id }));
+      var mitte = h("div", { style: "min-width:0" }, h("b", { text: a.name, style: "overflow-wrap:anywhere" }), " ",
+        h("span", { class: "gedaempft klein", text: t(anhangArt(a)) + " · " + groesse(a.groesse || 0) + (a.blob ? "" : " · " + t("Inhalt fehlt")) }));
+      if (a.blob && /^image\/(png|jpeg|webp|gif)$/.test(a.typ || "")) {
+        var u = URL.createObjectURL(a.blob);
+        mitte.append(h("div", null, h("img", { src: u, alt: a.name, class: "anhang-bild", onload: function () { URL.revokeObjectURL(u); } })));
+      }
+      z.append(mitte, h("div", { class: "band" },
+        a.blob ? knopf("⬇ " + t("Speichern"), function () { laden(a.blob, a.name); }, "klein", { "data-anhang-laden": a.id }) : null,
+        knopf("✕", function () {
+          if (!confirm(t("Diesen Anhang entfernen?") + "\n" + a.name)) return;
+          v.anhaenge = v.anhaenge.filter(function (x) { return x !== a; }); merken(v); zeichne();
+        }, "klein gefahr", { "aria-label": t("Anhang entfernen"), "data-anhang-weg": a.id })));
+      k.append(z);
+    });
+    if (L.length) k.append(h("p", { class: "gedaempft klein", "data-anhang-summe": String(summe), text: L.length + " " + t("Anhang/Anhänge") + " · " + groesse(summe) }));
+    return k;
+  }
+
   function alleTexte(f) {
     var out = [];
     BD.alleEintraege(f.protokoll).forEach(function (x) { out.push(x.e.text || ""); if (x.e.nutzen && x.e.nutzen.text) out.push(x.e.nutzen.text); if (x.e.wer) out.push(x.e.wer); });
@@ -746,6 +841,20 @@
         if (!confirm(t("Fassung einfrieren? Danach ist sie nur noch zu lesen; Änderungen ergeben eine neue Fassung."))) return;
         F.unterschreiben(v, f, S.einst.ust); merken(v); melde(t("Fassung") + " " + f.nr + " " + t("ist unterschrieben und eingefroren."), "");
       }, "", { id: "unterschreiben" }) : null));
+    /* Übergabe an WorkFloh — nur aus der Whitelist (assets/kern/uebergabe.js → aussen.js) */
+    var nA = (v.anhaenge || []).filter(function (x) { return x.blob; }).length;
+    main.append(h("div", { class: "karte", "data-uebergabe": "", style: "margin-top:12px" },
+      h("h2", { text: "📤 " + t("Als Auftrag übergeben") }),
+      h("p", { class: "gedaempft klein", text: t("Eine Auftragsdatei für Mein WorkFloh oder Tomys Hub (dort „📥 Importieren“). Darin: Kunde, Positionen, Preis — wie im Angebot, ohne Stundensatz und ohne interne Einträge.") + " " +
+        (nA ? nA + " " + t("Anhang/Anhänge gehen als Datei mit (PDF als PDF, Mail als .eml).") : t("Keine Anhänge am Vorgang.")) }),
+      h("div", { class: "band" }, knopf("📤 " + t("Auftragsdatei speichern"), function () {
+        var auf = WN.uebergabe.auftrag(v, f, S.einst, S.tabellen);
+        WN.uebergabe.dateien(v.anhaenge).then(function (fs) {
+          auf.files = fs;
+          laden(new Blob([JSON.stringify(WN.uebergabe.buendel([auf]), null, 1)], { type: "application/json" }), WN.uebergabe.dateiname(v, f));
+          melde(t("Auftragsdatei gespeichert. In WorkFloh: „📥 Importieren“ und diese Datei wählen. Zweimal eingelesen wird aktualisiert, nicht verdoppelt."), "");
+        }, function () { melde(t("Die Auftragsdatei ließ sich nicht bauen."), "bad"); });
+      }, "", { id: "uebergabe-speichern" }))));
   }
   function summenTabelle(su, blatt) {
     var tb = h("table", { class: blatt ? "" : "klein", "data-summen": su.p19 ? "p19" : "regel", style: "margin-top:8px" });
@@ -770,6 +879,15 @@
           h("span", { class: "gedaempft klein", text: f.datum + (f.von ? " · " + t({ kunde: "von: Kunde", betrieb: "von: Betrieb", bau: "von: Befund beim Bau" }[f.von]) : "") +
             " · " + euroG(f.satzCent) + "/h" + (f.unterschrieben ? " · ✍ " + f.unterschrieben : " · " + t("offen")) })),
         knopf(t("Ansehen"), function () { S.fNr = f === akt ? null : f.nr; S.reiter = "bedarf"; zeichne(); }, "klein")));
+      /* Ist-Stunden — nur für unterschriebene Fassungen, intern (stehen am Vorgang, nicht an der Fassung) */
+      if (f.unterschrieben) {
+        var sch = R.schaetze(f, S.tabellen);
+        k.append(h("div", { class: "zeile intern klein", "data-ist-zeile": String(f.nr) },
+          h("label", { class: "feld", style: "max-width:200px" }, "🔒 " + t("Ist-Stunden F") + f.nr,
+            h("input", { type: "number", min: "0", step: "0.25", "data-ist": String(f.nr), "data-key": "ist-" + f.nr, value: v.ist && v.ist[f.nr] != null ? v.ist[f.nr] : "",
+              onchange: function (e) { var n = zahl(e.target.value); v.ist = v.ist || {}; if (n == null || n < 0) delete v.ist[f.nr]; else v.ist[f.nr] = n; merken(v); zeichne(); } })),
+          h("span", { class: "gedaempft", text: t("Schätzung") + " " + std(sch.stundenVon) + "–" + std(sch.stundenBis) + " · " + t("nur intern, für die Kalibrierung") })));
+      }
     });
     main.append(k);
     /* Neue Fassung */
@@ -894,7 +1012,8 @@
   function einlesenText(txt) {
     var j = null;
     try { j = JSON.parse(txt); } catch (_e) {}
-    if (j && j.art === "workflowneeds-sicherung") { sicherungEinlesen(j); return; }
+    if (SI.istAlt(j)) { sicherungEinlesen(j.vorgaenge, null, t("Alte Sicherung ohne Passwort:")); return; }
+    if (SI.istVerschluesselt(j)) { melde(t("Das ist eine verschlüsselte Sicherung — bitte unter „Einstellungen“ → Sicherung mit dem Passwort zurückholen."), "warn"); return; }
     var r = WN.bauauftrag.einlesen(txt, P);
     if (!r.ok) { melde(t("Nicht eingelesen:") + " " + r.grund, "bad"); return; }
     var v = S.vorgaenge.filter(function (x) { return x.id === r.kopf.vorgang; })[0];
@@ -958,8 +1077,24 @@
       h("p", { class: "gedaempft klein", text: K.methode + " " + t("Gemessen") + " " + K.datum + ". " + K.gesamt + "." }));
     var tk = h("table", { class: "klein" }, h("tr", null, h("th", { text: "Repo" }), h("th", { class: "r", text: t("aktive h") }), h("th", { class: "r", text: "Commits" }), h("th", { class: "r", text: t("Bildschirme") })));
     K.zeilen.forEach(function (z) { tk.append(h("tr", null, h("td", { text: z.repo }), h("td", { class: "r", text: std(z.stunden) }), h("td", { class: "r", text: String(z.commits) }), h("td", { class: "r gedaempft", text: z.bildschirme == null ? t("nicht gezählt") : String(z.bildschirme) }))); });
-    kk.append(h("div", { class: "tabelle-huelle" }, tk), h("p", { class: "gedaempft klein", text: t("Für Fremdaufträge kommen Abstimmung, Anpassung, Test vor Ort und Pflege als eigene Posten dazu.") }));
+    kk.append(h("div", { class: "tabelle-huelle" }, tk), h("p", { class: "gedaempft klein", "data-bildschirm-regel": "", text: t("Bildschirme") + ": " + t(K.bildschirmRegel) }), h("p", { class: "gedaempft klein", text: t("Für Fremdaufträge kommen Abstimmung, Anpassung, Test vor Ort und Pflege als eigene Posten dazu.") }));
     main.append(kk);
+    var eig = R.istVergleich(S.vorgaenge, S.tabellen);
+    var ke = h("div", { class: "karte intern", "data-tabelle": "eigene-auftraege", "data-anzahl": String(eig.length) },
+      h("h2", { text: "🔒 " + t("Eigene Aufträge: Schätzung und Ist (intern)") }),
+      h("p", { class: "gedaempft klein", text: t("Ist-Stunden je unterschriebener Fassung, eingetragen unter „Fassungen“. Abweichung gegen die Mitte der Schätzung. Geht in keinen Ausdruck, kein Angebot und keinen Bauauftrag.") }));
+    if (!eig.length) ke.append(h("p", { class: "gedaempft", text: t("Noch keine Ist-Stunden eingetragen.") }));
+    else {
+      var te = h("table", { class: "klein" }, h("tr", null, h("th", { text: t("Vorgang") }), h("th", { text: t("Fassung") }), h("th", { class: "r", text: t("Schätzung") }),
+        h("th", { class: "r", text: t("Ist") }), h("th", { class: "r", text: t("Abweichung") })));
+      eig.forEach(function (z) {
+        te.append(h("tr", { "data-ist-vergleich": z.vorgang + "-F" + z.fassung }, h("td", { text: z.vorgang + (z.titel ? " · " + z.titel : "") }), h("td", { text: "F" + z.fassung }),
+          h("td", { class: "r", text: std(z.von) + "–" + std(z.bis) }), h("td", { class: "r", text: std(z.ist) }),
+          h("td", { class: "r", text: z.abweichungPct == null ? "–" : (z.abweichungPct > 0 ? "+" : "") + z.abweichungPct + " %" + (z.imRahmen ? " ✓" : "") })));
+      });
+      ke.append(h("div", { class: "tabelle-huelle" }, te), h("p", { class: "gedaempft klein", text: t("✓ = Ist liegt in der geschätzten Spanne.") }));
+    }
+    main.append(ke);
     main.append(knopf("↺ " + t("Alle Tabellen auf Vorgabe"), function () {
       if (!confirm(t("Alle Tabellen auf die Vorgabe zurücksetzen?"))) return;
       try { localStorage.removeItem(LS.tab); } catch (_e) {}
@@ -996,30 +1131,102 @@
       h("label", { class: "feld", style: "max-width:260px" }, t("Nutzen-Zeitraum für die Kosten-Nutzen-Grenze (Monate)"),
         h("input", { type: "number", min: "1", step: "1", value: E.zeitraum, "data-key": "zeitraum", onchange: function (e) { var n = zahl(e.target.value); if (n) { E.zeitraum = n; einstSpeichern(); } zeichne(); } })));
     main.append(kp);
-    var ks = h("div", { class: "karte" }, h("h2", { text: t("Sicherung") }),
-      h("p", { class: "gedaempft klein", text: t("Alle Vorgänge als JSON — mit Kundendaten und Zuordnung im Klartext, nur für das eigene Gerät. Verschlüsselt (wie Sende-Prüfer/Workflow PDF) kommt später, nicht in dieser Fassung.") }),
-      h("div", { class: "band" },
-        knopf("⬇ " + t("Sicherung speichern"), function () {
-          jetztSpeichern();
-          laden(new Blob([JSON.stringify({ art: "workflowneeds-sicherung", fassung: 1, erstellt: new Date().toISOString(), vorgaenge: S.vorgaenge }, null, 1)], { type: "application/json" }),
-            "Workflow-Needs-Sicherung-" + F.heute() + ".json");
-        }, "", { id: "sicherung-speichern" }),
-        h("label", { class: "btn" }, "⬆ " + t("Sicherung einlesen"), h("input", { type: "file", accept: ".json,application/json", hidden: true, onchange: function (e) {
-          var fl = e.target.files && e.target.files[0]; if (fl) fl.text().then(einlesenText); e.target.value = "";
-        } }))));
-    main.append(ks);
+    main.append(sicherungKarte());
     main.append(h("div", { class: "karte" }, h("h2", { text: t("Beispiel") }),
       h("p", { class: "gedaempft klein", text: t("Der Testfall „Boutique“ (erfundene Daten): F1 Internetseite, F2 zweite Seite, F3 Warenwirtschaft dazu, Newsletter entfällt.") }),
       knopf(t("Beispiel-Vorgang laden"), function () { beispielLaden(); melde(t("Beispiel geladen."), ""); }, "", { id: "beispiel-laden" })));
   }
-  function sicherungEinlesen(j) {
-    var dazu = 0, da = 0;
-    (j.vorgaenge || []).forEach(function (v) {
-      if (!v || !v.id || !Array.isArray(v.fassungen)) return;
-      if (S.vorgaenge.some(function (x) { return x.id === v.id; })) { da++; return; }
-      S.vorgaenge.push(v); merken(v); dazu++;
-    });
-    melde(dazu + " " + t("Vorgänge dazu,") + " " + da + " " + t("schon da (nicht überschrieben)."), "");
+  /* ── Verschlüsselte Sicherung (Brief Stufe 2, Punkt 2; Muster Sende-Prüfer) — Rechnen in assets/kern/sicherung.js ── */
+  var SI = WN.sicherung, SPAETER = "workflowneeds_sicherung_spaeter", gewaehlt = null;
+  var SI_GRUND = {
+    passwort: "Das Passwort passt nicht zu dieser Sicherung (oder die Datei ist beschädigt). Am Passwort lässt sich nichts zurückrechnen.",
+    fassung: "Diese Sicherung stammt aus einer anderen Fassung der App und lässt sich hier nicht öffnen. Am Passwort liegt es nicht.",
+    "keine-sicherung": "Das ist keine Sicherungsdatei der Workflow Bedarfsanalyse.",
+    "schloss-fehlt": "Das Schloss (assets/schluesseltresor.js) ist nicht geladen — nichts wurde gesichert. Einmal neu laden.",
+    kurz: "Das Passwort braucht mindestens 8 Zeichen.",
+  };
+  function siMelde(id, text, gut) { var e = document.getElementById(id); if (e) { e.className = "hinweis " + (gut ? "" : "warn"); e.textContent = text; e.hidden = false; } }
+  function sicherungKarte() {
+    var z = lsGet(LS.sicherung);
+    var pw = h("input", { type: "password", id: "sicherung-pw", autocomplete: "new-password", spellcheck: "false" });
+    var pw2 = h("input", { type: "password", id: "sicherung-pw2", autocomplete: "new-password", spellcheck: "false" });
+    var pwz = h("input", { type: "password", id: "sicherung-pw-zurueck", autocomplete: "current-password", spellcheck: "false" });
+    var name = h("span", { class: "gedaempft klein", id: "sicherung-dateiname", text: gewaehlt ? gewaehlt.name : "" });
+    var k = h("div", { class: "karte", id: "sicherung-kasten", "data-sicherung": "" },
+      h("h2", { text: "🔐 " + t("Sicherung") }),
+      h("p", { class: "gedaempft klein", text: t("Alle Vorgänge samt Anhängen, Zuordnung, Firmendaten und Tabellen in einer Datei — verschlüsselt mit einem eigenen Passwort (AES-256-GCM, wie im Sende-Prüfer). In der Datei steht kein Klartext.") }),
+      h("p", { class: "klein", id: "sicherung-stand", text: z ? t("Letzte Sicherung auf diesem Gerät:") + " " + datumText(z.slice(0, 10)) : t("Auf diesem Gerät wurde noch keine Sicherung angelegt.") }),
+      h("div", { class: "zeile" },
+        h("label", { class: "feld" }, t("Passwort für die Sicherung (mindestens 8 Zeichen)"), pw),
+        h("label", { class: "feld" }, t("Passwort wiederholen"), pw2)),
+      h("p", { class: "hinweis warn klein", "data-sicherung-warnung": "", text: t("Das Passwort wird nirgends gespeichert. Ist es vergessen, lässt sich die Sicherung nicht mehr öffnen — von niemandem.") }),
+      h("div", { class: "band" }, knopf("🔐 " + t("Sicherung erstellen"), function () {
+        if (pw.value.length < SI.MIN_PW) return siMelde("sicherung-meldung", t(SI_GRUND.kurz), false);
+        if (pw.value !== pw2.value) return siMelde("sicherung-meldung", t("Die beiden Passwörter sind nicht gleich."), false);
+        siMelde("sicherung-meldung", t("Wird verschlüsselt …"), true);
+        if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+        jetztSpeichern().then(function () {
+          return SI.verschliessen(pw.value, { vorgaenge: S.vorgaenge, speicher: { einstellungen: lsGet(LS.einst) || "", tabellen: lsGet(LS.tab) || "" } });
+        }).then(function (d) {
+          var dname = "Workflow-Needs-Sicherung-" + d.erstellt.slice(0, 10) + ".json";
+          window.WNApp.letzteSicherung = { name: dname, inhalt: d };
+          laden(new Blob([JSON.stringify(d)], { type: "application/json" }), dname);
+          lsSet(LS.sicherung, d.erstellt);
+          pw.value = pw2.value = "";
+          var st = document.getElementById("sicherung-stand"); if (st) st.textContent = t("Letzte Sicherung auf diesem Gerät:") + " " + datumText(d.erstellt.slice(0, 10));
+          siMelde("sicherung-meldung", "✓ " + S.vorgaenge.length + " " + t("Vorgänge gesichert in") + " „" + dname + "“. " + t("Legen Sie die Datei an einen zweiten Ort (Stick, Cloud, Mail an sich selbst). Ohne das Passwort ist sie nutzlos."), true);
+        }, function (e) { siMelde("sicherung-meldung", t(SI_GRUND[e && e.message] || "Die Sicherung ist nicht gelungen."), false); });
+      }, "pri", { id: "sicherung-machen" })),
+      h("p", { id: "sicherung-meldung", role: "status", hidden: true }),
+      h("h3", { style: "margin-top:14px", text: "↩ " + t("Zurückholen") }),
+      h("p", { class: "gedaempft klein", text: t("Fehlende Vorgänge kommen dazu. Was schon da ist, bleibt unverändert. Eine alte Sicherung ohne Passwort wird auch gelesen.") }),
+      h("div", { class: "band" },
+        h("label", { class: "btn" }, "📂 " + t("Sicherung wählen …"), h("input", { type: "file", accept: ".json,application/json", hidden: true, id: "sicherung-datei", onchange: function (e) {
+          var fl = e.target.files && e.target.files[0]; e.target.value = ""; if (!fl) return;
+          fl.text().then(function (txt) {
+            var j = null; try { j = JSON.parse(txt); } catch (_e) {}
+            gewaehlt = { name: fl.name, inhalt: j }; name.textContent = fl.name;
+            if (SI.istAlt(j)) { sicherungEinlesen(j.vorgaenge, null, t("Alte Sicherung ohne Passwort:")); gewaehlt = null; }
+            else if (!SI.istVerschluesselt(j)) siMelde("sicherung-zurueck-meldung", t(SI_GRUND["keine-sicherung"]), false);
+            else { siMelde("sicherung-zurueck-meldung", t("Verschlüsselte Sicherung gewählt — jetzt das Passwort eingeben."), true); pwz.focus(); }
+          });
+        } })), name),
+      h("label", { class: "feld", style: "max-width:360px" }, t("Passwort der Sicherung"), pwz),
+      h("div", { class: "band" }, knopf("↩ " + t("Zurückholen"), function () {
+        if (!gewaehlt || !SI.istVerschluesselt(gewaehlt.inhalt)) return siMelde("sicherung-zurueck-meldung", t("Erst eine Sicherungsdatei wählen."), false);
+        if (!pwz.value) return siMelde("sicherung-zurueck-meldung", t("Das Passwort der Sicherung fehlt."), false);
+        siMelde("sicherung-zurueck-meldung", t("Wird geöffnet …"), true);
+        SI.oeffnen(pwz.value, gewaehlt.inhalt).then(function (r) {
+          pwz.value = ""; gewaehlt = null;
+          sicherungEinlesen(r.vorgaenge, r.speicher, t("Sicherung vom") + " " + datumText(String(r.erstellt || "").slice(0, 10)) + ":");
+        }, function (e) { siMelde("sicherung-zurueck-meldung", t(SI_GRUND[e && e.message] || "Die Sicherung ließ sich nicht öffnen."), false); });
+      }, "pri", { id: "sicherung-holen" })),
+      h("p", { id: "sicherung-zurueck-meldung", role: "status", hidden: true }));
+    return k;
+  }
+  function sicherungEinlesen(liste, speicher, vor) {
+    var z = SI.zusammenfuehren(S.vorgaenge, liste);
+    z.neu.forEach(function (v) { S.vorgaenge.push(v); merken(v); });
+    jetztSpeichern();
+    var mit = [];
+    if (speicher && speicher.einstellungen && !lsGet(LS.einst)) { lsSet(LS.einst, speicher.einstellungen); mit.push(t("Firmendaten und Satz")); }
+    if (speicher && speicher.tabellen && !lsGet(LS.tab)) { lsSet(LS.tab, speicher.tabellen); tabellenLaden(); mit.push(t("Tabellen")); }
+    S.meldung = { text: (vor ? vor + " " : "") + z.neu.length + " " + t("Vorgänge dazu,") + " " + z.schonDa + " " + t("schon da (nicht überschrieben).") +
+      (mit.length ? " " + t("Übernommen, weil hier noch nichts stand:") + " " + mit.join(", ") + "." : ""), art: "" };
+    if (mit.length) { try { S.einst = Object.assign(S.einst, lsJson(LS.einst, {})); } catch (_e) {} }
+    zeichne();
+  }
+  function erinnerungSicherung(main) {
+    var spaeter = ""; try { spaeter = sessionStorage.getItem(SPAETER) || ""; } catch (_e) {}
+    if (spaeter || !SI.erinnernNoetig(S.vorgaenge, lsGet(LS.sicherung))) return;
+    var tage = SI.tageSeit(lsGet(LS.sicherung));
+    var p = h("div", { class: "hinweis warn", id: "sicherung-erinnerung", "data-sicherung-erinnerung": tage === Infinity ? "nie" : "alt", role: "status" },
+      tage === Infinity ? "💾 " + t("Ihre Vorgänge sind noch nie gesichert. Löscht jemand die Browserdaten, sind sie weg.") + " "
+        : "💾 " + t("Die letzte Sicherung ist") + " " + Math.floor(tage) + " " + t("Tage alt.") + " ",
+      knopf(t("Jetzt sichern"), function () { S.reiter = "einstellungen"; lsSet(LS.reiter, "einstellungen"); zeichne();
+        var k = document.getElementById("sicherung-kasten"); if (k) { k.scrollIntoView(); var f = document.getElementById("sicherung-pw"); if (f) f.focus(); } }, "klein", { id: "sicherung-jetzt" }), " ",
+      knopf(t("Später"), function () { try { sessionStorage.setItem(SPAETER, "1"); } catch (_e) {} p.remove(); }, "klein", { id: "sicherung-spaeter" }));
+    main.append(p);
   }
   function beispielLaden() {
     var nr = naechsteNr();

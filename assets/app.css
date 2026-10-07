@@ -202,3 +202,7 @@ dialog#vorschau::backdrop{background:rgba(0,0,0,.55)}
   .blatt{padding:22px 18px}
   .blatt .unterschriften{grid-template-columns:1fr;gap:20px}
 }
+.anhang-bild{max-width:min(240px,100%);max-height:160px;margin-top:6px;border-radius:8px;border:1px solid var(--line)}
+.app-fuss{text-align:center;padding:18px 16px 28px;font-size:.85rem;color:var(--muted,inherit);opacity:.85}
+.app-fuss a,.recht a{color:inherit}
+.recht h1{margin-bottom:8px}.recht h2{margin:16px 0 6px;font-size:1.05rem}.recht p{margin:6px 0;line-height:1.5;overflow-wrap:anywhere}
