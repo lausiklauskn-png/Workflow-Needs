@@ -265,7 +265,7 @@ try {
     await reiter(s.p, "einstellungen");
     await s.p.fill('[data-firma="name"]', "Werkstatt Prüf-Firma");
     const opts = await s.p.$$eval("#beispiel-wahl option", (o) => o.map((x) => x.value));
-    ok("BEISPIELE: Auswahl mit Boutique und den vier Beispielen", opts.join() === "boutique,tomys,psb,alis,eigene", opts);
+    ok("BEISPIELE: Auswahl mit Boutique, den vier Beispielen und Tomys Hub gesamt", opts.join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt", opts);
     await s.p.selectOption("#beispiel-wahl", "tomys"); await s.p.click("#beispiel-laden");
     await s.p.waitForFunction(() => window.WNApp.S.vorgaenge.length === 2, null, { timeout: 5000 }).catch(() => {});
     ok("BEISPIELE: ein Beispiel einzeln laden", await anzahl() === 2 && await s.p.evaluate(() => window.WNApp.S.vorgaenge.some((v) => v.bid === "tomys")));
@@ -274,13 +274,32 @@ try {
     ok("BEISPIELE: zweimal laden legt keinen Doppel an", await anzahl() === 2 && /schon da/.test(await s.p.textContent("[data-meldung]")));
     await s.p.click("#beispiel-alle");
     await s.p.waitForFunction(() => /Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
-    ok("BEISPIELE: „Alle laden“ ergänzt nur die fehlenden (3 geladen, 2 schon da)", await anzahl() === 5 && /3 Beispiele geladen, 2 waren schon da/.test(await s.p.textContent("[data-meldung]")), await s.p.textContent("[data-meldung]").catch(() => ""));
+    ok("BEISPIELE: „Alle laden“ ergänzt nur die fehlenden (4 geladen, 2 schon da)", await anzahl() === 6 && /4 Beispiele geladen, 2 waren schon da/.test(await s.p.textContent("[data-meldung]")), await s.p.textContent("[data-meldung]").catch(() => ""));
     await s.p.click("#beispiel-alle");
     await s.p.waitForFunction(() => /0 Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
-    ok("BEISPIELE: zweites „Alle laden“ ohne Doppel", await anzahl() === 5);
+    ok("BEISPIELE: zweites „Alle laden“ ohne Doppel", await anzahl() === 6);
     await s.p.evaluate(() => window.WNApp.jetztSpeichern());
     await s.p.reload(); await s.p.waitForSelector("body[data-bereit]");
-    ok("BEISPIELE: alle fünf überstehen das Neuladen, jedes einmal", await s.p.evaluate(() => { const b = window.WNApp.S.vorgaenge.map((v) => v.bid).sort().join(); return b; }) === "alis,boutique,eigene,psb,tomys");
+    ok("BEISPIELE: alle sechs überstehen das Neuladen, jedes einmal", await s.p.evaluate(() => { const b = window.WNApp.S.vorgaenge.map((v) => v.bid).sort().join(); return b; }) === "alis,boutique,eigene,psb,tomys,tomys-gesamt");
+    /* Tomys Hub gesamt: die erfundenen Bilder, PDFs und E-Mails hängen als echte Dateien am Vorgang
+       und gehen mit der Übergabe an WorkFloh — dort werden sie wieder Dateien am Auftrag. */
+    const ga = await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.bid === "tomys-gesamt");
+      return { id: v.id, n: (v.anhaenge || []).length, mit: (v.anhaenge || []).filter((a) => a.blob instanceof Blob && a.blob.size > 500 && a.blob.type === a.typ).map((a) => a.name + "|" + a.typ) }; });
+    ok("GESAMT: sieben Beispiel-Dateien hängen nach dem Neuladen am Vorgang, Byte für Byte mit Typ", ga.n === 7 && ga.mit.length === 7 && ga.mit.some((x) => x === "Anfrage-Tomys-Hub.eml|message/rfc822") && ga.mit.some((x) => /\.pdf\|application\/pdf$/.test(x)) && ga.mit.some((x) => /\.jpg\|image\/jpeg$/.test(x)), ga);
+    await s.p.evaluate((id) => { window.WNApp.S.aktiv = id; }, ga.id);
+    await reiter(s.p, "vorgaenge");
+    ok("GESAMT: Anhänge-Karte zeigt die sieben Dateien", (await s.p.getAttribute("#anhaenge", "data-anhaenge")) === "7");
+    await reiter(s.p, "angebot");
+    const [dlG] = await Promise.all([s.p.waitForEvent("download"), s.p.click("#uebergabe-speichern")]);
+    const ug = JSON.parse(fsm.readFileSync(await dlG.path(), "utf8")), gfiles = ug.auftraege[0].files || [];
+    const eml = gfiles.find((x) => x.name === "Anfrage-Tomys-Hub.eml");
+    ok("GESAMT: Übergabe trägt alle Dateien mit Typ — 2 E-Mails, 2 PDFs, 3 Bilder, dazu Erklärung und Vereinbarung", gfiles.filter((x) => x.mime === "message/rfc822").length === 2 && gfiles.filter((x) => x.mime === "application/pdf").length === 2 && gfiles.filter((x) => /^image\//.test(x.mime)).length === 3 && gfiles.filter((x) => x.mime === "text/html").length === 2, gfiles.map((x) => x.name + "|" + x.mime));
+    ok("GESAMT: die E-Mail kommt in der Übergabe unverändert an (mit ihrem Bild-Anhang)", !!eml && eml.data.startsWith("data:message/rfc822;base64,") && /Auftragszettel-Papier\.jpg/.test(Buffer.from(eml.data.split(",")[1], "base64").toString("utf8")));
+    ok("GESAMT: Kunde der Übergabe ist Tomys Hub, kein Satz", ug.auftraege[0].data.nameFirma === "Tomys Hub" && !/Stundensatz/.test(JSON.stringify(ug.auftraege[0].data)));
+    await reiter(s.p, "tabellen");
+    const ik = await s.p.evaluate(() => [...document.querySelectorAll("[data-ist-kosten]")].map((x) => x.closest("tr").getAttribute("data-ist-vergleich") + "=" + x.getAttribute("data-ist-kosten")));
+    const soll = await s.p.evaluate((id) => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === id); return id + "-F4=" + Math.round(248.4 * v.fassungen[3].satzCent); }, ga.id);
+    ok("GESAMT: Tabelle zeigt „Ist × Satz“ je Fassung (F4 = 248,4 h × Satz der Fassung)", ik.includes(soll) && ik.filter((x) => x.startsWith(ga.id + "-F")).length === 4, [soll, ik]);
     ok("ERINNERUNG: nur Beispiele → keine Sicherungs-Erinnerung", await s.p.locator("[data-sicherung-erinnerung]").count() === 0);
     /* Erklärung an einem neuen Vorgang */
     await reiter(s.p, "vorgaenge"); await s.p.click("#neuer-vorgang");

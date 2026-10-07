@@ -1096,13 +1096,16 @@
     if (!eig.length) ke.append(h("p", { class: "gedaempft", text: t("Noch keine Ist-Stunden eingetragen.") }));
     else {
       var te = h("table", { class: "klein" }, h("tr", null, h("th", { text: t("Vorgang") }), h("th", { text: t("Fassung") }), h("th", { class: "r", text: t("Schätzung") }),
-        h("th", { class: "r", text: t("Ist") }), h("th", { class: "r", text: t("Abweichung") })));
+        h("th", { class: "r", text: t("Ist") }), h("th", { class: "r", text: t("Abweichung") }),
+        h("th", { class: "r", text: t("Schätzung netto") }), h("th", { class: "r", text: t("Ist × Satz netto") })));
       eig.forEach(function (z) {
         te.append(h("tr", { "data-ist-vergleich": z.vorgang + "-F" + z.fassung }, h("td", { text: z.vorgang + (z.titel ? " · " + z.titel : "") }), h("td", { text: "F" + z.fassung }),
           h("td", { class: "r", text: std(z.von) + "–" + std(z.bis) }), h("td", { class: "r", text: std(z.ist) }),
-          h("td", { class: "r", text: z.abweichungPct == null ? "–" : (z.abweichungPct > 0 ? "+" : "") + z.abweichungPct + " %" + (z.imRahmen ? " ✓" : "") })));
+          h("td", { class: "r", text: z.abweichungPct == null ? "–" : (z.abweichungPct > 0 ? "+" : "") + z.abweichungPct + " %" + (z.imRahmen ? " ✓" : "") }),
+          h("td", { class: "r", text: G.formatEuro(z.kostenVon, S.lang) + "–" + G.formatEuro(z.kostenBis, S.lang) }),
+          h("td", { class: "r", "data-ist-kosten": String(z.istKostenCent), text: G.formatEuro(z.istKostenCent, S.lang) })));
       });
-      ke.append(h("div", { class: "tabelle-huelle" }, te), h("p", { class: "gedaempft klein", text: t("✓ = Ist liegt in der geschätzten Spanne.") }));
+      ke.append(h("div", { class: "tabelle-huelle" }, te), h("p", { class: "gedaempft klein", text: t("✓ = Ist liegt in der geschätzten Spanne.") + " " + t("„Ist × Satz“: was die Fassung als Kundenauftrag gekostet hätte — Ist-Stunden mal Stundensatz der Fassung, netto. Die Ist-Stunden sind eine Untergrenze aus den Commit-Zeitstempeln.") }));
     }
     main.append(ke);
     main.append(knopf("↺ " + t("Alle Tabellen auf Vorgabe"), function () {
@@ -1272,8 +1275,24 @@
     v.fassungen.forEach(function (f) { f.angebot.nummer = "AN-" + v.id.slice(2); });
     WN.aussen.RECHT_ARTEN.forEach(function (a) { if (v[a] && v[a].stand) v[a].stand.vorgang = v.id; });
     S.vorgaenge.unshift(v); S.aktiv = v.id; lsSet(LS.aktiv, v.id); S.fNr = null;
-    /* Merker erst, wenn der Vorgang wirklich in IndexedDB liegt */
-    return dbPut(v).then(function () { lsSet(LS.beispiel, "1"); return true; }).catch(function () { return true; });
+    /* Beispiel-Anhänge (erfunden, beispiele/…): als echte Dateien an den Vorgang, so wie
+       „📎 Datei wählen“ sie anhängt — sie reisen mit Sicherung und Übergabe an WorkFloh.
+       Kommt eine Datei nicht (offline beim ersten Mal), fehlt sie und das wird gesagt. */
+    var holen = (b.anhaenge || []).map(function (a) {
+      return fetch(a.datei).then(function (r) { return r.ok ? r.blob() : null; }).catch(function () { return null; })
+        .then(function (bl) { return bl ? { a: a, blob: new Blob([bl], { type: a.typ }) } : { a: a, fehlt: true }; });
+    });
+    return Promise.all(holen).then(function (rs) {
+      if (rs.length) v.anhaenge = v.anhaenge || [];
+      rs.forEach(function (r) {
+        if (r.fehlt) return;
+        v.anhaenge.push({ id: BD.neueKennung(v, "A"), name: r.a.name, typ: r.a.typ, groesse: r.blob.size, datum: r.a.datum || F.heute(), blob: r.blob });
+      });
+      var fehlt = rs.filter(function (r) { return r.fehlt; }).length;
+      if (fehlt) melde(fehlt + " " + t("Beispiel-Dateien kamen nicht an (ohne Netz beim ersten Mal?). Der Vorgang ist trotzdem da."), "warn");
+      /* Merker erst, wenn der Vorgang wirklich in IndexedDB liegt */
+      return dbPut(v).then(function () { lsSet(LS.beispiel, "1"); return true; }).catch(function () { return true; });
+    });
   }
 
   /* ════ Rechtsblätter (Stufe 3 § 4) — Rechnen und Whitelist in assets/kern/aussen.js ════

@@ -111,6 +111,6 @@
     return v;
   }
 
-  WN.beispiel.registrieren({ id: "tomys", name: { de: "Tomys Hub (Werbeartikel-Betrieb)", en: "Tomys Hub (promotional products)" }, bauen: tomys,
+  WN.beispiel.registrieren({ id: "tomys", name: { de: "Tomys Hub — nur die Hub-App (Werbeartikel-Betrieb)", en: "Tomys Hub — the hub app only (promotional products)" }, bauen: tomys,
     quelle: "Tomys-Hub 0e05091, gelesen 2026-10-07" });
 })(typeof window !== "undefined" ? window : globalThis);

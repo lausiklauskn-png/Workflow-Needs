@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
   "assets/kern/bedarf.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
-  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
+  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
 console.log = stumm;
@@ -409,7 +409,7 @@ function kundenVorgang() {
 {
   const E73 = Object.assign(kopie(EINST), { satzCent: 7300, wartung: { freistunden: 4, wochen: 8, pauschaleCent: 30000 }, firma: { name: "Prüf-Firma" } });
   const L = WN.beispiel.liste();
-  ok("BEISPIELE: fünf im Register (Boutique + vier aus den Repos)", L.map((b) => b.id).join() === "boutique,tomys,psb,alis,eigene", L.map((b) => b.id));
+  ok("BEISPIELE: sechs im Register (Boutique, vier aus den Repos, Tomys Hub gesamt)", L.map((b) => b.id).join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt", L.map((b) => b.id));
   for (const b of L.filter((x) => x.id !== "boutique")) {
     const v = b.bauen(3, E73), ff = v.fassungen, ak = F.aktuelle(v);
     ok(`BEISPIEL ${b.id}: lädt, trägt bid und beispiel`, v.bid === b.id && v.beispiel === true && WN.beispiel.bidVon(v) === b.id);
@@ -438,6 +438,30 @@ function kundenVorgang() {
   ok("BEISPIEL eigene: eigenes Vorhaben, je App eine Gruppe (Name beginnt mit dem App-Namen)", (() => { const v = WN.beispiel.liste().find((b) => b.id === "eigene").bauen(5, E73);
     const n = F.aktuelle(v).umfang.bausteine.map((x) => x.name); return v.eigenesVorhaben && ["Mein Rezeptbuch ·", "Sage-Protokol ·", "family-project ·", "PWA-Toolpoint ·"].every((a) => n.some((x) => x.startsWith(a))); })());
   ok("BEISPIELE: alte Boutique ohne bid wird als „boutique“ erkannt (kein Doppel)", WN.beispiel.bidVon({ beispiel: true, titel: "Internetseite für ein Modegeschäft" }) === "boutique" && WN.beispiel.bidVon({ titel: "x" }) === "");
+  /* Tomys Hub — Gesamtprogramm (Klaus 2026-10-07): vollständig ausgefüllt, mit Anhängen und Unterschriften */
+  {
+    const bg = WN.beispiel.liste().find((b) => b.id === "tomys-gesamt"), g = bg.bauen(7, E73), gf = g.fassungen;
+    ok("GESAMT: vier unterschriebene Fassungen, Ist 108,6 · 154,3 · 199,9 · 248,4 h", gf.length === 4 && gf.every((f) => f.unterschrieben) && JSON.stringify(g.ist) === JSON.stringify({ 1: 108.6, 2: 154.3, 3: 199.9, 4: 248.4 }), g.ist);
+    ok("GESAMT: Kunde vollständig (Firma, Ansprechpartner, Anschrift, Mail, Telefon, Kundennummer) und erfunden", WN.KUNDENFELDER.every((k) => String(g.kunde[k.id]).trim()) && /Beispiel/.test(g.kunde.ansprechpartner) && /\.example$/.test(g.kunde.mail) && /^030 23125/.test(g.kunde.telefon));
+    const namen = gf[3].umfang.bausteine.map((x) => x.name).join(" | ");
+    ok("GESAMT: alle Teile des Programms stehen als Bausteine da", ["WorkFloh", "BookLedgerPro", "Internetseite", "Gestalter", "Brücke", "Tresor", "Knotennetz", "PDF-Werkzeug", "Prüfung beim Anhängen"].every((w) => namen.includes(w)), namen);
+    { const f4 = gf[3], s4 = R.schaetze(f4, null), kn4 = R.kostenNutzen(f4, s4, 24), pos4 = R.positionen(f4, s4, kn4, null, "de");
+      ok("GESAMT: alles beauftragt — keine Grenzlinie, keine Wahlposition im Angebot", f4.umfang.grenzeManuell === "keine" && pos4.optional.length === 0 && pos4.haupt.length > 10, [pos4.haupt.length, pos4.optional.length]); }
+    ok("GESAMT: alle 18 Bereiche ausgefüllt", BD.fortschritt(F.aktuelle(g).protokoll) === 18, BD.fortschritt(F.aktuelle(g).protokoll));
+    ok("GESAMT: Erklärung, Vereinbarung und Wartung aktiviert, mit Unterschriften (keine auf Papier)", ["erklaerung", "vereinbarung", "wartung"].every((a) => g[a].aktiviert && !g[a].papier && /^data:image\/png;base64,/.test(g[a].unterschriftBetrieb) && /^data:image\/png;base64,/.test(g[a].unterschriftKunde)));
+    const g0 = bg.bauen(8, Object.assign(kopie(E73), { firma: { name: "" } })), rb = A.rechtsblatt(g0, "erklaerung", {});
+    ok("GESAMT: ohne eigene Firmendaten steht im eingefrorenen Blatt eine erfundene Werkstatt", rb.firma.name === "Werkstatt Beispiel" && A.parteien(rb).auftraggeber[0] === "Tomys Hub");
+    ok("GESAMT: Sterne beim Bedarf und bei der Abnahme", g.sterne.filter((x) => x.zeitpunkt === "bedarf").length === 8 && g.sterne.filter((x) => x.zeitpunkt === "abnahme").length === 8);
+    const iv = R.istVergleich([g], null), letzte = iv.find((z) => z.fassung === 4);
+    ok("GESAMT: „Ist × Satz“ = Ist-Stunden mal Satz der Fassung (248,4 h × 73 € = 18.133,20 €)", letzte && letzte.istKostenCent === Math.round(248.4 * 7300) && letzte.istKostenCent === 1813320 && letzte.kostenBis >= letzte.kostenVon, letzte);
+    ok("GESAMT: sieben Anhänge angekündigt — Bilder, PDFs, E-Mails mit Typ", bg.anhaenge.length === 7 && bg.anhaenge.filter((a) => a.typ === "message/rfc822").length === 2 && bg.anhaenge.filter((a) => a.typ === "application/pdf").length === 2 && bg.anhaenge.filter((a) => /^image\//.test(a.typ)).length === 3);
+    const magie = { "message/rfc822": (b) => /^From: /.test(b.toString("utf8", 0, 6)) || /\nFrom: /.test(b.toString("utf8", 0, 400)), "application/pdf": (b) => b.toString("latin1", 0, 5) === "%PDF-", "image/png": (b) => b[0] === 0x89 && b.toString("latin1", 1, 4) === "PNG", "image/jpeg": (b) => b[0] === 0xff && b[1] === 0xd8 };
+    const da = bg.anhaenge.map((a) => { try { const b = readFileSync(join(WURZEL, a.datei)); return magie[a.typ](b) && b.length > 500; } catch (_e) { return false; } });
+    ok("GESAMT: jede angekündigte Datei liegt da und ist, was sie zu sein behauptet", da.every(Boolean), da);
+    const alleDaten = bg.anhaenge.filter((a) => a.typ === "message/rfc822").map((a) => readFileSync(join(WURZEL, a.datei)).toString("latin1")).join("\n");
+    ok("GESAMT: Beispiel-Mails tragen nur erfundene Adressen und keine Anweisung an eine KI", !/@(?![a-z0-9.-]*\.example)/.test(alleDaten) && !/ignore (all )?previous|ignoriere/i.test(alleDaten));
+    ok("GESAMT: Anfrage-Mail trägt den Auftragszettel als Anhang, Rückfrage die alte Kundenliste", /filename="?Auftragszettel-Papier\.jpg/.test(alleDaten) && /filename="?Kundenliste-alt\.csv/.test(alleDaten));
+  }
   ok("BEISPIELE: Erinnerung zählt keines der Beispiele", !WN.sicherung.erinnernNoetig(WN.beispiel.liste().map((b) => b.bauen(1, E73)), null, Date.parse("2026-10-07")));
 }
 
