@@ -231,3 +231,8 @@ canvas.unterschrift{width:100%;max-width:600px;aspect-ratio:4/1;height:auto;back
 :root[data-theme="light"] .btn.on,
 :root[data-theme="light"] .seg button.on{background:linear-gradient(135deg,#8a5a12,#7a3e12);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
 :root[data-theme="light"] .badge.gelb{background:#7a5a0c;border-color:#7a5a0c;color:#fff}
+
+/* Beispiele gleich neben „Neuer Vorgang“ (Klaus 2026-10-08) */
+.vorgang-start{flex-wrap:wrap;align-items:center;gap:10px}
+.beispiel-start{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+.beispiel-start select{max-width:min(420px,100%)}

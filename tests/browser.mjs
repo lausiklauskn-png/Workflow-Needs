@@ -256,6 +256,27 @@ try {
     await z.ctx.close();
   }
 
+  /* ── Beispiele gleich in „Vorgänge“ neben „Neuer Vorgang“ (Klaus 2026-10-08) ── */
+  {
+    const s = await seite(1100);
+    await s.p.goto(url); await s.p.waitForSelector("body[data-bereit]");
+    await reiter(s.p, "vorgaenge");
+    const lage = await s.p.evaluate(() => { const n = document.getElementById("neuer-vorgang"), w = document.getElementById("vg-beispiel-wahl"), l = document.getElementById("vg-beispiel-laden"), a = document.getElementById("vg-beispiel-alle");
+      const sicht = (e) => !!e && e.getClientRects().length > 0 && e.checkVisibility();
+      return { alle: [n, w, l, a].every(sicht), gleicheLeiste: !!n && !!w && n.parentElement === w.closest("[data-beispiel-start]").parentElement, optionen: w ? w.options.length : 0, vor: w ? w.value : "", vorListe: !!w && !!(w.compareDocumentPosition(document.querySelector("[data-vorgangsliste]")) & 4) }; });
+    ok("VORGÄNGE: Beispiel-Auswahl, „Laden“ und „Alle laden“ stehen sichtbar neben „Neuer Vorgang“, vor der Liste", lage.alle && lage.gleicheLeiste && lage.optionen === 6 && lage.vorListe, lage);
+    ok("VORGÄNGE: vorausgewählt ist das erste noch nicht geladene Beispiel (nicht die schon geladene Boutique)", lage.vor === "tomys", lage.vor);
+    await s.p.selectOption("#vg-beispiel-wahl", "tomys-gesamt"); await s.p.click("#vg-beispiel-laden");
+    await s.p.waitForFunction(() => /Beispiel geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
+    const nach = await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv) || {}; return { bid: v.bid, reiter: window.WNApp.S.reiter, anh: (v.anhaenge || []).length, haken: [...document.querySelectorAll("#vg-beispiel-wahl option")].filter((o) => o.textContent.startsWith("✓")).map((o) => o.value) }; });
+    ok("VORGÄNGE: „Laden“ legt das Beispiel an, öffnet es und hakt es in der Auswahl ab", nach.bid === "tomys-gesamt" && nach.reiter === "vorgaenge" && nach.anh === 7 && nach.haken.includes("tomys-gesamt"), nach);
+    await s.p.click("#vg-beispiel-alle");
+    await s.p.waitForFunction(() => /Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 15000 }).catch(() => {});
+    ok("VORGÄNGE: „Alle laden“ von hier ergänzt den Rest ohne Doppel", await s.p.evaluate(() => window.WNApp.S.vorgaenge.filter((v) => v.beispiel).map((v) => v.bid).sort().join()) === "alis,boutique,eigene,psb,tomys,tomys-gesamt");
+    ok("VORGÄNGE: Liste zeigt bei leerem Kunden nie einen Platzhalter", !(await s.p.textContent("[data-vorgangsliste]")).includes("⟦"));
+    await s.ctx.close();
+  }
+
   /* ── Stufe 3: Beispiele, Rechtsblätter mit Unterschrift, Sterne ── */
   {
     const fsm = await import("node:fs");
