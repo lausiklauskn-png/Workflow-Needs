@@ -251,6 +251,18 @@ nächsten Aktualisierung nicht mehr benutzbar.
      (nächste Aktualisierung). Wer nie wieder online geht oder die Dateien kopiert, behält die alte
      Fassung. Das heißt „unbrauchbar ab der nächsten Aktualisierung“, nicht „sofort“ — so benennen.
 
+**D2 · Stundensatz im Wartungsvertrag — Klaus' ausdrückliches Ja (2026-10-07, fünfte Nachricht)**
+
+- **Regeländerung, eng begrenzt:** der Stundensatz darf **nur im Blatt „Wartungsvertrag“** stehen.
+  Angebot, Nachtrag, Bedarfsprotokoll, Verschwiegenheitserklärung, Vereinbarung, Übergabe an WorkFloh
+  und Bauauftrags-MD bleiben **ohne** Satz — die 73-€-Probe gilt dort weiter, und eine neue Probe misst,
+  dass der Satz im Wartungsvertrag **steht** (beide Richtungen).
+- Im Blatt zwei getrennte Angaben: **„Abrechnung nach Zeitaufwand“** (als eigener Satz: was zählt —
+  Fehlersuche, Änderung, Test, Abstimmung) **und** der **Stundensatz** (aus dem Vorgang, wie in Stufe 2:
+  Fassung → Vorgabe; beim Unterschreiben eingefroren).
+- Über die Whitelist (`aussen.js`, eigene Funktion `wartungExtern`); CLAUDE.md „Stundensatz verlässt das
+  Haus nie“ wird um genau diese Ausnahme ergänzt, mit Klaus' Wortlaut und Datum.
+
 **C2 · Klaus' Festlegung (2026-10-07, vierte Nachricht) — gilt:**
 
 > „Die Sperre für den Kunden … werden wir erstmal festhalten, später einbauen. Die wird in der App
@@ -319,7 +331,8 @@ nächsten Aktualisierung nicht mehr benutzbar.
 9. ~~je Vorgang oder je Fassung~~ — beantwortet (§ 4f D): je Vorgang für die Grundversion; Verbesserungen
    als Nachtrag oder neuer Vorgang; dazu ein Wartungsvertrag mit eingerechneten Freistunden.
 10. Sterne der Mitarbeiter: zu beiden Zeitpunkten (Bedarf und Abnahme)? Am Gerät oder auf Papier?
-11. Wartungsvertrag: bleibt der Stundensatz ungenannt („nach Aufwand“), oder soll er dort stehen?
+11. ~~Stundensatz im Wartungsvertrag~~ — beantwortet (Klaus 2026-10-07: „du bekommst hiermit mein
+    ausdrückliches Ja … nach Zeitaufwand soll separat mit angeführt werden, also nicht nur nach Stunden“), § 4f D2.
 12. ~~Sperre~~ — beantwortet (§ 4f C2): Bedienungssperre, Daten bleiben, später in der Kunden-App gebaut,
     hier nur vereinbart. (Alte Frage zum Nachlesen: einverstanden mit den drei Grenzen in § 4f C (nur Bedienung, Export bleibt,
     erst ab der nächsten Aktualisierung) und damit, dass sie in der Kunden-App gebaut wird, nicht hier?
