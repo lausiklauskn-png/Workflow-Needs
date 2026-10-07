@@ -303,6 +303,14 @@ try {
     const ev = await s.p.evaluate(() => { const d = document.getElementById("vorschau"); return { offen: d.open, text: (d.querySelector(".blatt") || {}).textContent || "", bilder: d.querySelectorAll(".blatt img[data-unterschrift-bild]").length,
       mail: (d.querySelector("[data-vorschau-mail]") || {}).href || "", entwurf: !!d.querySelector(".vorschau-kopf [data-entwurf]") }; });
     ok("ERKLÄRUNG: Aktivieren öffnet sofort das Blatt für den Kunden (Firma, Kunde, beide Unterschriften)", ev.offen && ev.text.includes("Werkstatt Prüf-Firma") && ev.text.includes("Kundin Prüf-Blatt GmbH") && ev.bilder === 2, [ev.offen, ev.bilder, ev.text.slice(0, 80)]);
+    const kopf = await s.p.evaluate(() => { const d = document.getElementById("vorschau"), b = d.querySelector(".blatt"), pa = b.querySelector("[data-parteien]"), sb = b.querySelector("[data-schlussblock]");
+      return { an: (pa && pa.querySelector("[data-partei=auftragnehmer]") || {}).textContent || "", ag: (pa && pa.querySelector("[data-partei=auftraggeber]") || {}).textContent || "",
+        vorTitel: pa ? !!(pa.compareDocumentPosition(b.querySelector("h2")) & 4) : false,
+        unterStrich: b.querySelectorAll("[data-unterschrift-feld] .strich img[data-unterschrift-bild]").length,
+        zusammen: sb ? (sb.querySelector("h2") || {}).textContent + "|" + !!sb.querySelector(".unterschriften") + "|" + getComputedStyle(sb).breakInside : "" }; });
+    ok("ERKLÄRUNG: im Kopf stehen Auftragnehmer und Auftraggeber mit Namen, vor dem ersten Abschnitt", kopf.an.startsWith("Auftragnehmer") && kopf.an.includes("Werkstatt Prüf-Firma") && kopf.ag.startsWith("Auftraggeber") && kopf.ag.includes("Kundin Prüf-Blatt GmbH") && kopf.vorTitel, kopf);
+    ok("ERKLÄRUNG: die Unterschrift sitzt ÜBER der Linie", kopf.unterStrich === 2, kopf.unterStrich);
+    ok("ERKLÄRUNG: letzter Abschnitt und Unterschriften bleiben beim Seitenumbruch zusammen", kopf.zusammen === "7. Ihre Rechte|true|avoid", kopf.zusammen);
     ok("ERKLÄRUNG: Entwurf-Hinweis in der Vorschau, nicht auf dem Blatt; nirgends „Analyse“", ev.entwurf && !/prüfen lassen/.test(ev.text) && !/analyse/i.test(ev.text));
     const mt = decodeURIComponent(ev.mail);
     ok("ERKLÄRUNG: „Per E-Mail“ ist ein mailto an die Kundin mit Betreff und Text", ev.mail.startsWith("mailto:kundin%40pruefblatt.example?subject=") && mt.includes("Verschwiegenheits- und Datenschutzerklärung") && mt.includes("7. Ihre Rechte") && !mt.includes("data:image"), ev.mail.slice(0, 80));

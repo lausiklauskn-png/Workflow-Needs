@@ -1,11 +1,11 @@
 /* Offline-Vorrat der Workflow Bedarfsanalyse. Wer eine Datei aus CORE ändert,
    erhöht CACHE_VERSION — sonst liefert der Worker die alte Fassung weiter.
    Fremde Adressen fasst er nicht an (die App ruft keine auf). */
-const CACHE_VERSION = "workflow-needs-v6";
-const CORE = ["./", "index.html", "manifest.json", "assets/app.css?v=3", "modules/25_pseudonym.js",
+const CACHE_VERSION = "workflow-needs-v8";
+const CORE = ["./", "index.html", "manifest.json", "assets/app.css?v=4", "modules/25_pseudonym.js",
   "assets/kern/geld.js?v=1", "assets/daten/bausteine.js?v=3", "assets/daten/markt.js?v=2", "assets/kern/bedarf.js?v=2",
-  "assets/kern/rechnen.js?v=3", "assets/kern/fassungen.js?v=2", "assets/kern/aussen.js?v=2", "assets/kern/bauauftrag.js?v=2", "assets/schluesseltresor.js?v=1", "assets/kern/sicherung.js?v=1", "assets/kern/uebergabe.js?v=2",
-  "assets/daten/beispiel.js?v=3", "assets/daten/beispiel-tomys.js?v=1", "assets/daten/beispiel-psb.js?v=1", "assets/daten/beispiel-alis.js?v=1", "assets/daten/beispiel-eigene.js?v=1", "assets/texte.js?v=3", "assets/app.js?v=3", "assets/installieren.js",
+  "assets/kern/rechnen.js?v=3", "assets/kern/fassungen.js?v=2", "assets/kern/aussen.js?v=3", "assets/kern/bauauftrag.js?v=2", "assets/schluesseltresor.js?v=1", "assets/kern/sicherung.js?v=1", "assets/kern/uebergabe.js?v=2",
+  "assets/daten/beispiel.js?v=3", "assets/daten/beispiel-tomys.js?v=1", "assets/daten/beispiel-psb.js?v=1", "assets/daten/beispiel-alis.js?v=1", "assets/daten/beispiel-eigene.js?v=1", "assets/texte.js?v=3", "assets/app.js?v=4", "assets/installieren.js",
   "impressum.html", "datenschutz.html", "icons/favicon-32.png", "icons/favicon-48.png", "assets/bild-prisma.webp", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE_VERSION).then((c) =>

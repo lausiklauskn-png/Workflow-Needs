@@ -212,5 +212,22 @@ dialog#vorschau::backdrop{background:rgba(0,0,0,.55)}
 .unterschrift-feld{flex:1 1 260px;display:flex;flex-direction:column;gap:4px;min-width:0}
 canvas.unterschrift{width:100%;max-width:600px;aspect-ratio:4/1;height:auto;background:#fff;border:1px dashed var(--line,#888);border-radius:8px;touch-action:none;cursor:crosshair}
 .blatt .unterschrift-bild{display:block;max-height:60px;max-width:100%}
+/* Rechtsblätter: Parteien im Kopf, Unterschrift ÜBER der Linie, kein Umbruch vor den Unterschriften */
+.blatt .parteien{display:grid;grid-template-columns:1fr 1fr;gap:28px;font:10pt/1.4 Arial,Helvetica,sans-serif;white-space:pre-line;margin:0 0 16px;padding:8px 0;border-top:1px solid #000;border-bottom:1px solid #000}
+.blatt .parteien .schreiblinie{min-width:90%}
+.blatt .unterschriften.mit-strich div{border-top:0;padding-top:0;min-height:0}
+.blatt .unterschriften.mit-strich .strich{min-height:56px;border-bottom:1px solid #000;margin-bottom:4px;display:flex;align-items:flex-end}
+.blatt .schlussblock{break-inside:avoid;page-break-inside:avoid}
+.blatt h2{break-after:avoid;page-break-after:avoid}
+.blatt .abschnitt{break-inside:avoid;page-break-inside:avoid}
 .blatt .sterne-ankreuzen{white-space:nowrap;font-size:11pt}
 .vorschau-kopf .badge{white-space:normal;max-width:100%}
+
+/* Helles Thema: auf den dunklen Messing-Flächen (gedrückter Reiter, Hauptknopf, gewählte Stufe,
+   gelbes Abzeichen) weiße Schrift statt schwarzer (Klaus 2026-10-07: „besser zu erkennen").
+   Der Verlauf ist dafür dunkler gezogen — Kontrast Weiß gegen #8a5a12 5,9 · #7a3e12 8,3 · #7a5a0c 6,4.
+   Das dunkle Thema bleibt unverändert. */
+:root[data-theme="light"] .btn.pri,
+:root[data-theme="light"] .btn.on,
+:root[data-theme="light"] .seg button.on{background:linear-gradient(135deg,#8a5a12,#7a3e12);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+:root[data-theme="light"] .badge.gelb{background:#7a5a0c;border-color:#7a5a0c;color:#fff}

@@ -150,6 +150,16 @@
   function eurDe(c) { return WN.geld.formatEuro(c, "de"); }
   function wer(fi) { return String(fi.name || "").trim() || "der Auftragnehmer"; }
   function kundeWort(k) { return String(k.firma || "").trim() || "der Kunde"; }
+  /* „Für den Auftragnehmer“, nicht „Für der Auftragnehmer“ (Klaus' Tablet 2026-10-07) */
+  function fuerWen(F) { return "Für " + (F === "der Auftragnehmer" ? "den Auftragnehmer" : F); }
+  /* Wer mit wem: beide Vertragsparteien mit Namen und Anschrift, leere Felder bleiben leer
+     (das Blatt zeichnet dort eine Schreiblinie). Gilt auch für schon eingefrorene Blätter. */
+  function parteien(b) {
+    var fi = b.firma || {}, k = b.kunde || {};
+    return { auftragnehmer: [fi.name, fi.anschrift, fi.kontakt].map(function (x) { return String(x || "").trim(); }),
+      auftraggeber: [k.firma, k.ansprechpartner, k.anschrift, [k.mail, k.telefon].filter(Boolean).join(" · "), k.kundennummer ? "Kundennummer " + k.kundennummer : ""].map(function (x) { return String(x || "").trim(); }) };
+  }
+  function linksText(t) { return String(t || "").replace(/^Für der Auftragnehmer/, "Für den Auftragnehmer"); }
   /* Die Fassung, auf die sich Vereinbarung und Wartung beziehen: gewählt, sonst die jüngste unterschriebene, sonst die aktuelle */
   function bezugFassung(v, r) {
     var nr = r && r.fassung;
@@ -171,7 +181,7 @@
       abschnitt(6, "Löschung", "Auf Ihren Wunsch löschen wir Ihre Angaben, spätestens nach Ablauf der gesetzlichen Aufbewahrungsfristen."),
       abschnitt(7, "Ihre Rechte", "Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch (Art. 15–21 DSGVO) und das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren." + (String(fi.kontakt || "").trim() ? " Kontakt: " + String(fi.kontakt).trim() + "." : "")),
     ], schluss: "Diese Erklärung bekommen Sie zum Mitnehmen — ausgedruckt oder per E-Mail. Sie verschenken keine Daten.",
-      links: "Für " + F + " (verpflichtet sich)", rechts: K + " (Erhalt bestätigt)" };
+      links: fuerWen(F) + " (verpflichtet sich)", rechts: K + " (Erhalt bestätigt)" };
   }
   function vereinbarungText(v, f, fi, k, ctx) {
     var F = wer(fi), K = kundeWort(k);
@@ -189,7 +199,7 @@
       abschnitt(7, "Aktualisierungen", "Aktualisierungen der App erhalten Sie automatisch, solange Sie das wünschen. In den ersten zwei Jahren ab Abnahme sind sie kostenlos. Ab dem dritten Jahr laufen sie über den Wartungsvertrag. Ohne Wartungsvertrag läuft die App in ihrer letzten Fassung weiter, ohne Sperre."),
       abschnitt(8, "Grundversion und Verbesserungen", "Ausgeliefert wird die Grundversion nach Fassung " + f.nr + ". Aktualisierungen sind Verbesserungen, die " + F + " von sich aus vornimmt. Wünschen Sie eine Verbesserung oder Erweiterung, wird sie gesondert abgerechnet — als Nachtrag zu diesem Auftrag oder als neuer Auftrag."),
     ], bezug: { nummer: an.nummer, fassung: f.nr, ziel: ziel }, summen: { netto: an.summen.netto, brutto: an.summen.brutto, p19: an.summen.p19 },
-      links: "Für " + F, rechts: K };
+      links: fuerWen(F), rechts: K };
   }
   function wartungText(v, f, fi, k, ctx) {
     var F = wer(fi), K = kundeWort(k);
@@ -204,7 +214,7 @@
       abschnitt(4, "Abrechnung nach Zeitaufwand", "Was über die Freistunden und die Aktualisierungen hinausgeht, wird nach Zeitaufwand abgerechnet. Dazu zählen Fehlersuche, Änderung, Test und Abstimmung. Verbesserungen und Erweiterungen auf Ihren Wunsch kommen als Nachtrag oder als neuer Auftrag."),
       abschnitt(5, "Stundensatz", eurDe(f.satzCent) + (p19 ? " je Stunde (gemäß § 19 UStG ohne Umsatzsteuer)." : " netto je Stunde, zuzüglich Umsatzsteuer.")),
     ], bezug: { nummer: an.nummer, fassung: f.nr }, satzCent: f.satzCent, freistunden: frei, wochen: wochen, pauschaleCent: pausch,
-      links: "Für " + F, rechts: K };
+      links: fuerWen(F), rechts: K };
   }
   /* ctx: { firma, ust, tabellen, zeitraum, wartung } */
   function rechtsblatt(v, art, ctx) {
@@ -243,7 +253,8 @@
   }
   /* Klartext für mailto: Betreff und Text (ohne Unterschriften). */
   function alsText(b) {
-    var L = [b.titel + (b.vorhaben ? " — " + b.vorhaben : ""), "", b.text.einleitung, ""];
+    var P = parteien(b), zeile = function (a) { return a.filter(Boolean).join(", ").replace(/\n/g, ", ") || "________________"; };
+    var L = [b.titel + (b.vorhaben ? " — " + b.vorhaben : ""), "", "Auftragnehmer: " + zeile(P.auftragnehmer), "Auftraggeber: " + zeile(P.auftraggeber), "", b.text.einleitung, ""];
     b.text.abschnitte.forEach(function (a) {
       L.push(a.nr + ". " + a.titel, a.text);
       (a.tabelle || []).forEach(function (z) { L.push("   " + [z.kennung, z.leistung, z.deckt ? "deckt " + z.deckt : "", eurDe(z.nettoCent) + " netto"].filter(Boolean).join(" · ")); });
@@ -258,14 +269,17 @@
   /* Das Druckblatt als eigenständige HTML-Datei (für die Übergabe an WorkFloh) */
   function alsHtml(b) {
     var H = ["<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>" + esc(b.titel) + "</title>",
-      "<style>body{font:11pt/1.45 Georgia,serif;max-width:760px;margin:30px auto;padding:0 16px;color:#000}h1{font:700 17pt Arial,sans-serif}h2{font:700 11.5pt Arial,sans-serif;margin:14px 0 4px}table{border-collapse:collapse;width:100%;font:10pt Arial,sans-serif}td{border-bottom:1px solid #999;padding:3px 5px}.u{display:flex;gap:30px;margin-top:30px}.u div{flex:1;border-top:1px solid #000;padding-top:4px;font:9pt Arial,sans-serif}.u img{max-height:70px;display:block}</style></head><body>",
-      "<h1>" + esc(b.titel) + "</h1>", "<p>" + esc(b.vorhaben) + "</p>", "<p>" + esc(b.text.einleitung) + "</p>"];
+      "<style>body{font:11pt/1.45 Georgia,serif;max-width:760px;margin:30px auto;padding:0 16px;color:#000}h1{font:700 17pt Arial,sans-serif}h2{font:700 11.5pt Arial,sans-serif;margin:14px 0 4px}table{border-collapse:collapse;width:100%;font:10pt Arial,sans-serif}td{border-bottom:1px solid #999;padding:3px 5px}.p{display:flex;gap:30px;font:10pt/1.4 Arial,sans-serif;margin:10px 0 16px}.p div{flex:1}.u{display:flex;gap:30px;margin-top:30px;break-inside:avoid}.u div{flex:1;font:9pt Arial,sans-serif}.u .s{min-height:60px;border-bottom:1px solid #000;margin-bottom:4px}.u img{max-height:70px;display:block}</style></head><body>",
+      "<h1>" + esc(b.titel) + "</h1>", "<p>" + esc(b.vorhaben) + "</p>"];
+    var P = parteien(b), spalte = function (titel, a) { return "<div><b>" + titel + "</b><br>" + (a.filter(Boolean).map(function (x) { return esc(x).replace(/\n/g, "<br>"); }).join("<br>") || "________________") + "</div>"; };
+    H.push("<div class=\"p\">" + spalte("Auftragnehmer", P.auftragnehmer) + spalte("Auftraggeber", P.auftraggeber) + "</div>", "<p>" + esc(b.text.einleitung) + "</p>");
     b.text.abschnitte.forEach(function (a) {
       H.push("<h2>" + a.nr + ". " + esc(a.titel) + "</h2><p>" + esc(a.text) + "</p>");
       if (a.tabelle && a.tabelle.length) H.push("<table>" + a.tabelle.map(function (z) { return "<tr><td>" + esc(z.kennung) + "</td><td>" + esc(z.leistung) + "</td><td>" + esc(z.deckt) + "</td><td style=\"text-align:right\">" + esc(eurDe(z.nettoCent)) + "</td></tr>"; }).join("") + "</table>");
     });
     if (b.text.schluss) H.push("<p>" + esc(b.text.schluss) + "</p>");
-    H.push("<div class=\"u\"><div>" + (b.unterschriftBetrieb ? "<img alt=\"\" src=\"" + b.unterschriftBetrieb + "\">" : "") + esc(b.text.links) + "</div><div>" + (b.unterschriftKunde ? "<img alt=\"\" src=\"" + b.unterschriftKunde + "\">" : "") + esc(b.text.rechts) + "</div></div>");
+    var uf = function (bild, txt) { return "<div><div class=\"s\">" + (bild ? "<img alt=\"\" src=\"" + bild + "\">" : "") + "</div>" + esc(txt) + "<br>Ort, Datum, Unterschrift</div>"; };
+    H.push("<div class=\"u\">" + uf(b.unterschriftBetrieb, linksText(b.text.links)) + uf(b.unterschriftKunde, b.text.rechts) + "</div>");
     H.push("<p style=\"font:9pt Arial,sans-serif\">" + esc(b.aktiviert ? "Unterschrieben" + (b.papier ? " auf Papier" : "") + " am " + b.aktiviert.split("-").reverse().join(".") : "Noch nicht unterschrieben") + " · Textfassung " + b.textFassung + "</p></body></html>");
     return H.join("\n");
   }
@@ -278,7 +292,7 @@
       vorgang: v.id, titel: String(v.titel || ""), fassung: f.nr, bedarfe: bed.map(function (e) { return { id: String(e.id), text: String(e.text || "") }; }) };
   }
 
-  WN.aussen = { RECHT_ARTEN: RECHT_ARTEN, TEXTFASSUNG: TEXTFASSUNG, rechtsblatt: rechtsblatt, erklaerungExtern: erklaerungExtern, vereinbarungExtern: vereinbarungExtern,
+  WN.aussen = { RECHT_ARTEN: RECHT_ARTEN, TEXTFASSUNG: TEXTFASSUNG, rechtsblatt: rechtsblatt, parteien: parteien, linksText: linksText, erklaerungExtern: erklaerungExtern, vereinbarungExtern: vereinbarungExtern,
     wartungExtern: wartungExtern, kannAktivieren: kannAktivieren, aktivieren: aktivieren, alsText: alsText, alsHtml: alsHtml, sterneBogenExtern: sterneBogenExtern, kundenProtokoll: kundenProtokoll, angebotExtern: angebotExtern, nachtragExtern: nachtragExtern,
     analyseIntern: analyseIntern, kundeExtern: kundeExtern, firmaExtern: firmaExtern };
 })(typeof window !== "undefined" ? window : globalThis);
