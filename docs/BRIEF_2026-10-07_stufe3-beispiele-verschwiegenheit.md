@@ -201,6 +201,72 @@ und die Kennungen des Ziels; ohne beide Unterschriften nicht „aktiviert“; ak
 der Satz zur Zahlung folgt dem gewählten Modell (ganz / je Baustein); kein Satz/Preis-Leck außer den
 Summen des Angebots.
 
+## 4f · Klaus' Antworten (2026-10-07, dritte Nachricht) — gelten
+
+> „Erfolg wird gemessen am Bedarfsprotokoll und die Bewertung der Mitarbeiter … mit Sternchen …
+> Mitarbeiter, die in dem Fachbereich tätig sind. Das ist ganz wichtig, wie schätzen die Mitarbeiter
+> den Bedarf ein. … Nutzungsrecht gilt zeitlich unbegrenzt. … die App darf er von anderen nicht ändern
+> lassen. Wenn er nicht zahlt, wird die App kodiert … ein Code geschickt und die App wird unbrauchbar
+> bei der nächsten Aktualisierung … Aktualisierungen oder Verbesserungen werden separat abgerechnet nach
+> Stundensatz … auf den bestehenden Auftrag oder Neuauftrag … Es wird im Prinzip eine Grundversion
+> ausgeliefert, die dann jederzeit verbessert werden kann. … die Änderung an der App, die kann ich dann
+> vornehmen. Das ist dann das Ziel … eines Vertrages über die Wartung … mehrere Umsonststunden dabei,
+> die gewährleisten, dass die App in der Anfangsphase Fehler ausgemerzt bekommt … Nur kalkuliert.“
+
+**A · Erfolg = Bedarfsprotokoll + Sterne der Mitarbeiter im Fachbereich (neu zu bauen)**
+
+- Die Mitarbeiter, die im jeweiligen Fachbereich arbeiten, bewerten mit **1–5 Sternen**.
+- **Zwei Zeitpunkte** (Vorschlag, Klaus bestätigen lassen):
+  1. **beim Bedarf (Stufe 1):** „Wie wichtig ist dieser Bedarf für meine Arbeit?“ — je Bedarf (Kennung B-nn).
+  2. **bei der Abnahme:** „Wie gut erfüllt das Ergebnis diesen Bedarf?“ — je Bedarf.
+  Das Ergebnis je Bedarf steht neben der Kennung (Durchschnitt, Anzahl). Dieselbe Kennung ist in der
+  Vereinbarung (4e, Punkt 1) das Ziel.
+- **Mitarbeiter sind Kundendaten:** erfasst wird **Fachbereich** (z. B. „Verkauf“, „Lager“) und
+  optional ein Kürzel — kein Klarname nötig. Steht doch ein Name da, gilt er wie ein Kundenfeld:
+  Platzhalter in der MD, Klartext nur auf Kundenblättern.
+- Ins **Bedarfsprotokoll für den Kunden:** die Sterne beim Bedarf ja (es ist seine Einschätzung).
+  In die **Bauauftrags-MD:** die Sterne ja, Namen nein.
+- Wie die Bewertung in die App kommt: am Gerät reihum, oder ein Ausdruck mit Sternchen zum
+  Ankreuzen, den Klaus nachträgt. Vorschlag: beides, Ausdruck zuerst. Klaus fragen (Frage 10).
+
+**B · Nutzungsrecht:** zeitlich **unbegrenzt**, einfach, nicht übertragbar; **Änderungen nur durch
+Klaus** — der Kunde lässt die App nicht von anderen ändern. So steht es in der Vereinbarung (4e, Punkt 4).
+
+**C · Ohne Zahlung wird die App unbrauchbar — ⚠ benannte Grenzen, vor dem Bauen mit Klaus klären**
+
+Klaus' Wunsch: zahlt der Kunde nicht, wird die App „kodiert“, ein Code geht hinaus und sie ist ab der
+nächsten Aktualisierung nicht mehr benutzbar.
+
+- **Das gehört NICHT in Workflow-Needs gebaut**, sondern in die ausgelieferte Kunden-App. Workflow-Needs
+  bekommt nur: (1) den **Satz in der Vereinbarung**, offen angekündigt, und (2) einen neuen
+  **Katalog-Baustein „Freischaltung / Lizenz“** (Schätzung, `geprueft: false`), damit er in jedem
+  Angebot mitgerechnet wird. Gebaut wird der Schalter in einer eigenen Sitzung je App.
+- ⚠ **Drei Grenzen, die im Brief stehen bleiben müssen:**
+  1. **Rechtlich:** eine Sperre gegen einen Kunden ist nur haltbar, wenn sie vorher klar vereinbart ist
+     und erst greift, wenn die Zahlung nach der Abnahme ausbleibt. Wortlaut prüfen lassen.
+  2. **Die Daten des Kunden bleiben seine** (4e, Punkt 5, und DSGVO Art. 20): die Sperre darf **nur die
+     Bedienung** sperren, nie Daten löschen oder verschlüsseln; **Export der eigenen Daten bleibt immer
+     möglich**. Sonst bricht sie Klaus' eigene Verschwiegenheits- und Datenschutzerklärung.
+  3. **Technisch:** eine PWA, die offline läuft, sieht eine Sperre erst beim nächsten Abruf vom Server
+     (nächste Aktualisierung). Wer nie wieder online geht oder die Dateien kopiert, behält die alte
+     Fassung. Das heißt „unbrauchbar ab der nächsten Aktualisierung“, nicht „sofort“ — so benennen.
+
+**D · Grundversion, Verbesserungen und Wartung**
+
+- Ausgeliefert wird eine **Grundversion** (die Fassung, die zur Vereinbarung unterschrieben ist). Die
+  Vereinbarung gilt **je Vorgang** für diese Grundversion.
+- **Verbesserungen und Erweiterungen** werden **gesondert** abgerechnet: als **Nachtrag** zum bestehenden
+  Auftrag (neue Fassung + Nachtrag zum Unterschreiben — gibt es schon) oder als **neuer Vorgang**.
+- **Wartungsvertrag** (neues Blatt, gleiche Bauart wie 4e): nur Klaus ändert die App; Fehlerbehebung in
+  der Anfangsphase mit **n Freistunden**. Die Freistunden sind **eingerechnet** („nur kalkuliert“): sie
+  stehen intern in der Schätzung (Stufe 2, neuer Posten neben Abstimmung/Puffer, z. B. „Gewährleistung in
+  der Anfangsphase“), der Kunde sieht nur „inklusive *n* Stunden Fehlerbehebung in den ersten *m* Wochen“.
+  Werte *n* und *m* sind Klaus' Vorgabe in den Einstellungen.
+- ⚠ **Stundensatz:** „separat abgerechnet nach Stundensatz“ — die App druckt den Satz **nie** (CLAUDE.md,
+  „Stundensatz verlässt das Haus nie“). Das Blatt sagt deshalb „nach Aufwand, mit gesondertem Angebot
+  oder Nachtrag“. Soll der Satz im Wartungsvertrag doch genannt werden, ist das eine **Änderung dieser
+  Regel** — nur mit Klaus' ausdrücklichem Wort, und dann nur in diesem einen Blatt (Frage 11).
+
 ## 5 · Proben und Gegenprobe
 
 - **kern:** jedes Beispiel lädt, hat 18 Bereiche gültig, Kennungen lückenlos aus dem Zähler,
@@ -223,11 +289,16 @@ Summen des Angebots.
    nur Klaus (einseitige Erklärung) oder beide (Vereinbarung)?
 5. „Per E-Mail“: reicht `mailto` mit Text + PDF von Hand angehängt?
 6. Soll die Erklärung mit in die WorkFloh-Übergabe?
-7. Zahlung nach Erfolg: entfällt sie **ganz**, wenn der Kunde das Ergebnis nicht nützlich findet,
-   oder zahlt er **je Baustein**, den er behält? Wer stellt „erfolgreich“ fest — der Kunde allein,
-   oder gegen die Kennungen des Bedarfsprotokolls?
-8. Nutzungsrecht des Kunden: zeitlich unbegrenzt? Änderungen durch Dritte erlaubt? Was gilt ohne Zahlung?
-9. Die Vereinbarung zu Zahlung und Rechten: einmal je Vorgang oder je Fassung (Nachtrag)?
+7. Zahlung nach Erfolg: entfällt sie **ganz**, wenn das Ziel verfehlt ist, oder zahlt der Kunde **je
+   Baustein**, den er behält? (Noch offen. Beantwortet: „erfolgreich“ = Bedarfsprotokoll + Sterne der
+   Mitarbeiter, § 4f A.)
+8. ~~Nutzungsrecht~~ — beantwortet (§ 4f B, C): unbegrenzt, Änderungen nur durch Klaus, ohne Zahlung Sperre.
+9. ~~je Vorgang oder je Fassung~~ — beantwortet (§ 4f D): je Vorgang für die Grundversion; Verbesserungen
+   als Nachtrag oder neuer Vorgang; dazu ein Wartungsvertrag mit eingerechneten Freistunden.
+10. Sterne der Mitarbeiter: zu beiden Zeitpunkten (Bedarf und Abnahme)? Am Gerät oder auf Papier?
+11. Wartungsvertrag: bleibt der Stundensatz ungenannt („nach Aufwand“), oder soll er dort stehen?
+12. Sperre ohne Zahlung: einverstanden mit den drei Grenzen in § 4f C (nur Bedienung, Export bleibt,
+    erst ab der nächsten Aktualisierung) und damit, dass sie in der Kunden-App gebaut wird, nicht hier?
 
 ## 7 · Zugriff (gemessen in dieser Sitzung)
 
