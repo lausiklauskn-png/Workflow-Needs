@@ -35,7 +35,7 @@
     v.beispiel = true; v.bid = "tomys-gesamt";
     v.kunde.firma = "Tomys Hub";
     v.kunde.ansprechpartner = "Max Beispiel";
-    v.kunde.anschrift = "Musterstraße 12\n12345 Musterstadt";
+    v.kunde.anschrift = "Musterstraße 12, 12345 Musterstadt";
     v.kunde.mail = "kontakt@tomys-hub.example";
     v.kunde.telefon = "030 23125456";
     v.kunde.kundennummer = "KD-2026-001";

@@ -207,6 +207,10 @@ const FAELLE = [
     an: [["assets/daten/beispiel-tomys-gesamt.js", '    v.kunde.telefon = "030 23125456";', ""]] },
   { name: "GESAMT: E-Mail als Bild deklariert", probe: K, erwartet: "GESAMT: sieben Anhänge angekündigt",
     an: [["assets/daten/beispiel-tomys-gesamt.js", 'name: "Rueckfrage-Buchhaltung.eml", typ: "message/rfc822"', 'name: "Rueckfrage-Buchhaltung.eml", typ: "image/png"']] },
+  { name: "VORGÄNGE: Beispiele nur in den Einstellungen", probe: B, erwartet: "VORGÄNGE: Beispiel-Auswahl, „Laden“ und „Alle laden“ stehen sichtbar",
+    an: [["assets/app.js", 'h("span", { class: "gedaempft klein", text: t("oder ein Beispiel ansehen:") }), beispielSteuerung("vg-beispiel"))', 'h("span", { class: "gedaempft klein", text: t("oder ein Beispiel ansehen:") }))']] },
+  { name: "VORGÄNGE: Platzhalter in der Liste", probe: B, erwartet: "VORGÄNGE: Liste zeigt bei leerem Kunden nie einen Platzhalter",
+    an: [["assets/app.js", '(x.kunde.firma || (x.eigenesVorhaben ? t("eigenes Vorhaben") : t("ohne Kunde")))', '(x.kunde.firma || "⟦KUNDE-1⟧")']] },
   { name: "PIN: Modul 25 abgewandelt", probe: K, erwartet: "PIN: Modul 25 ist byte-gleich mit Sage",
     an: [["modules/25_pseudonym.js", "  var KEIN_NAME = [\"herr\",", "  var KEIN_NAME = [\"chef2\", \"herr\","]] },
 ];

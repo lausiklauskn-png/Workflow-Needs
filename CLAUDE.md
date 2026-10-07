@@ -213,6 +213,12 @@ gekostet hätte“* · *„Beispiel Bilder und PDFs mit einfügen … PDFs und E
 - Gemessen: kern **254 grün · 0 ROT** · browser **122 grün · 0 ROT** · Gegenprobe `GESAMT:` **7 gefangen · 0 blind**.
   ⚠ Nicht gemessen: ob WorkFloh die .eml beim Import auspackt (das macht WorkFlohs eigener Posteingang, hier nur die Übergabe).
 
+**Beispiele gleich in „Vorgänge“** (Klaus 2026-10-08: *„da rein, wo neue Vorgänge steht, gleich am Anfang … nicht erst in
+Einstellungen“*): neben „+ Neuer Vorgang“ stehen Auswahl, „Laden“ und „Alle laden“ (`beispielSteuerung(pre)`, EINE Fassung
+für beide Orte; Kennungen `vg-beispiel-*` hier, `beispiel-*` in den Einstellungen). Geladene tragen ✓, vorausgewählt ist das
+erste noch nicht geladene. Die Vorgangsliste zeigt bei leerem Kunden „ohne Kunde“/„eigenes Vorhaben“ statt `⟦KUNDE-1⟧`.
+Anschrift im Gesamtbeispiel einzeilig (das Feld ist einzeilig). Gegenprobe `VORGÄNGE:` 2 gefangen · browser 127 grün.
+
 ## Benannte Grenzen
 
 - Platzhalter sind **keine Verschlüsselung**: der Klartext geht nur gar nicht erst hinaus. Was

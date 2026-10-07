@@ -211,14 +211,34 @@
     S.vorgaenge.unshift(v); S.aktiv = v.id; lsSet(LS.aktiv, v.id); S.fNr = null;
     merken(v); S.reiter = "vorgaenge"; S.meldung = null; zeichne();
   }
+  /* Auswahl + „Laden“ + „Alle laden“ — EINE Fassung für Vorgänge und Einstellungen (Klaus 2026-10-08:
+     „gleich am Anfang, wo Neuer Vorgang steht … nicht erst in Einstellungen gehen“). Kennungen je Ort. */
+  function beispielSteuerung(pre) {
+    var wahl = h("select", { id: pre + "-wahl", "aria-label": t("Beispiele") });
+    WN.beispiel.liste().forEach(function (b) {
+      var da = S.vorgaenge.some(function (x) { return WN.beispiel.bidVon(x) === b.id; });
+      wahl.append(h("option", { value: b.id, text: (da ? "✓ " : "") + nm(b.name) }));
+      if (!da && !wahl.dataset.vor) { wahl.dataset.vor = b.id; }
+    });
+    /* vorausgewählt: das erste Beispiel, das noch nicht geladen ist */
+    if (wahl.dataset.vor) wahl.value = wahl.dataset.vor;
+    return [wahl,
+      knopf(t("Laden"), function () { beispielLaden(wahl.value).then(function (r) { melde(r ? t("Beispiel geladen.") : t("Dieses Beispiel ist schon da — nichts doppelt angelegt."), ""); }); }, "", { id: pre + "-laden" }),
+      knopf(t("Alle laden"), function () {
+        var ids = WN.beispiel.liste().map(function (b) { return b.id; }), n = 0;
+        ids.reduce(function (pr, id) { return pr.then(function () { return beispielLaden(id).then(function (r) { if (r) n++; }); }); }, Promise.resolve())
+          .then(function () { melde(n + " " + t("Beispiele geladen,") + " " + (ids.length - n) + " " + t("waren schon da."), ""); });
+      }, "", { id: pre + "-alle" })];
+  }
   function zVorgaenge(main, v) {
     main.append(h("div", { class: "karte held", "data-held": "" },
       h("img", { src: "assets/bild-prisma.webp", alt: "", width: "120", height: "120" }),
       h("div", null, h("h2", { text: appName() }),
         h("p", { class: "gedaempft", text: t("Bedarf erfassen, Umfang schätzen, Angebot drucken — Kundendaten gehen nie hinaus.") }))));
     erinnerungSicherung(main);
-    main.append(h("div", { class: "band", style: "margin-bottom:12px" },
-      knopf("＋ " + t("Neuer Vorgang"), neuerVorgang, "pri", { id: "neuer-vorgang" })));
+    main.append(h("div", { class: "band vorgang-start", style: "margin-bottom:12px" },
+      knopf("＋ " + t("Neuer Vorgang"), neuerVorgang, "pri", { id: "neuer-vorgang" }),
+      h("span", { class: "beispiel-start", "data-beispiel-start": "" }, h("span", { class: "gedaempft klein", text: t("oder ein Beispiel ansehen:") }), beispielSteuerung("vg-beispiel"))));
     var liste = h("div", { class: "karte", "data-vorgangsliste": "" }, h("h2", { text: t("Vorgänge") }));
     if (!S.vorgaenge.length) liste.append(h("p", { class: "gedaempft", text: t("Noch keine Vorgänge.") }));
     S.vorgaenge.forEach(function (x) {
@@ -226,7 +246,7 @@
       liste.append(h("div", { class: "eintrag", "data-vorgang": x.id },
         h("span", { class: "badge kennung", text: x.id }),
         h("div", null, h("b", { text: x.titel || t("(ohne Titel)") }), " ",
-          h("span", { class: "gedaempft klein", text: (x.kunde.firma || "⟦KUNDE-1⟧") + " · " + t("Fassung") + " " + f.nr + (f.unterschrieben ? " ✍" : "") })),
+          h("span", { class: "gedaempft klein", text: (x.kunde.firma || (x.eigenesVorhaben ? t("eigenes Vorhaben") : t("ohne Kunde"))) + " · " + t("Fassung") + " " + f.nr + (f.unterschrieben ? " ✍" : "") })),
         h("div", { class: "band" },
           knopf(x.id === S.aktiv ? t("offen") : t("Öffnen"), function () { S.aktiv = x.id; lsSet(LS.aktiv, x.id); S.fNr = null; S.meldung = null; zeichne(); }, "klein" + (x.id === S.aktiv ? " on" : "")),
           knopf(t("Duplizieren"), function () {
@@ -1158,17 +1178,9 @@
         onchange: function (e) { var c = e.target.value === "" ? null : G.parseEuroToCents(e.target.value); W.pauschaleCent = Number.isFinite(c) ? c : null; einstSpeichern(); zeichne(); } }))));
     main.append(kw);
     /* Beispiele (Stufe 3 § 3c): Auswahl statt eines Knopfs, „Alle laden“, nie ein Doppel */
-    var wahl = h("select", { id: "beispiel-wahl" });
-    WN.beispiel.liste().forEach(function (b) { wahl.append(h("option", { value: b.id, text: nm(b.name) })); });
     var kb = h("div", { class: "karte", "data-beispiele": "" }, h("h2", { text: t("Beispiele") }),
       h("p", { class: "gedaempft klein", text: t("Vier Beispiele aus den eigenen Repos, jedes durch alle drei Stufen, mit Fassungen nach der echten Geschichte und gemessenen Ist-Stunden. Kundendaten sind erfunden. „Boutique“ ist der Testfall (erfundene Daten).") }),
-      h("div", { class: "zeile" }, wahl,
-        knopf(t("Laden"), function () { beispielLaden(wahl.value).then(function (r) { melde(r ? t("Beispiel geladen.") : t("Dieses Beispiel ist schon da — nichts doppelt angelegt."), ""); }); }, "", { id: "beispiel-laden" }),
-        knopf(t("Alle laden"), function () {
-          var ids = WN.beispiel.liste().map(function (b) { return b.id; }), n = 0;
-          ids.reduce(function (pr, id) { return pr.then(function () { return beispielLaden(id).then(function (r) { if (r) n++; }); }); }, Promise.resolve())
-            .then(function () { melde(n + " " + t("Beispiele geladen,") + " " + (ids.length - n) + " " + t("waren schon da."), ""); });
-        }, "", { id: "beispiel-alle" })),
+      h("div", { class: "zeile" }, beispielSteuerung("beispiel")),
       h("ul", { class: "klein gedaempft" }, WN.beispiel.liste().map(function (b) { return h("li", { text: nm(b.name) + " — " + t("Quelle") + ": " + b.quelle }); })));
     main.append(kb);
   }
