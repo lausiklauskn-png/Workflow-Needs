@@ -86,11 +86,17 @@
       s[n].kostenVon = Math.round(s[n].von * fassung.satzCent);
       s[n].kostenBis = Math.round(s[n].bis * fassung.satzCent);
     });
-    s.stundenVon = summeV + s.abstimmung.von + s.puffer.von;
-    s.stundenBis = summeB + s.abstimmung.bis + s.puffer.bis;
-    s.kostenVon = kv + s.firmenanpassung.kostenVon + s.abstimmung.kostenVon + s.puffer.kostenVon;
-    s.kostenBis = kb + s.firmenanpassung.kostenBis + s.abstimmung.kostenBis + s.puffer.kostenBis;
-    s.zuschlag = (ap + pp) / 100;
+    /* Gewährleistung in der Anfangsphase (Stufe 3 § 4f D): Freistunden, „nur kalkuliert“ — intern ein
+       eigener Posten, im Angebot steckt er anteilig in den Preisen (über den Zuschlag); der Kunde sieht nur
+       „inklusive n Stunden Fehlerbehebung“. Fehlt das Feld (Vorgänge vor Stufe 3), ist es 0. */
+    var gw = Math.max(0, zahl(u.gewaehrleistungH) || 0);
+    s.gewaehrleistung = { stunden: gw, kostenVon: Math.round(gw * fassung.satzCent), kostenBis: Math.round(gw * fassung.satzCent) };
+    s.stundenVon = summeV + s.abstimmung.von + s.puffer.von + gw;
+    s.stundenBis = summeB + s.abstimmung.bis + s.puffer.bis + gw;
+    s.kostenVon = kv + s.firmenanpassung.kostenVon + s.abstimmung.kostenVon + s.puffer.kostenVon + s.gewaehrleistung.kostenVon;
+    s.kostenBis = kb + s.firmenanpassung.kostenBis + s.abstimmung.kostenBis + s.puffer.kostenBis + s.gewaehrleistung.kostenBis;
+    var mitteBasis = (summeV + summeB) / 2;
+    s.zuschlag = (ap + pp) / 100 + (gw && mitteBasis > 0 ? gw / mitteBasis : 0);
     s.satzCent = fassung.satzCent;
     return s;
   }

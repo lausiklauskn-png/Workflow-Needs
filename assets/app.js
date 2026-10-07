@@ -23,7 +23,8 @@
     vorgaenge: [], aktiv: lsGet(LS.aktiv), reiter: lsGet(LS.reiter) || "vorgaenge",
     lang: lsGet(LS.lang) === "en" ? "en" : "de", fNr: null,
     einst: Object.assign({ satzCent: 8000, ust: { modus: "regel", satz: 19 }, zeitraum: 24,
-      firma: { name: "", anschrift: "", kontakt: "", steuer: "", bank: "", logo: "" } }, lsJson(LS.einst, {})),
+      firma: { name: "", anschrift: "", kontakt: "", steuer: "", bank: "", logo: "" },
+      wartung: { freistunden: 4, wochen: 8, pauschaleCent: null } }, lsJson(LS.einst, {})),
     tabellen: null, mdOpts: { stunden: true, euro: false }, antwort: null, meldung: null,
   };
   function tabellenLaden() {
@@ -248,7 +249,10 @@
   }
 
   function zVorgangDaten(main, v) {
-    var k = h("div", { class: "karte", "data-vorgang-daten": "" }, h("h2", { text: t("Vorgang") + " " + v.id }));
+    var er = v.erklaerung && v.erklaerung.aktiviert;
+    var k = h("div", { class: "karte", "data-vorgang-daten": "" }, h("div", { class: "bereich-kopf" }, h("h2", { text: t("Vorgang") + " " + v.id }),
+      v.eigenesVorhaben ? null : h("span", { class: "badge" + (er ? "" : " gelb"), "data-erklaerung-status": er ? "aktiviert" : "offen",
+        text: "🔏 " + t("Verschwiegenheitserklärung") + ": " + (er ? t("aktiviert am") + " " + datumText(v.erklaerung.aktiviert) : t("offen")) })));
     k.append(h("label", { class: "feld" }, t("Vorhaben (Titel)"),
       h("input", { value: v.titel, "data-key": "titel", oninput: function (e) { v.titel = e.target.value; merken(v); } })));
     k.append(h("h3", { style: "margin-top:12px", text: t("Kunde") }),
@@ -282,6 +286,7 @@
     }
     k.append(box);
     main.append(k);
+    if (!v.eigenesVorhaben) main.append(rechtsKarte(v, "erklaerung"));
     main.append(anhaengeKarte(v));
   }
 
@@ -401,6 +406,7 @@
       h("div", { class: "fortschritt", style: "margin-top:8px" }, h("i", { style: "width:" + Math.round(n / 18 * 100) + "%" })),
       h("p", { class: "gedaempft klein", text: t("„Bedarfsprotokoll“ geht an den Kunden (nur Freigegebenes). „Bedarfsanalyse“ ist für Sie: alles, samt internen Punkten und Notizen.") })));
     WN.BEREICHE.forEach(function (b) { main.append(bereichKarte(v, f, b, ro)); });
+    main.append(sterneKarte(v, f));
   }
 
   function sichtSchalter(obj, ro, key, v) {
@@ -586,7 +592,9 @@
         h("label", { class: "feld", style: "flex:0 1 150px" }, t("Abstimmung/Doku %"),
           nummer(u.abstimmungPct == null ? 15 : u.abstimmungPct, ro, "abst", function (n) { u.abstimmungPct = n == null ? 15 : n; }, v, u.abstimmungPct != null && u.abstimmungPct !== 15)),
         h("label", { class: "feld", style: "flex:0 1 150px" }, t("Puffer %"),
-          nummer(u.pufferPct == null ? 20 : u.pufferPct, ro, "puffer", function (n) { u.pufferPct = n == null ? 20 : n; }, v, u.pufferPct != null && u.pufferPct !== 20))));
+          nummer(u.pufferPct == null ? 20 : u.pufferPct, ro, "puffer", function (n) { u.pufferPct = n == null ? 20 : n; }, v, u.pufferPct != null && u.pufferPct !== 20)),
+        h("label", { class: "feld", style: "flex:0 1 220px" }, t("Gewährleistung in der Anfangsphase h (Freistunden, eingerechnet)"),
+          nummer(u.gewaehrleistungH || 0, ro, "gewaehr", function (n) { u.gewaehrleistungH = n || 0; }, v))));
     links.append(gew);
 
     /* Ergebnis */
@@ -694,7 +702,8 @@
       h("tr", null, h("td", { text: t("Bausteine") }), h("td", { class: "r", text: std(s.bausteineVon) + "–" + std(s.bausteineBis) + " h" })),
       h("tr", null, h("td", { text: t("Firmenanpassung") }), h("td", { class: "r", text: std(s.firmenanpassung.von) + "–" + std(s.firmenanpassung.bis) + " h" })),
       h("tr", null, h("td", { text: t("Abstimmung/Doku") + " " + s.abstimmung.pct + " %" }), h("td", { class: "r", text: std(s.abstimmung.von) + "–" + std(s.abstimmung.bis) + " h" })),
-      h("tr", null, h("td", { text: t("Puffer") + " " + s.puffer.pct + " %" }), h("td", { class: "r", text: std(s.puffer.von) + "–" + std(s.puffer.bis) + " h" })));
+      h("tr", null, h("td", { text: t("Puffer") + " " + s.puffer.pct + " %" }), h("td", { class: "r", text: std(s.puffer.von) + "–" + std(s.puffer.bis) + " h" })),
+      s.gewaehrleistung.stunden ? h("tr", { "data-gewaehr-zeile": "" }, h("td", { text: t("Gewährleistung in der Anfangsphase (eingerechnet)") }), h("td", { class: "r", text: std(s.gewaehrleistung.stunden) + " h" })) : null);
     k.append(tab);
     var sicht = h("div", { style: "margin-top:10px", "data-sichten": "" }, h("h3", { text: t("Drei Sichten — Orientierung, nicht Messung") }),
       h("p", { class: "klein" }, h("b", { text: t("kostenbasiert") + ": " }), euroG(si.kosten.von) + "–" + euroG(si.kosten.bis)));
@@ -841,6 +850,7 @@
         if (!confirm(t("Fassung einfrieren? Danach ist sie nur noch zu lesen; Änderungen ergeben eine neue Fassung."))) return;
         F.unterschreiben(v, f, S.einst.ust); merken(v); melde(t("Fassung") + " " + f.nr + " " + t("ist unterschrieben und eingefroren."), "");
       }, "", { id: "unterschreiben" }) : null));
+    if (!v.eigenesVorhaben) { main.append(rechtsKarte(v, "vereinbarung")); main.append(rechtsKarte(v, "wartung")); }
     /* Übergabe an WorkFloh — nur aus der Whitelist (assets/kern/uebergabe.js → aussen.js) */
     var nA = (v.anhaenge || []).filter(function (x) { return x.blob; }).length;
     main.append(h("div", { class: "karte", "data-uebergabe": "", style: "margin-top:12px" },
@@ -850,7 +860,7 @@
       h("div", { class: "band" }, knopf("📤 " + t("Auftragsdatei speichern"), function () {
         var auf = WN.uebergabe.auftrag(v, f, S.einst, S.tabellen);
         WN.uebergabe.dateien(v.anhaenge).then(function (fs) {
-          auf.files = fs;
+          auf.files = fs.concat(WN.uebergabe.rechtsDateien(v, rechtCtx()));
           laden(new Blob([JSON.stringify(WN.uebergabe.buendel([auf]), null, 1)], { type: "application/json" }), WN.uebergabe.dateiname(v, f));
           melde(t("Auftragsdatei gespeichert. In WorkFloh: „📥 Importieren“ und diese Datei wählen. Zweimal eingelesen wird aktualisiert, nicht verdoppelt."), "");
         }, function () { melde(t("Die Auftragsdatei ließ sich nicht bauen."), "bad"); });
@@ -1132,9 +1142,32 @@
         h("input", { type: "number", min: "1", step: "1", value: E.zeitraum, "data-key": "zeitraum", onchange: function (e) { var n = zahl(e.target.value); if (n) { E.zeitraum = n; einstSpeichern(); } zeichne(); } })));
     main.append(kp);
     main.append(sicherungKarte());
-    main.append(h("div", { class: "karte" }, h("h2", { text: t("Beispiel") }),
-      h("p", { class: "gedaempft klein", text: t("Der Testfall „Boutique“ (erfundene Daten): F1 Internetseite, F2 zweite Seite, F3 Warenwirtschaft dazu, Newsletter entfällt.") }),
-      knopf(t("Beispiel-Vorgang laden"), function () { beispielLaden(); melde(t("Beispiel geladen."), ""); }, "", { id: "beispiel-laden" })));
+    var kw = h("div", { class: "karte" }, h("h2", { text: t("Wartung (Vorgaben für neue Vorgänge und den Wartungsvertrag)") }),
+      h("p", { class: "gedaempft klein", text: t("Freistunden zur Fehlerbehebung in der Anfangsphase sind in der Schätzung eingerechnet; der Kunde sieht nur „inklusive n Stunden“.") }));
+    var W = E.wartung = E.wartung || { freistunden: 4, wochen: 8, pauschaleCent: null };
+    kw.append(h("div", { class: "zeile" },
+      h("label", { class: "feld", style: "max-width:220px" }, t("Freistunden (Anfangsphase)"), h("input", { type: "number", min: "0", step: "0.5", id: "wartung-frei", value: W.freistunden, "data-key": "wartung-frei",
+        onchange: function (e) { var n = zahl(e.target.value); if (n != null && n >= 0) { W.freistunden = n; einstSpeichern(); } zeichne(); } })),
+      h("label", { class: "feld", style: "max-width:220px" }, t("in den ersten … Wochen nach der Abnahme"), h("input", { type: "number", min: "0", step: "1", id: "wartung-wochen", value: W.wochen, "data-key": "wartung-wochen",
+        onchange: function (e) { var n = zahl(e.target.value); if (n != null && n >= 0) { W.wochen = n; einstSpeichern(); } zeichne(); } })),
+      h("label", { class: "feld", style: "max-width:260px" }, t("Jahrespauschale ab dem 3. Jahr (€ netto, leer = nach Angebot)"), h("input", { type: "number", min: "0", step: "1", id: "wartung-pauschale",
+        value: W.pauschaleCent == null ? "" : W.pauschaleCent / 100, "data-key": "wartung-pauschale",
+        onchange: function (e) { var c = e.target.value === "" ? null : G.parseEuroToCents(e.target.value); W.pauschaleCent = Number.isFinite(c) ? c : null; einstSpeichern(); zeichne(); } }))));
+    main.append(kw);
+    /* Beispiele (Stufe 3 § 3c): Auswahl statt eines Knopfs, „Alle laden“, nie ein Doppel */
+    var wahl = h("select", { id: "beispiel-wahl" });
+    WN.beispiel.liste().forEach(function (b) { wahl.append(h("option", { value: b.id, text: nm(b.name) })); });
+    var kb = h("div", { class: "karte", "data-beispiele": "" }, h("h2", { text: t("Beispiele") }),
+      h("p", { class: "gedaempft klein", text: t("Vier Beispiele aus den eigenen Repos, jedes durch alle drei Stufen, mit Fassungen nach der echten Geschichte und gemessenen Ist-Stunden. Kundendaten sind erfunden. „Boutique“ ist der Testfall (erfundene Daten).") }),
+      h("div", { class: "zeile" }, wahl,
+        knopf(t("Laden"), function () { beispielLaden(wahl.value).then(function (r) { melde(r ? t("Beispiel geladen.") : t("Dieses Beispiel ist schon da — nichts doppelt angelegt."), ""); }); }, "", { id: "beispiel-laden" }),
+        knopf(t("Alle laden"), function () {
+          var ids = WN.beispiel.liste().map(function (b) { return b.id; }), n = 0;
+          ids.reduce(function (pr, id) { return pr.then(function () { return beispielLaden(id).then(function (r) { if (r) n++; }); }); }, Promise.resolve())
+            .then(function () { melde(n + " " + t("Beispiele geladen,") + " " + (ids.length - n) + " " + t("waren schon da."), ""); });
+        }, "", { id: "beispiel-alle" })),
+      h("ul", { class: "klein gedaempft" }, WN.beispiel.liste().map(function (b) { return h("li", { text: nm(b.name) + " — " + t("Quelle") + ": " + b.quelle }); })));
+    main.append(kb);
   }
   /* ── Verschlüsselte Sicherung (Brief Stufe 2, Punkt 2; Muster Sende-Prüfer) — Rechnen in assets/kern/sicherung.js ── */
   var SI = WN.sicherung, SPAETER = "workflowneeds_sicherung_spaeter", gewaehlt = null;
@@ -1228,14 +1261,113 @@
       knopf(t("Später"), function () { try { sessionStorage.setItem(SPAETER, "1"); } catch (_e) {} p.remove(); }, "klein", { id: "sicherung-spaeter" }));
     main.append(p);
   }
-  function beispielLaden() {
+  /* Lädt ein Beispiel (Vorgabe „boutique“). Liegt es schon da (gleiches bid), passiert nichts → false. */
+  function beispielLaden(id) {
+    id = id || "boutique";
+    var b = WN.beispiel.liste().filter(function (x) { return x.id === id; })[0];
+    if (!b || S.vorgaenge.some(function (x) { return WN.beispiel.bidVon(x) === id; })) return Promise.resolve(false);
     var nr = naechsteNr();
-    var v = WN.beispiel.boutique(nr, S.einst);
+    var v = b.bauen(nr, S.einst);
     v.id = "V-" + F.heute().slice(0, 4) + "-" + ("000" + nr).slice(-4);
     v.fassungen.forEach(function (f) { f.angebot.nummer = "AN-" + v.id.slice(2); });
+    WN.aussen.RECHT_ARTEN.forEach(function (a) { if (v[a] && v[a].stand) v[a].stand.vorgang = v.id; });
     S.vorgaenge.unshift(v); S.aktiv = v.id; lsSet(LS.aktiv, v.id); S.fNr = null;
     /* Merker erst, wenn der Vorgang wirklich in IndexedDB liegt */
-    return dbPut(v).then(function () { lsSet(LS.beispiel, "1"); }).catch(function () {});
+    return dbPut(v).then(function () { lsSet(LS.beispiel, "1"); return true; }).catch(function () { return true; });
+  }
+
+  /* ════ Rechtsblätter (Stufe 3 § 4) — Rechnen und Whitelist in assets/kern/aussen.js ════
+     ⚠ Entwürfe, kein Rechtsrat: jede Karte sagt „vor Verwendung prüfen lassen“. */
+  var RECHT_NAME = { erklaerung: "Verschwiegenheits- und Datenschutzerklärung", vereinbarung: "Vereinbarung zu Zahlung und Nutzungsrechten", wartung: "Wartungsvertrag" };
+  function rechtCtx() { return { firma: S.einst.firma, ust: S.einst.ust, tabellen: S.tabellen, zeitraum: S.einst.zeitraum, wartung: S.einst.wartung }; }
+  function unterschriftFeld(v, r, key, label, fertig) {
+    var c = h("canvas", { width: "600", height: "150", class: "unterschrift", "data-unterschrift": key, "aria-label": label });
+    var g2 = c.getContext && c.getContext("2d");
+    if (r[key] && g2) { var img = new Image(); img.onload = function () { g2.drawImage(img, 0, 0); }; img.src = r[key]; }
+    if (!fertig && g2) {
+      var zieht = false, last = null;
+      var pos = function (e) { var b = c.getBoundingClientRect(); return [(e.clientX - b.left) * c.width / b.width, (e.clientY - b.top) * c.height / b.height]; };
+      c.addEventListener("pointerdown", function (e) { zieht = true; last = pos(e); try { c.setPointerCapture(e.pointerId); } catch (_e) {} e.preventDefault(); });
+      c.addEventListener("pointermove", function (e) {
+        if (!zieht) return;
+        var q = pos(e); g2.lineWidth = 3; g2.lineCap = "round"; g2.strokeStyle = "#000";
+        g2.beginPath(); g2.moveTo(last[0], last[1]); g2.lineTo(q[0], q[1]); g2.stroke(); last = q;
+      });
+      ["pointerup", "pointercancel"].forEach(function (ty) { c.addEventListener(ty, function () {
+        if (!zieht) return; zieht = false; r[key] = c.toDataURL("image/png"); merken(v); zeichne();
+      }); });
+    }
+    return h("div", { class: "unterschrift-feld" }, h("span", { class: "klein", text: label }), c,
+      fertig ? null : knopf("✕ " + t("Unterschrift löschen"), function () { delete r[key]; merken(v); zeichne(); }, "klein", { "data-unterschrift-weg": key, disabled: !r[key] }));
+  }
+  function rechtsKarte(v, art) {
+    var r = v[art] = v[art] || {};
+    var fertig = !!r.aktiviert;
+    var k = h("div", { class: "karte", "data-recht": art, "data-recht-status": fertig ? "aktiviert" : "offen" },
+      h("div", { class: "bereich-kopf" }, h("h2", { text: (art === "wartung" ? "🛠 " : art === "vereinbarung" ? "🤝 " : "🔏 ") + t(RECHT_NAME[art]) }),
+        h("span", { class: "badge" + (fertig ? "" : " gelb"), text: fertig ? t("aktiviert am") + " " + datumText(r.aktiviert) + (r.papier ? " · " + t("auf Papier") : "") : t("offen") })),
+      h("div", { class: "hinweis warn klein", "data-entwurf": "" }, "⚠ " + t("Entwurf, kein Rechtsrat — vor Verwendung prüfen lassen.")));
+    if (art === "erklaerung") k.append(h("p", { class: "gedaempft klein", text: t("Ihre Erklärung an den Kunden, vor oder zu Beginn des Bedarfsgesprächs: was mit seinen Angaben geschieht. Beide unterschreiben — Sie verpflichten sich, der Kunde bestätigt den Erhalt.") }));
+    if (art === "vereinbarung") k.append(h("p", { class: "gedaempft klein", text: t("Zahlung erst nach Abnahme, je Baustein; Nutzungsrecht zeitlich unbegrenzt, Änderungen nur durch Sie; ohne Zahlung Bedienungssperre (nur vereinbart, die Daten bleiben); Aktualisierungen zwei Jahre kostenlos.") }));
+    if (art === "wartung") k.append(h("p", { class: "gedaempft klein", text: t("Das einzige Blatt mit dem Stundensatz (Ihre ausdrückliche Freigabe). Freistunden und Jahrespauschale kommen aus den Einstellungen.") }));
+    if (art !== "erklaerung") {
+      var b = WN.aussen.rechtsblatt(v, art, rechtCtx());
+      k.append(h("p", { class: "klein", "data-recht-bezug": String(b.fassung) }, t("bezieht sich auf Angebot") + " " + b.text.bezug.nummer + ", " + t("Fassung") + " " + b.fassung));
+    }
+    k.append(h("div", { class: "zeile" },
+      unterschriftFeld(v, r, "unterschriftBetrieb", t("Unterschrift Auftragnehmer"), fertig),
+      unterschriftFeld(v, r, "unterschriftKunde", t("Unterschrift Kunde"), fertig)));
+    k.append(h("label", { class: "schalter" }, h("input", { type: "checkbox", checked: !!r.papier, disabled: fertig, "data-papier": art,
+      onchange: function (e) { r.papier = e.target.checked; merken(v); zeichne(); } }), t("Auf Papier unterschrieben (statt in der App)")));
+    var mail = mailtoRecht(v, art);
+    k.append(h("div", { class: "band", style: "margin-top:8px" },
+      knopf("👁 " + t("Vorschau"), function () { vorschau(art); }, "", { "data-recht-vorschau": art }),
+      knopf("🖨 " + (fertig ? t("Drucken") : t("Zum Unterschreiben drucken")), function () { drucke(art); }, "", { "data-recht-druck": art }),
+      fertig ? null : knopf("✓ " + t("Aktivieren"), function () {
+        if (!WN.aussen.aktivieren(v, art, rechtCtx())) { melde(t("Erst beide Unterschriften — oder „auf Papier unterschrieben“ setzen."), "warn"); return; }
+        merken(v); jetztSpeichern(); zeichne(); vorschau(art);
+      }, "pri", { "data-recht-aktivieren": art, disabled: !WN.aussen.kannAktivieren(v, art) }),
+      fertig ? h("a", { class: "btn", href: mail, "data-recht-mail": art }, "✉ " + t("Per E-Mail")) : null));
+    if (fertig) k.append(h("p", { class: "gedaempft klein", text: t("Eingefroren: Text, Datum und Unterschriften bleiben, wie sie sind. Die App verschickt keine Mail selbst — „Per E-Mail“ öffnet Ihr Mailprogramm mit dem Text; das PDF („Als PDF speichern“ im Druckdialog) hängen Sie von Hand an.") }));
+    return k;
+  }
+  function mailtoRecht(v, art) {
+    var b = WN.aussen.rechtsblatt(v, art, rechtCtx()), m = WN.aussen.alsText(b);
+    return "mailto:" + encodeURIComponent(b.kunde.mail || "") + "?subject=" + encodeURIComponent(m.betreff) + "&body=" + encodeURIComponent(m.text);
+  }
+
+  /* ════ Sterne der Mitarbeiter (Stufe 3 § 4f A) — zuerst auf Papier, Klaus trägt nach ════ */
+  function sterneKarte(v, f) {
+    var bed = BD.bedarfe(f.protokoll);
+    var zB = BD.sterneZusammen(v, "bedarf"), zA = BD.sterneZusammen(v, "abnahme");
+    var k = h("div", { class: "karte", "data-sterne": String((v.sterne || []).length) }, h("h2", { text: "⭐ " + t("Bewertung der Mitarbeiter im Fachbereich") }),
+      h("p", { class: "gedaempft klein", text: t("Zwei Zeitpunkte: beim Bedarf (wie wichtig für die Arbeit?) und bei der Abnahme (wie gut erfüllt?). Zuerst auf Papier ankreuzen lassen, dann hier nachtragen. Erfasst werden Fachbereich und Kürzel — kein Name nötig. Grundlage des Abnahme-Gesprächs, keine Rechen-Automatik.") }),
+      h("div", { class: "band" },
+        knopf("🖨 " + t("Sternebogen beim Bedarf"), function () { drucke("sterne-bedarf"); }, "", { id: "druck-sterne-bedarf" }),
+        knopf("🖨 " + t("Sternebogen bei der Abnahme"), function () { drucke("sterne-abnahme"); }, "", { id: "druck-sterne-abnahme" })));
+    if (!bed.length) { k.append(h("p", { class: "gedaempft klein", text: t("Erst in Bereich 6 einen Bedarf eintragen.") })); return k; }
+    var tb = h("table", { class: "klein" }, h("tr", null, h("th", { text: t("Kennung") }), h("th", { text: t("Bedarf") }), h("th", { class: "r", text: t("beim Bedarf") }), h("th", { class: "r", text: t("bei der Abnahme") })));
+    var zelle = function (z) { return z ? "★ " + std(z.schnitt) + " (" + z.anzahl + ")" : "–"; };
+    bed.forEach(function (e) { tb.append(h("tr", { "data-sterne-zeile": e.id }, h("td", { text: e.id }), h("td", { text: e.text }), h("td", { class: "r", text: zelle(zB[e.id]) }), h("td", { class: "r", text: zelle(zA[e.id]) }))); });
+    k.append(h("div", { class: "tabelle-huelle" }, tb));
+    var wahl = h("select", { id: "sterne-kennung" }); bed.forEach(function (e) { wahl.append(h("option", { value: e.id, text: e.id })); });
+    var zp = h("select", { id: "sterne-zeitpunkt" }, h("option", { value: "bedarf", text: t("beim Bedarf") }), h("option", { value: "abnahme", text: t("bei der Abnahme") }));
+    var ber = h("input", { id: "sterne-bereich", placeholder: t("Fachbereich, z. B. Verkauf"), class: "mittel" });
+    var kz = h("input", { id: "sterne-kuerzel", placeholder: t("Kürzel (optional)"), class: "kurz" });
+    var seg = h("span", { class: "seg", "data-sterne-wahl": "" });
+    [1, 2, 3, 4, 5].forEach(function (n) {
+      seg.append(h("button", { type: "button", text: "★" + n, "data-stern": String(n), "aria-label": n + " " + t("Sterne"), onclick: function () {
+        var e = BD.sterneDazu(v, { zeitpunkt: zp.value, kennung: wahl.value, bereich: ber.value, kuerzel: kz.value, sterne: n });
+        if (e) { merken(v); zeichne(); }
+      } }));
+    });
+    k.append(h("div", { class: "zeile" }, wahl, zp, ber, kz, seg));
+    (v.sterne || []).forEach(function (x) {
+      k.append(h("div", { class: "eintrag", "data-stern-eintrag": x.id }, h("span", { class: "badge kennung", text: x.id }),
+        h("span", { text: x.kennung + " · " + t(x.zeitpunkt === "abnahme" ? "bei der Abnahme" : "beim Bedarf") + " · " + "★".repeat(x.sterne) + " · " + [x.bereich, x.kuerzel].filter(Boolean).join(" ") }),
+        knopf("✕", function () { v.sterne = v.sterne.filter(function (y) { return y !== x; }); merken(v); zeichne(); }, "klein gefahr", { "aria-label": t("Bewertung entfernen") })));
+    });
+    return k;
   }
 
   /* ════ Druckblätter — nur aus den Whitelist-Objekten (assets/kern/aussen.js) ════ */
@@ -1254,6 +1386,11 @@
   function kundenBlock(k) {
     return [k.firma, k.ansprechpartner, k.anschrift].filter(Boolean).join("\n");
   }
+  /* „für: …“ — ohne Kundendaten eine leere Schreiblinie, nie ein Platzhalter (§ 1b) */
+  function fuer(k, mitWort) {
+    var txt = kundenBlock(k);
+    return [mitWort === false ? "" : t("für") + ": ", txt ? txt : h("span", { class: "schreiblinie", "data-schreiblinie": "", "aria-label": t("von Hand ausfüllen") }), "\n"];
+  }
   function unterschriften(a, b) {
     return h("div", { class: "unterschriften" },
       h("div", null, h("b", { text: a }), h("br"), t("Ort, Datum, Unterschrift")),
@@ -1263,7 +1400,7 @@
     var b = h("article", { class: "blatt", "data-blatt": "protokoll" });
     b.append(h("div", { class: "kopfzeile" },
       h("div", null, h("h1", { text: t("Bedarfsprotokoll") }),
-        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : "") + t("für") + ": " + kundenBlock(d.kunde) + "\n" +
+        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : ""), fuer(d.kunde),
           t("Datum") + ": " + datumText(d.datum) + " · " + t("Fassung") + " " + d.fassung + " · " + d.vorgang)),
       absender(d.firma)));
     b.append(h("p", { class: "klein", text: t("Dieses Protokoll beschreibt, was benötigt wird und warum — nicht die technische Umsetzung.") }));
@@ -1282,11 +1419,13 @@
           if (u.text) teile.push(u.text);
           txt += ": " + teile.join(", ") + " (" + t("Angabe des Kunden") + ")";
         }
+        if (e.sterne) txt += " — ★ " + std(e.sterne.schnitt) + " (" + e.sterne.anzahl + " " + t("Bewertungen der Mitarbeiter") + ")";
         if (x.nr === 18 && (e.wer || e.bis)) txt += " — " + [e.wer ? t("klärt") + " " + e.wer : "", e.bis ? t("bis") + " " + datumText(e.bis) : ""].filter(Boolean).join(" ");
         ul.append(h("li", null, h("span", { class: "kenn", text: e.id }), " ", txt));
       });
       b.append(ul);
     });
+    if (d.erklaerungVom) b.append(h("p", { class: "klein", "data-erklaerung-satz": "", text: t("Es gilt die Verschwiegenheits- und Datenschutzerklärung vom") + " " + datumText(d.erklaerungVom) + "." }));
     b.append(h("p", { class: "klein", style: "margin-top:18px", text: t("Bestätigt durch") + ":" }));
     b.append(unterschriften(t("Auftraggeber"), t("Auftragnehmer")));
     b.append(fuss(d.firma));
@@ -1296,7 +1435,7 @@
     var b = h("article", { class: "blatt", "data-blatt": "analyse" });
     b.append(h("div", { class: "kopfzeile" },
       h("div", null, h("h1", { text: t("Bedarfsanalyse") }),
-        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : "") + kundenBlock(d.kunde) + "\n" + datumText(d.datum) + " · " + t("Fassung") + " " + d.fassung + " · " + d.vorgang)),
+        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : ""), fuer(d.kunde, false), datumText(d.datum) + " · " + t("Fassung") + " " + d.fassung + " · " + d.vorgang)),
       absender(d.firma)));
     b.append(h("div", { class: "intern-titel", text: t("Bedarfsanalyse — INTERN, nicht an den Kunden") }));
     WN.BEREICHE.forEach(function (def) {
@@ -1347,7 +1486,7 @@
     var b = h("article", { class: "blatt", "data-blatt": "angebot" });
     b.append(h("div", { class: "kopfzeile" },
       h("div", null, h("h1", { text: t("Angebot") + " " + d.nummer }),
-        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : "") + t("für") + ": " + kundenBlock(d.kunde) + "\n" +
+        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : ""), fuer(d.kunde),
           t("Datum") + ": " + datumText(d.datum) + (d.gueltigBis ? " · " + t("gültig bis") + " " + datumText(d.gueltigBis) : ""))),
       absender(d.firma)));
     b.append(h("p", { class: "klein", text: t("Grundlage ist das Bedarfsprotokoll, Fassung") + " " + d.fassung + "." }));
@@ -1361,6 +1500,7 @@
     b.append(h("ol", { class: "klein" }, h("li", { text: t("Bedarfsprotokoll und Angebot") }), h("li", { text: t("Bau") + " — " + t("etwa") + " " + d.phasen.bauWochen + " " + t("Woche(n)") }),
       h("li", { text: t("Praxistest bei Ihnen") + " — " + t("etwa") + " " + d.phasen.testWochen + " " + t("Woche(n)") }), h("li", { text: t("Abnahme") }), h("li", { text: t("auf Wunsch: Betrieb und Pflege") })));
     b.append(h("p", { class: "klein", text: t("Alle Zeitangaben sind Schätzungen.") }));
+    if (d.gewaehrleistung) b.append(h("p", { class: "klein", "data-gewaehr-satz": "", text: t("Inklusive") + " " + std(d.gewaehrleistung.umfang) + " " + t("Stunden Fehlerbehebung in der Anfangsphase nach der Abnahme.") }));
     if (d.zahlung || d.zahlungNachTest) b.append(h("p", { class: "klein" }, h("b", { text: t("Zahlung") + ": " }), [d.zahlung, d.zahlungNachTest ? t("Zahlung nach bestandenem Praxistest.") : ""].filter(Boolean).join(" ")));
     b.append(unterschriften(t("Auftraggeber"), t("Auftragnehmer")));
     b.append(fuss(d.firma));
@@ -1371,7 +1511,7 @@
     var b = h("article", { class: "blatt", "data-blatt": "nachtrag" });
     b.append(h("div", { class: "kopfzeile" },
       h("div", null, h("h1", { text: t("Nachtrag zu") + " " + d.nummer + " (" + t("Fassung") + " " + d.fassungNeu + ")" }),
-        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : "") + t("für") + ": " + kundenBlock(d.kunde) + "\n" + t("Datum") + ": " + datumText(d.datum))),
+        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : ""), fuer(d.kunde), t("Datum") + ": " + datumText(d.datum))),
       absender(d.firma)));
     if (d.anlass) b.append(h("p", null, h("b", { text: t("Anlass") + ": " }), d.anlass));
     b.append(h("h2", { text: t("Was sich ändert") + " (" + t("Fassung") + " " + d.fassungAlt + " → " + d.fassungNeu + ")" }));
@@ -1397,10 +1537,48 @@
     b.append(fuss(d.firma));
     return b;
   }
+  function blattRecht(d) {
+    var b = h("article", { class: "blatt", "data-blatt": d.art, lang: "de" });
+    b.append(h("div", { class: "kopfzeile" },
+      h("div", null, h("h1", { text: d.titel }),
+        h("div", { class: "meta", style: "white-space:pre-line" }, (d.vorhaben ? d.vorhaben + "\n" : ""), fuer(d.kunde),
+          (d.fassung ? "Angebot " + d.text.bezug.nummer + " · Fassung " + d.fassung + " · " : "") + d.vorgang)),
+      absender(d.firma)));
+    b.append(h("p", { text: d.text.einleitung }));
+    d.text.abschnitte.forEach(function (a) {
+      b.append(h("h2", { text: a.nr + ". " + a.titel }), h("p", { text: a.text }));
+      if (a.tabelle && a.tabelle.length) {
+        var tb = h("table", null, h("tr", null, h("th", { text: "Kennung" }), h("th", { text: "Leistung" }), h("th", { text: "deckt Bedarf" }), h("th", { class: "r", text: "Netto" })));
+        a.tabelle.forEach(function (z) { tb.append(h("tr", null, h("td", { text: z.kennung }), h("td", { text: z.leistung }), h("td", { text: z.deckt || "–" }), h("td", { class: "r", text: G.formatEuro(z.nettoCent, "de") }))); });
+        b.append(tb);
+      }
+    });
+    if (d.text.schluss) b.append(h("p", { text: d.text.schluss }));
+    var feld = function (bild, txt) { return h("div", null, bild ? h("img", { src: bild, alt: "", class: "unterschrift-bild", "data-unterschrift-bild": "" }) : null, h("b", { text: txt }), h("br"), "Ort, Datum, Unterschrift"); };
+    b.append(h("div", { class: "unterschriften" }, feld(d.unterschriftBetrieb, d.text.links), feld(d.unterschriftKunde, d.text.rechts)));
+    b.append(h("p", { class: "klein", "data-recht-stand": d.aktiviert ? "aktiviert" : "offen", text: (d.aktiviert ? "Unterschrieben" + (d.papier ? " auf Papier" : "") + " am " + datumText(d.aktiviert) + " · " : "") + "Textfassung " + d.textFassung + " (" + datumText(d.textStand) + ")" }));
+    b.append(fuss(d.firma));
+    return b;
+  }
+  function blattSterne(d) {
+    var b = h("article", { class: "blatt", "data-blatt": "sternebogen" });
+    b.append(h("div", { class: "kopfzeile" },
+      h("div", null, h("h1", { text: t(d.zeitpunkt === "abnahme" ? "Bewertung bei der Abnahme" : "Bewertung des Bedarfs") }),
+        h("div", { class: "meta", style: "white-space:pre-line" }, (d.titel ? d.titel + "\n" : ""), fuer(d.kunde), t("Fassung") + " " + d.fassung + " · " + d.vorgang)),
+      absender(d.firma)));
+    b.append(h("p", { class: "klein", text: t(d.zeitpunkt === "abnahme" ? "Wie gut erfüllt das Ergebnis diesen Bedarf? Bitte je Zeile 1 bis 5 Sterne ankreuzen." : "Wie wichtig ist dieser Bedarf für Ihre Arbeit? Bitte je Zeile 1 bis 5 Sterne ankreuzen.") }));
+    b.append(h("p", null, t("Fachbereich") + ": ", h("span", { class: "schreiblinie", style: "min-width:40%" }), "  " + t("Kürzel") + ": ", h("span", { class: "schreiblinie", style: "min-width:15%" })));
+    var tb = h("table", null, h("tr", null, h("th", { text: t("Kennung") }), h("th", { text: t("Bedarf") }), h("th", { text: "☆ 1 · 2 · 3 · 4 · 5" })));
+    d.bedarfe.forEach(function (e) { tb.append(h("tr", null, h("td", { text: e.id }), h("td", { text: e.text }), h("td", { class: "sterne-ankreuzen", text: "☐1 ☐2 ☐3 ☐4 ☐5" }))); });
+    b.append(tb, fuss(d.firma));
+    return b;
+  }
   function blattBauen(art, opts) {
     var v = aktiverVorgang(), f = sichtFassung(v);
     if (art === "protokoll") { var d = WN.aussen.kundenProtokoll(v, f, S.einst.firma); return { blatt: blattProtokoll(d), aus: d.ausgeblendet }; }
     if (art === "analyse") return { blatt: blattAnalyse(WN.aussen.analyseIntern(v, f, S.einst.firma, S.einst.ust, S.tabellen, S.einst.zeitraum, S.lang)) };
+    if (WN.aussen.RECHT_ARTEN.indexOf(art) >= 0) return { blatt: blattRecht(WN.aussen.rechtsblatt(v, art, rechtCtx())), recht: true };
+    if (art === "sterne-bedarf" || art === "sterne-abnahme") return { blatt: blattSterne(WN.aussen.sterneBogenExtern(v, f, S.einst.firma, art.slice(7))) };
     if (art === "angebot") return { blatt: blattAngebot(WN.aussen.angebotExtern(v, f, S.einst.firma, S.einst.ust, S.tabellen, S.einst.zeitraum, S.lang)) };
     if (art === "nachtrag") {
       var alt = v.fassungen.filter(function (x) { return x.nr === opts.alt; })[0], neu = v.fassungen.filter(function (x) { return x.nr === opts.neu; })[0];
@@ -1421,7 +1599,10 @@
     var kopf = h("div", { class: "vorschau-kopf" },
       h("b", { text: t("Vorschau — genau das, was gedruckt wird") }),
       art === "protokoll" ? h("span", { class: "badge intern", "data-ausgeblendet": String(r.aus), text: r.aus + " " + t("Punkte sind ausgeblendet") }) : null,
-      h("div", { class: "band" }, knopf("🖨 " + t("Drucken / als PDF"), function () { dlg.close(); drucke(art, opts); }, "pri klein"), knopf("✕", function () { dlg.close(); }, "klein", { "aria-label": t("Schließen") })));
+      r.recht ? h("span", { class: "badge gelb", "data-entwurf": "", text: "⚠ " + t("Entwurf, kein Rechtsrat — vor Verwendung prüfen lassen.") }) : null,
+      h("div", { class: "band" }, knopf("🖨 " + t("Drucken / als PDF"), function () { dlg.close(); drucke(art, opts); }, "pri klein"),
+        r.recht && aktiverVorgang()[art] && aktiverVorgang()[art].aktiviert ? h("a", { class: "btn klein", href: mailtoRecht(aktiverVorgang(), art), "data-vorschau-mail": "" }, "✉ " + t("Per E-Mail")) : null,
+        knopf("✕", function () { dlg.close(); }, "klein", { "aria-label": t("Schließen") })));
     dlg.replaceChildren(kopf, h("div", { class: "vorschau-papier" }, r.blatt));
     dlg.dataset.art = art;
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");

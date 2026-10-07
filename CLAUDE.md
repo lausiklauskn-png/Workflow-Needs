@@ -37,14 +37,14 @@ das „weggelassen", nicht „null"), `verdeckt: ja|nein`. Der Stundensatz steht
 | `assets/kern/bedarf.js` | die 18 Bereiche, Kennungen `B-nn`/`O-nn`, Klaus' Definition wörtlich |
 | `assets/kern/rechnen.js` | Schätzung, Satz-Ebenen, USt, Kosten-Nutzen, Grenzlinie, Phasen, Positionen |
 | `assets/kern/fassungen.js` | Vorgang, Fassung, Unterschreiben (friert Satz + USt ein), Vergleich, Kundenfeld-Platzhalter |
-| `assets/kern/aussen.js` | **Whitelist** für Bedarfsprotokoll, Angebot, Nachtrag (Muster: BookLedgerPro `externesAngebot`) |
+| `assets/kern/aussen.js` | **Whitelist** für Bedarfsprotokoll, Angebot, Nachtrag, Rechtsblätter (Erklärung, Vereinbarung, Wartung) und Sternebogen (Muster: BookLedgerPro `externesAngebot`) |
 | `assets/kern/bauauftrag.js` | MD erzeugen (Modul 25 + letzte Sicherung), einlesen, Platzhalter aufdecken |
 | `assets/kern/sicherung.js` | verschlüsselte Sicherung: verschließen, öffnen, zusammenführen (fügt hinzu, überschreibt nie), Anhänge ⟷ base64, Erinnerung |
 | `assets/kern/uebergabe.js` | 📤 Auftragsdatei für Mein WorkFloh / Tomys Hub — **nur aus `aussen.angebotExtern`** |
 | `assets/schluesseltresor.js` | **byte-1:1 aus dem Sende-Prüfer** (`74af186`, aus kim-hub-company `1a4528d`), `TRESOR_SHA` in `tests/kern.mjs`. Nie hier abwandeln |
 | `impressum.html` · `datenschutz.html` | wie im Auslieferungsprüfer, echte Angaben nach § 5 DDG — nie durch Platzhalter ersetzen |
 | `werbung.html` | Werbeseite mit `icons/werbung-1200.jpg` (nicht im Vorrat) · `docs/MARKTPLATZ_EINTRAG.md` |
-| `assets/daten/*.js` | Baustein-Katalog, Faktoren, Markt, Kalibrierung, Beispiel „Boutique" |
+| `assets/daten/*.js` | Baustein-Katalog, Faktoren, Markt, Kalibrierung, Beispiel „Boutique“ (Testfall) und Register; seit Stufe 3 `beispiel-tomys/-psb/-alis/-eigene.js` |
 | `assets/app.js` · `app.css` · `texte.js` | Oberfläche, Glas-Knöpfe, englische Texte |
 | `assets/installieren.js` | byte-1:1 aus Sage (`INSTALLIEREN_SHA`) |
 
@@ -55,11 +55,17 @@ Zuordnung Platzhalter ⟷ Klartext) · localStorage `workflowneeds_einstellungen
 sessionStorage `workflowneeds_sicherung_spaeter`). Nicht `toolpoint_lang` — github.io ist geteilt.
 Am Vorgang neu, ohne neue DB-Fassung: `v.anhaenge = [{id: "A-nn", name, typ, groesse, datum, blob}]`
 (der Blob liegt direkt in IndexedDB — `ablage(v)` in `app.js` klont alles als JSON und hängt die Blobs
-wieder an), `v.ist = {"<Fassung>": Stunden}`, `v.beispiel` (nur das Beispiel).
+wieder an), `v.ist = {"<Fassung>": Stunden}`, `v.beispiel` (nur Beispiele), seit Stufe 3 `v.bid` (Kennung des Beispiels),
+`v.erklaerung` / `v.vereinbarung` / `v.wartung = {unterschriftBetrieb, unterschriftKunde (PNG data-URL), papier, fassung, aktiviert, stand}`,
+`v.sterne = [{id: "S-nn", zeitpunkt: "bedarf"|"abnahme", kennung: "B-nn", bereich, kuerzel, sterne, datum}]`; an der Fassung
+`umfang.gewaehrleistungH` (Freistunden, fehlt = 0); in den Einstellungen `wartung = {freistunden, wochen, pauschaleCent}`.
 
 ## Was hier leicht kaputtgeht
 
-- **Stundensatz verlässt das Haus nie.** Angebot und Nachtrag werden aus `assets/kern/aussen.js`
+- **Stundensatz verlässt das Haus nie** — mit GENAU EINER Ausnahme: das Blatt **Wartungsvertrag**
+  (Klaus 2026-10-07, ausdrückliches Ja: „Stundensatz im Wartungsvertrag“). Erklärung, Vereinbarung,
+  Angebot, Nachtrag, Bedarfsprotokoll, Übergabe und MD bleiben ohne Satz; die Proben messen beide Richtungen,
+  und die Übergabe nimmt den Wartungsvertrag nie mit. Angebot und Nachtrag werden aus `assets/kern/aussen.js`
   gebaut und gezeichnet — nie aus der Ansicht. Ein neues Feld am Vorgang erscheint dort erst,
   wenn es ausdrücklich in die Whitelist kommt. Die Probe stellt den Satz auf 73 € und sucht ihn.
 - **Satz-Ebenen:** Baustein → Fassung → Vorgabe. Ein neuer Vorgang **kopiert** die Vorgabe
@@ -67,7 +73,10 @@ wieder an), `v.ist = {"<Fassung>": Stunden}`, `v.beispiel` (nur das Beispiel).
   eine offene Fassung folgt der USt-Einstellung.
 - **Kennungen** kommen aus `vorgang.zaehler` und werden nie neu vergeben. Lücken (B-05 intern)
   bleiben im Kundenausdruck stehen — benannte Entscheidung, Klaus kann sie überstimmen.
-- **Kundenfelder haben feste Platzhalter** `⟦KUNDE-1⟧` (Firma) … `⟦KUNDE-6⟧` (Kundennummer),
+- **Kein Platzhalter auf einem Kundenblatt** (Stufe 3 § 1b, Befund Klaus' Tablet): `kundeExtern` gibt für ein
+  leeres Feld `""`, das Blatt zeichnet eine Schreiblinie (`data-schreiblinie`). ⚠ Tafel-Evolution: bis Stufe 2
+  stand dort der Platzhalter.
+- **Kundenfelder haben feste Platzhalter** `⟦KUNDE-1⟧` (Firma) … `⟦KUNDE-6⟧` (Kundennummer) — in der MD,
   auch solange sie leer sind. Die Zuordnung wächst am Vorgang (`v.zuordnung`) und wird nach
   jedem Export gespeichert — so bleibt ein Name über alle Fassungen gleich.
 - **App-Zahlen werden nicht verdeckt:** verdeckt wird nur Inhalt (Freitext, Kundenfelder,
@@ -126,10 +135,56 @@ die in das Angebot mit einfließen … PDF als PDF, EML als E-Mail … Screensho
 - ⚠ **Offen:** Klaus' Sichttest-Befunde vom Tablet (Brief Punkt 1) lagen dieser Sitzung nicht vor.
   Der Marktplatz-Eintrag ist nur als Text da (`docs/MARKTPLATZ_EINTRAG.md`): kein Schreibzugriff auf PWA-Toolpoint.
 
-**Nächste Stufe:** `docs/BRIEF_2026-10-07_stufe3-beispiele-verschwiegenheit.md` — zuerst der Befund
-„Platzhalter auf dem Kundenblatt“ (§ 1b), dann vier Beispiele aus den eigenen Repos, die
-Verschwiegenheits- und Datenschutzerklärung, die Vereinbarung zu Zahlung und Rechten, Sterne der
-Mitarbeiter. Alle Fragen in § 6 sind beantwortet (Klaus 2026-10-07) — nicht erneut stellen.
+**Stufe 3 ist gebaut** (Abschnitt unten). Offen: Klaus' Tablet-Sichttest und seine „minimalen“ Verbesserungen.
+
+## Stufe 3 (2026-10-07, dritte Sitzung)
+
+Brief `docs/BRIEF_2026-10-07_stufe3-beispiele-verschwiegenheit.md`, alle Fragen dort beantwortet.
+
+- **§ 1b · kein ⟦ auf Kundenblättern:** leeres Kundenfeld → leere Schreiblinie. Probe kern und browser.
+- **§ 3 · vier Beispiele** (Einstellungen → „Beispiele“: Auswahl, „Laden“, „Alle laden“; kein Doppel über `v.bid`,
+  alte Boutique ohne `bid` wird am Titel erkannt; beim ersten Öffnen weiter NUR „Boutique“):
+  | bid | Quelle (gelesen 2026-10-07) | Fassungen nach der Geschichte | Ist (h, Untergrenze) |
+  |---|---|---|---|
+  | `tomys` | Tomys-Hub `0e05091` | F1 Grundverbund bis 07-07 · F2 Netz/Feinschliff bis 09-23 · F3 PDF-Werkzeug + Prüfung bis 10-07 | 22,9 · 76,0 · 103,9 |
+  | `psb` | Perfect-Skin-Beauty `aba5429` (privat) | F1 Seite bis 07-18 · F2 Selbstpflege/Recht/SEO bis 08-09 · F3 Netz bis 09-30 | 3,5 · 18,1 · 35,3 |
+  | `alis` | Alis-Moderaum `3563d45` | F1 Schaufenster **und** Lager (ein Commit) bis 07-16 · F2 Pflege/KI bis 07-25 · F3 Kasse + BLP bis 07-27 · F4 offen (mehrere Geräte, NOCH NICHT GESCHÄTZT) | 1,5 · 16,0 · 18,9 |
+  | `eigene` | Mein-Rezeptbuch `e8fe888`, Sage-Protokol `df54f0c`, family-project `9062508`, PWA-Toolpoint `dad5ae6` | F1 bis 05-15 · F2 bis 07-16 · F3 bis 10-07; eigenes Vorhaben (verdeckt: nein) | 118,4 · 392,5 · 749,8 (vereinigt; je Repo addiert 907,8) |
+  Methode der Ist-Stunden wie `markt.js` (Lücke > 90 min, 30 min Vorlauf), nachgeprüft an Datei-Post (3,2 h / 5 — gleich).
+  ⚠ Brief-Vorschläge, die die Geschichte nicht trug: Tomys „F2 + Angebot und WorkFloh“ (alles am 07-04) und
+  Alis „F1 Schaufenster · F2 + Lager“ (ein Commit) — korrigiert, steht im Kopf der Dateien.
+  ⚠ **Befund Schätzung gegen Ist:** bei den drei Kundenbeispielen liegt die Katalog-Schätzung weit ÜBER dem Ist
+  (KI-gestützter Bau, Vorlagen), bei „Eigene Apps“ darunter. Die Zahlen sind nicht angepasst — das ist genau,
+  was die Tabelle „Eigene Aufträge: Schätzung und Ist“ zeigen soll. Kundendaten erfunden (`.example`, „… Beispiel“).
+  Die Sterne in Tomys Hub sind erfunden (Beispiel), keine Bewertung echter Personen.
+- **§ 4 · Verschwiegenheits- und Datenschutzerklärung** (Reiter Vorgänge, Status oben): Text in `aussen.js`
+  (`erklaerungText`, Textfassung 1): DSGVO Art. 6 Abs. 1 lit. b, 3 Jahre für Geschäftliches, personenbezogene
+  Daten ohne Frist, Rechte Art. 15–21. Zwei Unterschriftsfelder (`<canvas>`, Finger/Stift/Maus, PNG) oder „auf
+  Papier unterschrieben“. **Aktivieren friert ein** (`v.erklaerung.stand`) und öffnet sofort das Blatt: 🖨 Drucken
+  und ✉ Per E-Mail (`mailto:` mit Betreff und Text — die App verschickt nichts; PDF hängt Klaus von Hand an).
+  Bedarfsprotokoll: „Es gilt die … vom …“. MD: nur „aktiviert: ja/nein“. Übergabe: erst aktiviert, als HTML-Datei.
+- **§ 4e/4f · Vereinbarung zu Zahlung und Nutzungsrechten** (Reiter Angebot): Ziel = Bedarfsprotokoll + Angebot
+  Fassung n mit den freigegebenen Kennungen; Zahlung erst nach Abnahme, **je Baustein** (Tabelle Kennung · Leistung ·
+  deckt · Netto); Nutzungsrecht einfach, nicht übertragbar, zeitlich unbegrenzt, Änderungen nur durch den
+  Auftragnehmer; ohne Zahlung **Bedienungssperre — nur vereinbart**, Daten bleiben, Export bleibt (der Schalter
+  kommt später je Kunden-App; Katalog-Baustein `lizenz`, Schätzung, nicht nachgesehen); Aktualisierungen automatisch,
+  2 Jahre kostenlos, danach Wartungsvertrag, ohne Vertrag läuft die letzte Fassung weiter. Übergabe: erst aktiviert.
+- **Wartungsvertrag**: Freistunden in den ersten m Wochen (eingerechnet: `umfang.gewaehrleistungH`, Vorgabe aus den
+  Einstellungen; im Angebot steckt er anteilig in den Preisen, der Kunde sieht nur „Inklusive n Stunden
+  Fehlerbehebung“), Jahrespauschale ab dem 3. Jahr, „Abrechnung nach Zeitaufwand“ als eigener Abschnitt, **Stundensatz**
+  (eingefroren beim Aktivieren). Geht NIE in die Übergabe.
+- **Alle Rechtstexte sind Entwürfe** — Karte und Vorschau sagen „Entwurf, kein Rechtsrat — vor Verwendung prüfen
+  lassen“ (nicht auf dem Papier). Verbindlich Deutsch: der Text bleibt auch in der englischen Oberfläche Deutsch.
+- **Sterne der Mitarbeiter** (Reiter Bedarf, am Ende): zwei Zeitpunkte (Bedarf · Abnahme), zuerst auf Papier
+  (🖨 Sternebogen zum Ankreuzen, `sterneBogenExtern`), dann nachtragen: Kennung, Fachbereich, Kürzel, 1–5. Am Vorgang,
+  nicht an der Fassung (bleibt nach der Unterschrift erfassbar). Bedarfsprotokoll: Ø und Anzahl beim Bedarf; MD: Ø
+  und Anzahl je Zeitpunkt, nie Kürzel/Fachbereich. Grundlage des Abnahme-Gesprächs, keine Rechen-Automatik.
+- ⚠ Nicht gemessen: Unterschrift mit dem Finger am Tablet, echtes Drucken/„Als PDF speichern“, das Mailprogramm am
+  Tablet mit langem `mailto`-Text (manche Programme kürzen lange Texte), die Übergabe-HTML in WorkFloh geöffnet.
+
+Gemessen (2026-10-07, Stufe 3): `kern` **224 grün · 0 ROT** · `browser` **113 grün · 0 ROT** · `NUR_ANKER` 83 · 0 tot ·
+neue Fälle `S3` (26): erst **24 gefangen · 2 aus falschem Grund** (zwei Proben stürzten beim fehlenden Teil ab statt zu
+melden), beide geschärft und einzeln nachgefahren: gefangen. Voller Lauf: siehe unten.
 
 ## Benannte Grenzen
 

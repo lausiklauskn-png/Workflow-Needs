@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
   "assets/kern/bedarf.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
-  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/daten/beispiel.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
+  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
 console.log = stumm;
@@ -187,13 +187,27 @@ function knFall(nutzenA, nutzenB) {
   ok("WHITELIST: ein ganz interner Bereich fällt weg (keine leere Überschrift)", !k.bereiche.some((b) => b.nr === 5));
   ok("WHITELIST: Freigegebenes steht da", j.includes("sichtbar-eins"));
   ok("WHITELIST: Zahl der ausgeblendeten Punkte stimmt (Eintrag, Bereich, Notiz)", k.ausgeblendet === 3, k.ausgeblendet);
-  ok("WHITELIST: fehlende Kundendaten stehen als Platzhalter da", k.kunde.firma === "⟦KUNDE-1⟧");
+  ok("KUNDENBLATT: fehlende Kundendaten bleiben leer, kein Platzhalter", k.kunde.firma === "" && k.kunde.mail === "" && !j.includes("⟦"), k.kunde);
   f.satzCent = 7300;
   bs(v, f, "seite", "klein");
   const an = A.angebotExtern(v, f, { name: "X" }, { modus: "regel", satz: 19 }, null, 24, "de");
   const ja = JSON.stringify(an);
   ok("WHITELIST: Angebot trägt keinen Satz", !/7300|satzCent|"73(,00)?"/.test(ja) && !("satzCent" in an));
   ok("WHITELIST: Angebot trägt keine Stunden, Faktoren, Wiederverwendung", !/stunden|faktor|"wv"|kosten|nutzen|markt/i.test(Object.keys(an).join(",") + JSON.stringify(an.positionen)));
+}
+
+/* ── KUNDENBLATT ohne Kundendaten (Stufe 3 § 1b): nie ein Platzhalter ── */
+{
+  const v = vorgang(); const f = F.aktuelle(v);
+  BD.eintragNeu(v, f.protokoll, 1, "Papier");
+  bs(v, f, "seite", "klein");
+  F.unterschreiben(v, f, EINST.ust, "2026-10-07");
+  const f2 = F.neueFassung(v, { anlass: "mehr", von: "kunde", datum: "2026-10-08" }).fassung;
+  bs(v, f2, "liste", "klein");
+  const blaetter = [A.kundenProtokoll(v, f, {}), A.angebotExtern(v, f, {}, EINST.ust, null, 24, "de"), A.nachtragExtern(v, f, f2, {}, EINST.ust, null, 24, "de")];
+  ok("KUNDENBLATT: Protokoll, Angebot, Nachtrag ohne Kundendaten tragen kein ⟦", blaetter.every((b) => !JSON.stringify(b).includes("⟦")), blaetter.map((b) => JSON.stringify(b.kunde)));
+  v.kunde.firma = "⟦KUNDE-1⟧";
+  ok("KUNDENBLATT: ein eingetippter Platzhalter wird nicht gedruckt", A.angebotExtern(v, f, {}, EINST.ust, null, 24, "de").kunde.firma === "");
 }
 
 /* ── BAUAUFTRAG (§ 7c/7e) ── */
@@ -388,6 +402,123 @@ function kundenVorgang() {
   const K = WN.KALIBRIERUNG;
   ok("BILDSCHIRME: gezählte Zeilen tragen eine Zahl, mycel-karte bleibt „nicht gezählt“", K.zeilen.filter((x) => x.bildschirme == null).map((x) => x.repo).join() === "mycel-karte" && typeof K.bildschirmRegel === "string" && K.bildschirmRegel.length > 40);
   ok("KATALOG: jeder nachgesehene Baustein nennt Datum und Stand im Hinweis", WN.BAUSTEINE.filter((b) => b.geprueft).every((b) => /^nachgesehen 2026-\d\d-\d\d/.test(b.hinweis)));
+}
+
+
+/* ── STUFE 3: VIER BEISPIELE AUS DEN EIGENEN REPOS (§ 3) ── */
+{
+  const E73 = Object.assign(kopie(EINST), { satzCent: 7300, wartung: { freistunden: 4, wochen: 8, pauschaleCent: 30000 }, firma: { name: "Prüf-Firma" } });
+  const L = WN.beispiel.liste();
+  ok("BEISPIELE: fünf im Register (Boutique + vier aus den Repos)", L.map((b) => b.id).join() === "boutique,tomys,psb,alis,eigene", L.map((b) => b.id));
+  for (const b of L.filter((x) => x.id !== "boutique")) {
+    const v = b.bauen(3, E73), ff = v.fassungen, ak = F.aktuelle(v);
+    ok(`BEISPIEL ${b.id}: lädt, trägt bid und beispiel`, v.bid === b.id && v.beispiel === true && WN.beispiel.bidVon(v) === b.id);
+    ok(`BEISPIEL ${b.id}: mindestens zwei Fassungen, jede mit Anlass`, ff.length >= 2 && ff.slice(1).every((f) => f.anlass && f.von));
+    ok(`BEISPIEL ${b.id}: alle 18 Bereiche gültig, mindestens 12 ausgefüllt`, WN.BEREICHE.every((x) => ak.protokoll.bereiche[x.nr]) && BD.fortschritt(ak.protokoll) >= 12, BD.fortschritt(ak.protokoll));
+    const ids = new Set(); ff.forEach((f) => { BD.alleEintraege(f.protokoll).forEach((x) => ids.add(x.e.id)); f.umfang.bausteine.forEach((x) => ids.add(x.id)); });
+    const lueckenlos = ["B", "K", "O"].every((art) => { const n = v.zaehler[art] || 0; for (let i = 1; i <= n; i++) if (!ids.has(art + "-" + String(i).padStart(2, "0"))) return false; return [...ids].filter((x) => x.startsWith(art + "-")).length === n; });
+    ok(`BEISPIEL ${b.id}: Kennungen lückenlos aus dem Zähler`, lueckenlos, v.zaehler);
+    ok(`BEISPIEL ${b.id}: jeder Baustein deckt einen Bedarf oder ist benannt`, ff.every((f) => f.umfang.bausteine.every((x) => Array.isArray(x.deckt) && (x.deckt.length || x.name))));
+    const s = R.schaetze(ak);
+    ok(`BEISPIEL ${b.id}: rechnet (Schätzung > 0)`, s.stundenBis > 0 && s.kostenBis > 0);
+    ok(`BEISPIEL ${b.id}: keine echten Adressen (nur .example)`, !/@(?![a-z0-9.-]*\.example)/.test(JSON.stringify(v)));
+    ok(`BEISPIEL ${b.id}: kein echter Personenname im Kundenfeld (Ansprechpartner erfunden)`, !v.kunde.ansprechpartner || /Beispiel/.test(v.kunde.ansprechpartner), v.kunde.ansprechpartner);
+    ok(`BEISPIEL ${b.id}: Ist-Stunden nur an unterschriebenen Fassungen`, Object.keys(v.ist || {}).length >= 2 && Object.keys(v.ist).every((nr) => ff.find((f) => String(f.nr) === nr && f.unterschrieben)));
+    const an = JSON.stringify(A.angebotExtern(v, ak, E73.firma, E73.ust, null, 24, "de"));
+    ok(`BEISPIEL ${b.id}: Angebot ohne Satz (73 €), ohne ⟦`, !/7300|73,00|satzCent/.test(an) && !an.includes("⟦"));
+    const ueb = JSON.stringify(WN.uebergabe.auftrag(v, ak, E73, null));
+    ok(`BEISPIEL ${b.id}: Übergabe ohne Satz (73 €)`, !/7300|73,00|Stundensatz/.test(ueb));
+    const alt = ff[ff.length - 2];
+    const md = BA.erzeuge(v, alt, ak, {}, P);
+    ok(`BEISPIEL ${b.id}: Bauauftrag entsteht, verdeckt ${b.id === "eigene" ? "nein" : "ja"}`, md.ok && new RegExp("\\nverdeckt: " + (b.id === "eigene" ? "nein" : "ja") + "\\n").test(md.md), md.grund || md.fund);
+    if (b.id !== "eigene") ok(`BEISPIEL ${b.id}: Bauauftrag ohne Kundendaten`, md.ok && !md.md.includes(v.kunde.firma) && !md.md.includes(v.kunde.mail));
+  }
+  const alis = WN.beispiel.liste().find((b) => b.id === "alis").bauen(4, E73);
+  ok("BEISPIEL alis: offene F4 hat einen Baustein NOCH NICHT GESCHÄTZT", F.vergleich(alis.fassungen[2], alis.fassungen[3]).bausteine.some((x) => x.aktion === "NOCH NICHT GESCHÄTZT"));
+  ok("BEISPIEL eigene: eigenes Vorhaben, je App eine Gruppe (Name beginnt mit dem App-Namen)", (() => { const v = WN.beispiel.liste().find((b) => b.id === "eigene").bauen(5, E73);
+    const n = F.aktuelle(v).umfang.bausteine.map((x) => x.name); return v.eigenesVorhaben && ["Mein Rezeptbuch ·", "Sage-Protokol ·", "family-project ·", "PWA-Toolpoint ·"].every((a) => n.some((x) => x.startsWith(a))); })());
+  ok("BEISPIELE: alte Boutique ohne bid wird als „boutique“ erkannt (kein Doppel)", WN.beispiel.bidVon({ beispiel: true, titel: "Internetseite für ein Modegeschäft" }) === "boutique" && WN.beispiel.bidVon({ titel: "x" }) === "");
+  ok("BEISPIELE: Erinnerung zählt keines der Beispiele", !WN.sicherung.erinnernNoetig(WN.beispiel.liste().map((b) => b.bauen(1, E73)), null, Date.parse("2026-10-07")));
+}
+
+/* ── STUFE 3: RECHTSBLÄTTER (§ 4) ── */
+{
+  const E73 = Object.assign(kopie(EINST), { satzCent: 7300, wartung: { freistunden: 6, wochen: 8, pauschaleCent: 30000 } });
+  const ctx = { firma: { name: "Prüf-Firma", kontakt: "kontakt@pruef.example" }, ust: EINST.ust, tabellen: null, zeitraum: 24, wartung: E73.wartung };
+  const v = F.neuerVorgang(9, E73, "2026-10-07"); const f = F.aktuelle(v);
+  v.kunde.firma = "Kundin Prüf GmbH"; v.kunde.mail = "kundin@pruef.example";
+  const b1 = BD.eintragNeu(v, f.protokoll, 6, "Termine online"); b1.prio = "muss";
+  const b2 = BD.eintragNeu(v, f.protokoll, 6, "Geheim intern", { sichtbar: false });
+  bs(v, f, "seite", "klein", { deckt: [b1.id] });
+  F.unterschreiben(v, f, EINST.ust, "2026-10-07");
+  const er = A.erklaerungExtern(v, ctx), ej = JSON.stringify(er);
+  ok("ERKLÄRUNG: DSGVO-Grundlage, 3 Jahre, personenbezogene Daten ohne Frist, Rechte Art. 15–21", /Art\. 6 Abs\. 1 lit\. b DSGVO/.test(ej) && /drei Jahre/.test(ej) && /ohne zeitliche Grenze/.test(ej) && /Art\. 15–21/.test(ej));
+  ok("ERKLÄRUNG: kein Satz, kein Preis, nicht das Wort „Analyse“", !/7300|73,00|satzCent|netto|€/.test(ej) && !/analyse/i.test(ej));
+  ok("ERKLÄRUNG: Firma und Kunde aus der Whitelist", er.firma.name === "Prüf-Firma" && er.kunde.firma === "Kundin Prüf GmbH" && !("zuordnung" in er.kunde));
+  ok("ERKLÄRUNG: ohne beide Unterschriften nicht aktivierbar", !A.kannAktivieren(v, "erklaerung") && !A.aktivieren(v, "erklaerung", ctx));
+  v.erklaerung = { unterschriftBetrieb: "data:image/png;base64,AAAA" };
+  ok("ERKLÄRUNG: eine Unterschrift reicht nicht", !A.kannAktivieren(v, "erklaerung"));
+  v.erklaerung.unterschriftKunde = "data:image/png;base64,BBBB";
+  ok("ERKLÄRUNG: beide Unterschriften → aktivierbar, aktiviert", A.aktivieren(v, "erklaerung", ctx, "2026-10-07") && v.erklaerung.aktiviert === "2026-10-07");
+  ctx.firma.name = "Umbenannt GmbH"; v.kunde.firma = "Andere Kundin";
+  const er2 = A.erklaerungExtern(v, ctx);
+  ok("ERKLÄRUNG: aktiviert = eingefroren (Firma, Kunde, Text bleiben)", er2.firma.name === "Prüf-Firma" && er2.kunde.firma === "Kundin Prüf GmbH" && er2.aktiviert === "2026-10-07" && er2.unterschriftKunde.endsWith("BBBB"));
+  ok("ERKLÄRUNG: zweites Aktivieren ändert nichts", !A.aktivieren(v, "erklaerung", ctx, "2026-12-01") && v.erklaerung.aktiviert === "2026-10-07");
+  const m = A.alsText(er2);
+  ok("ERKLÄRUNG: Text fürs mailto trägt Betreff und alle Abschnitte, keine Unterschrift", /Verschwiegenheits/.test(m.betreff) && m.text.includes("7. Ihre Rechte") && !m.text.includes("data:image"));
+  ok("ERKLÄRUNG: Bedarfsprotokoll nennt die Erklärung vom Datum", A.kundenProtokoll(v, f, {}).erklaerungVom === "2026-10-07");
+  ctx.firma.name = "Prüf-Firma"; v.kunde.firma = "Kundin Prüf GmbH";
+  const vb = A.vereinbarungExtern(v, ctx), vj = JSON.stringify(vb);
+  ok("VEREINBARUNG: nennt Angebot, Fassung und die Kennungen des Ziels (nur freigegebene)", vb.fassung === 1 && vb.text.bezug.ziel.join() === b1.id && vj.includes("Fassung 1") && !vj.includes(b2.id));
+  ok("VEREINBARUNG: kein Stundensatz (73 €)", !/7300|73,00|satzCent|Stundensatz/.test(vj));
+  ok("VEREINBARUNG: Zahlung je Baustein, Nutzungsrecht unbegrenzt, Änderungen nur durch den Auftragnehmer", /je Baustein/.test(vj) && /zeitlich unbegrenztes Nutzungsrecht/.test(vj) && /nur Prüf-Firma vor/.test(vj));
+  ok("VEREINBARUNG: Sperre nur der Bedienung, Daten bleiben, Export bleibt", /Bedienung der App gesperrt/.test(vj) && /Daten bleiben vollständig erhalten/.test(vj) && /exportieren/.test(vj));
+  ok("VEREINBARUNG: Aktualisierungen zwei Jahre kostenlos, danach Wartungsvertrag, ohne Vertrag letzte Fassung", /ersten zwei Jahren ab Abnahme sind sie kostenlos/.test(vj) && /Ohne Wartungsvertrag läuft die App in ihrer letzten Fassung weiter/.test(vj));
+  ok("VEREINBARUNG: Tabelle je Baustein mit Kennung und Preis aus dem Angebot", vb.text.abschnitte[2].tabelle.some((z) => z.kennung === "K-01" && z.deckt === b1.id && z.nettoCent > 0));
+  const wa = A.wartungExtern(v, ctx), wj = JSON.stringify(wa);
+  ok("WARTUNG: der Stundensatz steht drin (73,00 €) — das einzige Blatt", /73,00\s€/.test(wj) && wa.text.satzCent === 7300, [wa.text.satzCent, wa.text.abschnitte[4]]);
+  ok("WARTUNG: „Abrechnung nach Zeitaufwand“ steht als eigener Abschnitt", wa.text.abschnitte.some((a) => a.titel === "Abrechnung nach Zeitaufwand") && wa.text.abschnitte.some((a) => a.titel === "Stundensatz"));
+  ok("WARTUNG: Freistunden und Wochen aus Vorgang und Einstellung, Jahrespauschale ab dem 3. Jahr", /Inklusive 6 Stunden Fehlerbehebung in den ersten 8 Wochen/.test(wj) && /300,00\s€/.test(wj) && /dritten Jahr/.test(wj));
+  ok("RECHT: kein Blatt trägt das Wort „Analyse“", [er2, vb, wa].every((x) => !/analyse/i.test(JSON.stringify(x))));
+  const dat = WN.uebergabe.rechtsDateien(v, ctx);
+  ok("ÜBERGABE: aktivierte Erklärung geht als HTML-Datei mit, Vereinbarung erst wenn aktiviert, Wartung nie", dat.length === 1 && dat[0].mime === "text/html" && /^Verschwiegenheitserklaerung_V-2026-0009\.html$/.test(dat[0].name));
+  v.vereinbarung = { papier: true }; A.aktivieren(v, "vereinbarung", ctx, "2026-10-08"); v.wartung = { papier: true }; A.aktivieren(v, "wartung", ctx, "2026-10-08");
+  const dat2 = WN.uebergabe.rechtsDateien(v, ctx);
+  const html = dat2.map((d) => Buffer.from(d.data.split(",")[1], "base64").toString("utf8")).join("\n");
+  ok("ÜBERGABE: auch mit aktivierter Wartung kein Stundensatz in den Dateien", dat2.length === 2 && !/73,00|7300/.test(html) && html.includes("Vereinbarung zu Zahlung"));
+  const md = BA.erzeuge(v, null, f, {}, P);
+  ok("MD: nennt nur „aktiviert: ja/nein“, keine Unterschrift", md.ok && /Verschwiegenheitserklärung aktiviert: ja/.test(md.md) && /Wartungsvertrag aktiviert: ja/.test(md.md) && !md.md.includes("data:image"));
+  /* Gewährleistung, eingerechnet */
+  const g0 = F.neuerVorgang(10, EINST, "2026-10-07"), gf = F.aktuelle(g0); ohneZuschlag(gf); bs(g0, gf, "seite", "klein", { manuell: { von: 10, bis: 10 } });
+  const ohneFeld = gf.umfang.gewaehrleistungH === 0;
+  const s0 = R.schaetze(gf); gf.umfang.gewaehrleistungH = 5; const s1 = R.schaetze(gf);
+  ok("GEWÄHR: Freistunden sind eingerechnet (+5 h, +400 €), ohne Vorgabe 0", ohneFeld && s1.stundenVon - s0.stundenVon === 5 && s1.kostenVon - s0.kostenVon === 40000, [s0.stundenVon, s1.stundenVon]);
+  const pz = R.positionen(gf, s1, R.kostenNutzen(gf, s1, 24), null, "de");
+  ok("GEWÄHR: steckt im Preis der Positionen, nicht als eigene Zeile", pz.haupt.length === 1 && pz.haupt[0].nettoCent === 120000, pz.haupt.map((x) => x.nettoCent));
+  ok("GEWÄHR: neuer Vorgang übernimmt die Freistunden aus der Vorgabe", F.aktuelle(F.neuerVorgang(11, E73, "2026-10-07")).umfang.gewaehrleistungH === 6);
+  ok("KATALOG: „Freischaltung / Lizenz“ ist Schätzung, nicht nachgesehen", WN.BAUSTEINE.some((x) => x.id === "lizenz" && !x.geprueft && /Schätzung/.test(x.hinweis)));
+}
+
+/* ── STUFE 3: STERNE DER MITARBEITER (§ 4f A) ── */
+{
+  const v = vorgang(); const f = F.aktuelle(v);
+  const e1 = BD.eintragNeu(v, f.protokoll, 6, "Lager sehen");
+  const e2 = BD.eintragNeu(v, f.protokoll, 6, "intern", { sichtbar: false });
+  ok("STERNE: 0 und 6 Sterne werden abgewiesen, fremde Kennung auch", !BD.sterneDazu(v, { kennung: e1.id, sterne: 0 }) && !BD.sterneDazu(v, { kennung: e1.id, sterne: 6 }) && !BD.sterneDazu(v, { kennung: "K-01", sterne: 3 }));
+  BD.sterneDazu(v, { zeitpunkt: "bedarf", kennung: e1.id, bereich: "Lager", kuerzel: "STERNPRUEF-KZ", sterne: 5 });
+  BD.sterneDazu(v, { zeitpunkt: "bedarf", kennung: e1.id, bereich: "Verkauf", sterne: 4 });
+  BD.sterneDazu(v, { zeitpunkt: "abnahme", kennung: e1.id, bereich: "Lager", sterne: 3 });
+  BD.sterneDazu(v, { zeitpunkt: "bedarf", kennung: e2.id, bereich: "Lager", sterne: 1 });
+  const z = BD.sterneZusammen(v, "bedarf");
+  ok("STERNE: Durchschnitt und Anzahl je Kennung und Zeitpunkt", z[e1.id].schnitt === 4.5 && z[e1.id].anzahl === 2 && BD.sterneZusammen(v, "abnahme")[e1.id].schnitt === 3);
+  const kp = A.kundenProtokoll(v, f, {}), kj = JSON.stringify(kp);
+  ok("STERNE: im Bedarfsprotokoll beim Bedarf (Ø, Anzahl), ohne Kürzel und Fachbereich", ((kp.bereiche.find((x) => x.nr === 6) || { eintraege: [{}] }).eintraege[0].sterne || {}).schnitt === 4.5 && !kj.includes("STERNPRUEF-KZ") && !kj.includes("Verkauf"));
+  ok("STERNE: interner Bedarf trägt seine Sterne nicht hinaus", !kp.bereiche.find((x) => x.nr === 6).eintraege.some((x) => x.id === e2.id));
+  bs(v, f, "lager", "klein", { deckt: [e1.id] });
+  const md = BA.erzeuge(v, null, f, {}, P);
+  ok("STERNE: in der MD Ø und Anzahl, keine Kürzel", md.ok && md.md.includes("Sterne " + e1.id + ": beim Bedarf Ø 4,5 (2) · bei der Abnahme Ø 3 (1)") && !md.md.includes("STERNPRUEF-KZ"), md.md.match(/.*Sterne.*/g));
+  const sb = A.sterneBogenExtern(v, f, {}, "abnahme");
+  ok("STERNE: Bogen zum Ankreuzen nur mit freigegebenen Bedarfen, ohne Namen", sb.zeitpunkt === "abnahme" && sb.bedarfe.length === 1 && sb.bedarfe[0].id === e1.id && !JSON.stringify(sb).includes("STERNPRUEF"));
 }
 
 /* ── TEXTE (DE/EN) ── */

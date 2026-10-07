@@ -101,6 +101,29 @@
     return out;
   }
 
-  WN.bedarf = { leeresProtokoll: leeresProtokoll, neueKennung: neueKennung, eintragNeu: eintragNeu,
+  /* Sterne der Mitarbeiter im Fachbereich (Stufe 3 § 4f A): v.sterne = [{ id: "S-nn", zeitpunkt: "bedarf"|"abnahme",
+     kennung: "B-nn", bereich, kuerzel, sterne: 1…5, datum }]. Am Vorgang, nicht an der Fassung — die Kennungen
+     bleiben über alle Fassungen gleich. Zusammengefasst je Kennung: Durchschnitt und Anzahl, nie Namen. */
+  function sterneDazu(vorgang, angaben) {
+    var a = angaben || {}, n = Math.round(Number(a.sterne));
+    if (!(n >= 1 && n <= 5) || !/^B-\d+$/.test(a.kennung || "")) return null;
+    vorgang.sterne = vorgang.sterne || [];
+    var e = { id: neueKennung(vorgang, "S"), zeitpunkt: a.zeitpunkt === "abnahme" ? "abnahme" : "bedarf", kennung: a.kennung,
+      bereich: String(a.bereich || "").trim(), kuerzel: String(a.kuerzel || "").trim(), sterne: n, datum: a.datum || new Date().toISOString().slice(0, 10) };
+    vorgang.sterne.push(e);
+    return e;
+  }
+  function sterneZusammen(vorgang, zeitpunkt) {
+    var m = {};
+    ((vorgang && vorgang.sterne) || []).forEach(function (x) {
+      if (x.zeitpunkt !== zeitpunkt) return;
+      var z = m[x.kennung] = m[x.kennung] || { summe: 0, anzahl: 0 };
+      z.summe += Number(x.sterne) || 0; z.anzahl++;
+    });
+    Object.keys(m).forEach(function (k) { m[k].schnitt = Math.round(m[k].summe / m[k].anzahl * 10) / 10; delete m[k].summe; });
+    return m;
+  }
+
+  WN.bedarf = { sterneDazu: sterneDazu, sterneZusammen: sterneZusammen, leeresProtokoll: leeresProtokoll, neueKennung: neueKennung, eintragNeu: eintragNeu,
     bedarfe: bedarfe, ausgefuellt: ausgefuellt, fortschritt: fortschritt, hatNutzen: hatNutzen, alleEintraege: alleEintraege };
 })(typeof window !== "undefined" ? window : globalThis);

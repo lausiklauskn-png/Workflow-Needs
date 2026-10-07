@@ -131,7 +131,8 @@ try {
   /* ── Unterschriebene Fassung: nur lesen ── */
   await p.click('[data-fassung="1"] button');
   const ro = await p.evaluate(() => {
-    const e = [...document.querySelectorAll("#inhalt input:not([type=file]), #inhalt textarea, [data-bereich] button")];
+    /* Die Sterne der Mitarbeiter hängen am Vorgang, nicht an der Fassung — sie bleiben nach der Unterschrift erfassbar (Abnahme) */
+    const e = [...document.querySelectorAll("#inhalt input:not([type=file]), #inhalt textarea, [data-bereich] button")].filter((x) => !x.closest("[data-sterne]"));
     return { alle: e.length, offen: e.filter((x) => !x.disabled).length, banner: !!document.querySelector("[data-nur-lesen]") };
   });
   ok("NUR LESEN: unterschriebene Fassung ist nicht editierbar", ro.banner && ro.alle > 10 && ro.offen === 0, ro);
@@ -176,6 +177,13 @@ try {
     ok("ERINNERUNG: nur das Beispiel → keine Sicherungs-Erinnerung", await s.p.locator("[data-sicherung-erinnerung]").count() === 0);
     await s.p.click("#neuer-vorgang");
     ok("ERINNERUNG: eigener Vorgang, nie gesichert → Erinnerung steht da", (await s.p.getAttribute("[data-sicherung-erinnerung]", "data-sicherung-erinnerung")) === "nie");
+    /* § 1b: ein Vorgang OHNE Kundendaten — kein ⟦ auf dem Kundenblatt, eine Schreiblinie statt dessen */
+    await reiter(s.p, "angebot");
+    const leerA = await druck(s.p, "#druck-angebot");
+    await reiter(s.p, "bedarf");
+    const leerP = await druck(s.p, "#druck-protokoll");
+    ok("KUNDENBLATT: Angebot und Bedarfsprotokoll ohne Kundendaten tragen kein ⟦, sondern eine Schreiblinie", !leerA.text.includes("⟦") && !leerP.text.includes("⟦") && leerA.html.includes("data-schreiblinie") && leerP.html.includes("data-schreiblinie"), [leerA.text.slice(0, 120)]);
+    await reiter(s.p, "vorgaenge");
     await s.p.setInputFiles("#anhang-datei", [
       { name: "Anhangpruefwort-Plan.pdf", mimeType: "application/pdf", buffer: pdf },
       { name: "Mail vom Kunden.eml", mimeType: "message/rfc822", buffer: eml }]);
@@ -246,6 +254,89 @@ try {
     await z.p.reload(); await z.p.waitForSelector("body[data-bereit]");
     ok("SICHERUNG: Zurückgeholtes übersteht Neuladen (samt Anhängen)", await z.p.evaluate(() => window.WNApp.S.vorgaenge.some((v) => (v.anhaenge || []).length === 3 && v.anhaenge.every((a) => a.blob instanceof Blob))));
     await z.ctx.close();
+  }
+
+  /* ── Stufe 3: Beispiele, Rechtsblätter mit Unterschrift, Sterne ── */
+  {
+    const fsm = await import("node:fs");
+    const s = await seite(1100, { acceptDownloads: true });
+    await s.p.goto(url); await s.p.waitForSelector("body[data-bereit]");
+    const anzahl = () => s.p.evaluate(() => window.WNApp.S.vorgaenge.length);
+    await reiter(s.p, "einstellungen");
+    await s.p.fill('[data-firma="name"]', "Werkstatt Prüf-Firma");
+    const opts = await s.p.$$eval("#beispiel-wahl option", (o) => o.map((x) => x.value));
+    ok("BEISPIELE: Auswahl mit Boutique und den vier Beispielen", opts.join() === "boutique,tomys,psb,alis,eigene", opts);
+    await s.p.selectOption("#beispiel-wahl", "tomys"); await s.p.click("#beispiel-laden");
+    await s.p.waitForFunction(() => window.WNApp.S.vorgaenge.length === 2, null, { timeout: 5000 }).catch(() => {});
+    ok("BEISPIELE: ein Beispiel einzeln laden", await anzahl() === 2 && await s.p.evaluate(() => window.WNApp.S.vorgaenge.some((v) => v.bid === "tomys")));
+    await s.p.selectOption("#beispiel-wahl", "tomys"); await s.p.click("#beispiel-laden");
+    await s.p.waitForFunction(() => /schon da/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => {});
+    ok("BEISPIELE: zweimal laden legt keinen Doppel an", await anzahl() === 2 && /schon da/.test(await s.p.textContent("[data-meldung]")));
+    await s.p.click("#beispiel-alle");
+    await s.p.waitForFunction(() => /Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
+    ok("BEISPIELE: „Alle laden“ ergänzt nur die fehlenden (3 geladen, 2 schon da)", await anzahl() === 5 && /3 Beispiele geladen, 2 waren schon da/.test(await s.p.textContent("[data-meldung]")), await s.p.textContent("[data-meldung]").catch(() => ""));
+    await s.p.click("#beispiel-alle");
+    await s.p.waitForFunction(() => /0 Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
+    ok("BEISPIELE: zweites „Alle laden“ ohne Doppel", await anzahl() === 5);
+    await s.p.evaluate(() => window.WNApp.jetztSpeichern());
+    await s.p.reload(); await s.p.waitForSelector("body[data-bereit]");
+    ok("BEISPIELE: alle fünf überstehen das Neuladen, jedes einmal", await s.p.evaluate(() => { const b = window.WNApp.S.vorgaenge.map((v) => v.bid).sort().join(); return b; }) === "alis,boutique,eigene,psb,tomys");
+    ok("ERINNERUNG: nur Beispiele → keine Sicherungs-Erinnerung", await s.p.locator("[data-sicherung-erinnerung]").count() === 0);
+    /* Erklärung an einem neuen Vorgang */
+    await reiter(s.p, "vorgaenge"); await s.p.click("#neuer-vorgang");
+    await s.p.fill('[data-kundenfeld="firma"]', "Kundin Prüf-Blatt GmbH");
+    await s.p.fill('[data-kundenfeld="mail"]', "kundin@pruefblatt.example");
+    await s.p.fill("#weitere-namen", ""); await s.p.locator("#weitere-namen").blur();
+    ok("ERKLÄRUNG: Status „offen“ oben im Vorgang, Aktivieren gesperrt", (await s.p.getAttribute("[data-erklaerung-status]", "data-erklaerung-status")) === "offen" && await s.p.isDisabled('[data-recht-aktivieren="erklaerung"]'));
+    ok("ERKLÄRUNG: Karte sagt „Entwurf, vor Verwendung prüfen lassen“", (await s.p.evaluate(() => (document.querySelector('[data-recht="erklaerung"] [data-entwurf]') || {}).textContent || "")).includes("vor Verwendung prüfen lassen"));
+    for (const key of ["unterschriftBetrieb", "unterschriftKunde"]) {
+      const c = s.p.locator(`[data-recht="erklaerung"] [data-unterschrift="${key}"]`);
+      const bb = await c.boundingBox();
+      await s.p.mouse.move(bb.x + 20, bb.y + bb.height / 2); await s.p.mouse.down();
+      for (let i = 1; i <= 8; i++) await s.p.mouse.move(bb.x + 20 + i * 25, bb.y + bb.height / 2 + (i % 2 ? 15 : -15));
+      await s.p.mouse.up();
+      await s.p.waitForTimeout(80);
+    }
+    ok("ERKLÄRUNG: beide Unterschriften gezeichnet → Aktivieren frei", await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); return /^data:image\/png/.test(v.erklaerung.unterschriftBetrieb) && /^data:image\/png/.test(v.erklaerung.unterschriftKunde); }) && !(await s.p.isDisabled('[data-recht-aktivieren="erklaerung"]')));
+    await s.p.click('[data-recht-aktivieren="erklaerung"]');
+    await s.p.waitForSelector("#vorschau[open] [data-blatt=erklaerung]", { timeout: 5000 }).catch(() => {});
+    const ev = await s.p.evaluate(() => { const d = document.getElementById("vorschau"); return { offen: d.open, text: (d.querySelector(".blatt") || {}).textContent || "", bilder: d.querySelectorAll(".blatt img[data-unterschrift-bild]").length,
+      mail: (d.querySelector("[data-vorschau-mail]") || {}).href || "", entwurf: !!d.querySelector(".vorschau-kopf [data-entwurf]") }; });
+    ok("ERKLÄRUNG: Aktivieren öffnet sofort das Blatt für den Kunden (Firma, Kunde, beide Unterschriften)", ev.offen && ev.text.includes("Werkstatt Prüf-Firma") && ev.text.includes("Kundin Prüf-Blatt GmbH") && ev.bilder === 2, [ev.offen, ev.bilder, ev.text.slice(0, 80)]);
+    ok("ERKLÄRUNG: Entwurf-Hinweis in der Vorschau, nicht auf dem Blatt; nirgends „Analyse“", ev.entwurf && !/prüfen lassen/.test(ev.text) && !/analyse/i.test(ev.text));
+    const mt = decodeURIComponent(ev.mail);
+    ok("ERKLÄRUNG: „Per E-Mail“ ist ein mailto an die Kundin mit Betreff und Text", ev.mail.startsWith("mailto:kundin%40pruefblatt.example?subject=") && mt.includes("Verschwiegenheits- und Datenschutzerklärung") && mt.includes("7. Ihre Rechte") && !mt.includes("data:image"), ev.mail.slice(0, 80));
+    await s.p.keyboard.press("Escape");
+    ok("ERKLÄRUNG: danach „aktiviert am …“, Unterschriften eingefroren", (await s.p.getAttribute("[data-erklaerung-status]", "data-erklaerung-status")) === "aktiviert" && await s.p.locator('[data-recht="erklaerung"] [data-recht-aktivieren]').count() === 0 && await s.p.locator('[data-recht="erklaerung"] [data-unterschrift-weg]').count() === 0);
+    await reiter(s.p, "bedarf");
+    const pr = await druck(s.p, "#druck-protokoll");
+    ok("ERKLÄRUNG: das Bedarfsprotokoll nennt sie mit Datum", /Es gilt die Verschwiegenheits- und Datenschutzerklärung vom \d\d\.\d\d\.\d{4}/.test(pr.text));
+    /* Sterne */
+    await s.p.fill('[data-neu-eintrag="6"]', "Termine online buchen"); await s.p.click('[data-dazu="6"]');
+    await s.p.fill("#sterne-bereich", "Empfang"); await s.p.click('[data-stern="4"]');
+    ok("STERNE: Bewertung eintragen → Ø in der Tabelle", (await s.p.getAttribute("[data-sterne]", "data-sterne")) === "1" && /★ 4/.test(await s.p.textContent("[data-sterne-zeile]")));
+    const sb = await druck(s.p, "#druck-sterne-abnahme");
+    ok("STERNE: Sternebogen zum Ankreuzen mit dem Bedarf, ohne Fachbereich-Eintrag", sb.text.includes("Termine online buchen") && sb.text.includes("☐5") && !sb.text.includes("Empfang"));
+    /* Satz: nur im Wartungsvertrag */
+    await reiter(s.p, "umfang");
+    await s.p.fill("#satz-vorgang", "73"); await s.p.press("#satz-vorgang", "Tab");
+    await reiter(s.p, "angebot");
+    const SATZ = /(^|[^\d.,])73(,00)?\s?€|Stundensatz|€\/h/;
+    const wd = await druck(s.p, '[data-recht-druck="wartung"]');
+    ok("WARTUNG: der Stundensatz steht im Wartungsvertrag (73,00 €), dazu „Abrechnung nach Zeitaufwand“", /73,00\s€ netto je Stunde/.test(wd.text) && wd.text.includes("Abrechnung nach Zeitaufwand"), wd.text.match(/.{0,30}je Stunde.{0,10}/));
+    const vd = await druck(s.p, '[data-recht-druck="vereinbarung"]');
+    ok("VEREINBARUNG: kein Stundensatz (gestellt 73 €), Fassung und Ziel genannt", !SATZ.test(vd.text) && /Fassung 1/.test(vd.text) && vd.text.includes("je Baustein"), vd.text.match(/.{0,30}73.{0,30}/g));
+    const ad = await druck(s.p, "#druck-angebot");
+    ok("ANGEBOT: weiter kein Stundensatz, Freistunden als Satz „inklusive“", !SATZ.test(ad.text) && /Inklusive 4 Stunden Fehlerbehebung/.test(ad.text), ad.text.match(/.{0,30}(73|Inklusive).{0,30}/g));
+    await s.p.check('[data-papier="vereinbarung"]'); await s.p.click('[data-recht-aktivieren="vereinbarung"]'); await s.p.keyboard.press("Escape");
+    await s.p.check('[data-papier="wartung"]'); await s.p.click('[data-recht-aktivieren="wartung"]'); await s.p.keyboard.press("Escape");
+    ok("RECHT: „auf Papier unterschrieben“ aktiviert ohne gezeichnete Unterschrift", (await s.p.getAttribute('[data-recht="vereinbarung"]', "data-recht-status")) === "aktiviert" && (await s.p.getAttribute('[data-recht="wartung"]', "data-recht-status")) === "aktiviert");
+    const [dlU] = await Promise.all([s.p.waitForEvent("download"), s.p.click("#uebergabe-speichern")]);
+    const ueb = JSON.parse(fsm.readFileSync(await dlU.path(), "utf8"));
+    const uf = ueb.auftraege[0].files || [];
+    const html = uf.map((x) => Buffer.from(x.data.split(",")[1], "base64").toString("utf8")).join("\n");
+    ok("ÜBERGABE: Erklärung und Vereinbarung als HTML-Datei, Wartungsvertrag nicht, kein Satz", uf.length === 2 && uf.every((x) => x.mime === "text/html") && /Verschwiegenheitserklaerung_/.test(uf[0].name) && !/73,00|Stundensatz/.test(html + JSON.stringify(ueb.auftraege[0].data)), uf.map((x) => x.name));
+    await s.ctx.close();
   }
 
   /* ── 360 px ohne Querlaufen ── */

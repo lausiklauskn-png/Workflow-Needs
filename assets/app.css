@@ -206,3 +206,11 @@ dialog#vorschau::backdrop{background:rgba(0,0,0,.55)}
 .app-fuss{text-align:center;padding:18px 16px 28px;font-size:.85rem;color:var(--muted,inherit);opacity:.85}
 .app-fuss a,.recht a{color:inherit}
 .recht h1{margin-bottom:8px}.recht h2{margin:16px 0 6px;font-size:1.05rem}.recht p{margin:6px 0;line-height:1.5;overflow-wrap:anywhere}
+/* Leere Schreiblinie statt Platzhalter, wenn Kundendaten fehlen (Stufe 3 § 1b) */
+.schreiblinie{display:inline-block;min-width:60%;max-width:100%;border-bottom:1px solid currentColor;height:1.1em;vertical-align:bottom}
+/* Unterschrift mit Finger oder Stift (Stufe 3 § 4b) */
+.unterschrift-feld{flex:1 1 260px;display:flex;flex-direction:column;gap:4px;min-width:0}
+canvas.unterschrift{width:100%;max-width:600px;aspect-ratio:4/1;height:auto;background:#fff;border:1px dashed var(--line,#888);border-radius:8px;touch-action:none;cursor:crosshair}
+.blatt .unterschrift-bild{display:block;max-height:60px;max-width:100%}
+.blatt .sterne-ankreuzen{white-space:nowrap;font-size:11pt}
+.vorschau-kopf .badge{white-space:normal;max-width:100%}

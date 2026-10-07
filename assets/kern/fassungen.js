@@ -31,7 +31,8 @@
       satzCent: einst && einst.satzCent != null ? einst.satzCent : 8000, ust: null,
       protokoll: WN.bedarf.leeresProtokoll(),
       umfang: { bausteine: [], firmenanpassung: { von: 2, bis: 6 }, abstimmungPct: 15, pufferPct: 20,
-        kundenStundenwertCent: null, grenzeManuell: null },
+        kundenStundenwertCent: null, grenzeManuell: null,
+        gewaehrleistungH: einst && einst.wartung && einst.wartung.freistunden != null ? Number(einst.wartung.freistunden) || 0 : 0 },
       angebot: { nummer: "AN-" + d.slice(0, 4) + "-" + vier(nr), datum: d, gueltigBis: WN.rechnen.datumPlus(d, 4),
         preisbasis: "mitte", zahlungNachTest: false, zahlung: "", ueber: {} } });
     return v;
