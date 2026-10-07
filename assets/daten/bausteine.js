@@ -41,6 +41,8 @@
       "nachgesehen 2026-10-07 (20cfc95): Company Brain — Namens- und Bedeutungssuche; das Modell läuft lokal, wenn es im Repo liegt, sonst kommt es von Hugging Face (modules/03_embedding.js)"),
     b("schnitt", "Schnittstelle zu fremdem System", "Interface to another system", "", 0, [6, 12], [14, 26], [30, 60]),
     b("altdaten", "Datenübernahme aus Altbestand", "Data migration", "", 0, [4, 8], [10, 18], [20, 40]),
+    b("lizenz", "Freischaltung / Lizenz", "Licence / activation", "", 0, [4, 8], [8, 14], [14, 24], false,
+      "Schätzung, nicht nachgesehen (Stufe 3 § 4f C2): der Schalter für die vereinbarte Bedienungssperre — gebaut wird er je Kunden-App in einer eigenen Sitzung, nicht in Workflow-Needs. Daten bleiben, Export bleibt; die Sperre greift erst bei der nächsten Aktualisierung"),
     b("neu", "Neu, ohne Vorlage", "New, no template", "", 0, [10, 20], [24, 44], [50, 100]),
   ];
 

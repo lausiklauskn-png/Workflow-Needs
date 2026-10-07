@@ -66,7 +66,19 @@
       return dataUrl(x.blob, x.typ).then(function (d) { return { name: x.name, mime: x.typ || "", size: x.groesse || 0, data: d }; });
     }));
   }
+  /* Aktivierte Rechtsblätter als Datei zum Auftrag (Stufe 3, Frage 6): Erklärung und Vereinbarung,
+     ERST WENN AKTIVIERT, als eigenständige HTML-Datei. ⛔ Der Wartungsvertrag geht NICHT mit — er
+     trägt den Stundensatz, und die Übergabe bleibt ohne Satz. */
+  var MIT = { erklaerung: "Verschwiegenheitserklaerung", vereinbarung: "Vereinbarung-Zahlung-Rechte" };
+  function rechtsDateien(v, ctx) {
+    return Object.keys(MIT).filter(function (art) { return v[art] && v[art].aktiviert; }).map(function (art) {
+      var html = WN.aussen.alsHtml(WN.aussen.rechtsblatt(v, art, ctx));
+      var bytes = new TextEncoder().encode(html), s = "", i;
+      for (i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return { name: MIT[art] + "_" + v.id + ".html", mime: "text/html", size: bytes.length, data: "data:text/html;base64," + g.btoa(s) };
+    });
+  }
   function dateiname(v, f) { return "Auftrag_" + v.id + "-F" + f.nr + ".json"; }
 
-  WN.uebergabe = { auftrag: auftrag, buendel: buendel, dateien: dateien, dateiname: dateiname };
+  WN.uebergabe = { rechtsDateien: rechtsDateien, auftrag: auftrag, buendel: buendel, dateien: dateien, dateiname: dateiname };
 })(typeof window !== "undefined" ? window : globalThis);

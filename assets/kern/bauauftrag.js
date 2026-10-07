@@ -166,6 +166,21 @@
     sz.push("Kosten-Nutzen: Grenzlinie " + gl);
     L.push(sz.join(" · "), "");
 
+    /* Rechtsblätter und Sterne (Stufe 3): nur ja/nein und Zahlen — keine Unterschriften,
+       keine Namen der Mitarbeiter (Kundendaten). */
+    L.push("## Erklärungen und Sterne");
+    L.push("- Verschwiegenheitserklärung aktiviert: " + (v.erklaerung && v.erklaerung.aktiviert ? "ja" : "nein") +
+      " · Vereinbarung Zahlung/Rechte aktiviert: " + (v.vereinbarung && v.vereinbarung.aktiviert ? "ja" : "nein") +
+      " · Wartungsvertrag aktiviert: " + (v.wartung && v.wartung.aktiviert ? "ja" : "nein"));
+    var stB = WN.bedarf.sterneZusammen(v, "bedarf"), stA = WN.bedarf.sterneZusammen(v, "abnahme");
+    var stIds = Object.keys(stB).concat(Object.keys(stA).filter(function (k) { return !stB[k]; })).sort();
+    if (!stIds.length) L.push("- Sterne der Mitarbeiter: noch keine");
+    stIds.forEach(function (id) {
+      var f0 = function (z) { return z ? "Ø " + zahlH(z.schnitt) + " (" + z.anzahl + ")" : "–"; };
+      L.push("- Sterne " + id + ": beim Bedarf " + f0(stB[id]) + " · bei der Abnahme " + f0(stA[id]));
+    });
+    L.push("");
+
     /* Vollständiger Stand: lesbar UND als JSON zum Wiedereinlesen */
     L.push("## Vollständiger Stand (zum Nachschlagen)");
     var stand = { bedarf: [], bausteine: [] };

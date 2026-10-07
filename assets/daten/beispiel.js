@@ -12,6 +12,7 @@
     var v = F.neuerVorgang(nr, einst, "2026-10-01");
     v.titel = "Internetseite für ein Modegeschäft";
     v.beispiel = true;   // zählt nicht für die Sicherungs-Erinnerung
+    v.bid = "boutique";  // Kennung des Beispiels: zweimal laden legt keinen Doppel an
     v.kunde.firma = "Boutique Beispiel";
     v.kunde.ansprechpartner = "Erika Muster";
     v.kunde.mail = "kontakt@boutique.example";
@@ -64,5 +65,28 @@
     return v;
   }
 
-  WN.beispiel = { boutique: boutique };
+  /* ── Stufe 3: Register der Beispiele und gemeinsame Hilfen ──
+     Jedes Beispiel liegt in assets/daten/beispiel-*.js und meldet sich hier an.
+     Kundendaten der Beispiele sind ERFUNDEN (.example), kein echter Personenname. */
+  var LISTE = [{ id: "boutique", name: { de: "Boutique (Testfall)", en: "Boutique (test case)" }, bauen: boutique, quelle: "erfunden" }];
+  function registrieren(b) { LISTE = LISTE.filter(function (x) { return x.id !== b.id; }).concat([b]); }
+  /* Ein gespeicherter Vorgang gehört zu welchem Beispiel? Ältere Boutique-Vorgänge tragen noch kein bid. */
+  function bidVon(v) { return v && v.beispiel ? (v.bid || (v.titel === "Internetseite für ein Modegeschäft" ? "boutique" : "")) : ""; }
+  function hilfen(v) {
+    var B = WN.bedarf;
+    return {
+      e: function (p, nr, text, extra) { return B.eintragNeu(v, p, nr, text, extra); },
+      bed: function (p, text, prio, nutzen) {
+        var e = B.eintragNeu(v, p, 6, text); e.prio = prio || "";
+        if (nutzen) e.nutzen = { stundenMonat: nutzen.h == null ? null : nutzen.h, euroMonat: nutzen.eur == null ? null : nutzen.eur, text: nutzen.text || "" };
+        return e;
+      },
+      bs: function (f, katalog, name, groesse, deckt, extra) {
+        var b = Object.assign({ id: B.neueKennung(v, "K"), katalog: katalog, name: name || "", menge: 1, groesse: groesse || null, faktoren: [], deckt: deckt || [] }, extra || {});
+        f.umfang.bausteine.push(b); return b;
+      },
+    };
+  }
+
+  WN.beispiel = { boutique: boutique, registrieren: registrieren, liste: function () { return LISTE.slice(); }, bidVon: bidVon, hilfen: hilfen };
 })(typeof window !== "undefined" ? window : globalThis);
