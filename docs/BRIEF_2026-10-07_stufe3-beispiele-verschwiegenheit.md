@@ -315,30 +315,29 @@ nächsten Aktualisierung nicht mehr benutzbar.
 - Englische Texte für jeden neuen `t("…")` (Probe misst es). Den Rechtstext der Erklärung:
   Englisch nur, wenn Klaus es will (wie Impressum: verbindlich ist die deutsche Fassung).
 
-## 6 · Offene Fragen an Klaus (vor dem Bauen stellen)
+## 6 · Fragen an Klaus — alle beantwortet
 
-1. ~~vier oder fünf~~ — beantwortet (Klaus „1. ok“): **vier**, Tomys Hub ist der Werbeartikel-Betrieb.
-2. Perfect Skin Beauty: welches Repo gilt (`Perfect-Skin-Beauty` oder `New-Perfect-Skin-Beauty-`)?
-3. Beispiel 4: ein Vorgang mit allen eigenen Apps — oder je App ein Vorgang?
-4. Verschwiegenheit: wie lange nach Ende der Zusammenarbeit (Vorschlag 3 Jahre)? Unterschreibt
-   nur Klaus (einseitige Erklärung) oder beide (Vereinbarung)?
-5. „Per E-Mail“: reicht `mailto` mit Text + PDF von Hand angehängt?
-6. Soll die Erklärung mit in die WorkFloh-Übergabe?
-7. Zahlung nach Erfolg: entfällt sie **ganz**, wenn das Ziel verfehlt ist, oder zahlt der Kunde **je
-   Baustein**, den er behält? (Noch offen. Beantwortet: „erfolgreich“ = Bedarfsprotokoll + Sterne der
-   Mitarbeiter, § 4f A.)
-8. ~~Nutzungsrecht~~ — beantwortet (§ 4f B, C): unbegrenzt, Änderungen nur durch Klaus, ohne Zahlung Sperre.
-9. ~~je Vorgang oder je Fassung~~ — beantwortet (§ 4f D): je Vorgang für die Grundversion; Verbesserungen
-   als Nachtrag oder neuer Vorgang; dazu ein Wartungsvertrag mit eingerechneten Freistunden.
-10. Sterne der Mitarbeiter: zu beiden Zeitpunkten (Bedarf und Abnahme)? Am Gerät oder auf Papier?
-11. ~~Stundensatz im Wartungsvertrag~~ — beantwortet (Klaus 2026-10-07: „du bekommst hiermit mein
-    ausdrückliches Ja … nach Zeitaufwand soll separat mit angeführt werden, also nicht nur nach Stunden“), § 4f D2.
-12. ~~Sperre~~ — beantwortet (§ 4f C2): Bedienungssperre, Daten bleiben, später in der Kunden-App gebaut,
-    hier nur vereinbart. (Alte Frage zum Nachlesen: einverstanden mit den drei Grenzen in § 4f C (nur Bedienung, Export bleibt,
-    erst ab der nächsten Aktualisierung) und damit, dass sie in der Kunden-App gebaut wird, nicht hier?
+Klaus 2026-10-07: *„Suche bitte die beste Antwort für mich, für die Fragen, die noch offen waren. Und
+nimm diese als Antwort von mir.“* Die Antworten zu 2, 3, 4, 5, 6, 7, 10 und 13 hat die Sitzung danach
+gewählt, jeweils passend zu dem, was Klaus vorher gesagt hat. **Sie gelten als Klaus' Antwort.** Die
+nächste Sitzung fragt nicht erneut nach. Merkt sie beim Bauen, dass eine davon nicht trägt, nennt sie
+das und schlägt eine andere vor.
 
-13. Aktualisierungen nach den zwei kostenlosen Jahren: bezahlt (wie — Wartungsvertrag, je Aktualisierung)
-    oder weiter kostenlos?
+| # | Frage | Antwort (gilt) | warum diese |
+|---|---|---|---|
+| 1 | vier oder fünf Beispiele | **vier**, Tomys Hub ist der Werbeartikel-Betrieb | Klaus: „1. ok“ |
+| 2 | welches Perfect-Skin-Beauty-Repo | **`Perfect-Skin-Beauty`** (privat, zuletzt bearbeitet 2026-09-30). `New-Perfect-Skin-Beauty-` (2026-09-25) nur, wenn das private Repo nicht lesbar ist; dann die Lücke in der App benennen | der neuere Stand |
+| 3 | eigene Apps: ein Vorgang oder je App einer | **ein Vorgang** „Eigene Apps“, darin je App eine Gruppe Bausteine (Name beginnt mit dem App-Namen); Fassungen = Ausbaustufen | Klaus: „vier insgesamt“; die Ist-Stunden je Repo stehen trotzdem je Baustein |
+| 4 | Dauer der Verschwiegenheit, wer unterschreibt | **3 Jahre** nach Ende der Zusammenarbeit für Geschäftliches; **personenbezogene Daten ohne Frist** (das verlangt die DSGVO ohnehin). **Beide unterschreiben**: Klaus verpflichtet sich, der Kunde bestätigt den Erhalt | Klaus: „mit der Unterschrift … damit er etwas in der Hand hat“ |
+| 5 | Per E-Mail | **ja**: `mailto` mit Betreff und Text; das PDF („Als PDF speichern“) hängt Klaus von Hand an. Kein Server | ehrlich machbar ohne Server |
+| 6 | Erklärung in die WorkFloh-Übergabe | **ja**, als Datei (Druckblatt als HTML) in `files[]` — **erst wenn aktiviert** | sie gehört zum Auftrag bis zur Buchhaltung |
+| 7 | Zahlung bei Misserfolg: ganz weg oder je Baustein | **je Baustein**: nach der Abnahme zahlt der Kunde die Bausteine, die er behält. Was er nicht behält, wird nicht berechnet, und dafür gibt es kein Nutzungsrecht. Die Sterne der Mitarbeiter und die Kennungen des Bedarfsprotokolls sind die **Grundlage des Abnahme-Gesprächs**, keine Rechen-Automatik | Klaus: „je nachdem, was der Kunde als praktisch empfindet“; ein festes Sterne-Limit würde Klaus' Entscheidung vorwegnehmen |
+| 8 | Nutzungsrecht | beantwortet (§ 4f B, C2) | Klaus |
+| 9 | je Vorgang oder je Fassung | beantwortet (§ 4f D) | Klaus |
+| 10 | Sterne: wann, wie erfasst | **beide Zeitpunkte** (Bedarf und Abnahme). **Zuerst auf Papier**: ein Ausdruck mit Sternchen zum Ankreuzen je Bedarf, Klaus trägt die Ergebnisse in der App nach. Eingabe am Gerät reihum erst, wenn Klaus sie will | wenig Bauaufwand; Mitarbeiter brauchen kein Gerät |
+| 11 | Stundensatz im Wartungsvertrag | beantwortet (§ 4f D2) | Klaus' ausdrückliches Ja |
+| 12 | Sperre | beantwortet (§ 4f C2) | Klaus |
+| 13 | Aktualisierungen nach 2 Jahren | ab dem 3. Jahr **über den Wartungsvertrag**: Jahrespauschale, Höhe in Klaus' Einstellungen, auf dem Wartungsblatt genannt. **Ohne Wartungsvertrag läuft die App weiter in ihrer letzten Fassung**, ohne Sperre (gesperrt wird nur, wenn der Auftrag selbst nicht bezahlt wird, § 4f C2) | trennt sauber „nicht bezahlt“ von „keine Wartung mehr“ |
 
 ## 7 · Zugriff (gemessen in dieser Sitzung)
 

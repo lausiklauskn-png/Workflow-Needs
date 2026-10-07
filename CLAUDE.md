@@ -129,7 +129,7 @@ die in das Angebot mit einfließen … PDF als PDF, EML als E-Mail … Screensho
 **Nächste Stufe:** `docs/BRIEF_2026-10-07_stufe3-beispiele-verschwiegenheit.md` — zuerst der Befund
 „Platzhalter auf dem Kundenblatt“ (§ 1b), dann vier Beispiele aus den eigenen Repos, die
 Verschwiegenheits- und Datenschutzerklärung, die Vereinbarung zu Zahlung und Rechten, Sterne der
-Mitarbeiter. Die offenen Fragen (§ 6) vor dem Bauen stellen.
+Mitarbeiter. Alle Fragen in § 6 sind beantwortet (Klaus 2026-10-07) — nicht erneut stellen.
 
 ## Benannte Grenzen
 
