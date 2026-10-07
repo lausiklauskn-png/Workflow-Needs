@@ -270,7 +270,9 @@
         if (!f) return;
         var s = schaetze(f, tabellen), mitte = (s.stundenVon + s.stundenBis) / 2;
         out.push({ vorgang: v.id, titel: v.titel || "", fassung: f.nr, von: s.stundenVon, bis: s.stundenBis, ist: ist,
-          abweichungPct: mitte > 0 ? Math.round((ist - mitte) / mitte * 100) : null, imRahmen: ist >= s.stundenVon && ist <= s.stundenBis });
+          abweichungPct: mitte > 0 ? Math.round((ist - mitte) / mitte * 100) : null, imRahmen: ist >= s.stundenVon && ist <= s.stundenBis,
+          /* Was es gekostet hätte: Ist-Stunden × Satz der Fassung (netto, intern) — neben der geschätzten Spanne */
+          kostenVon: s.kostenVon, kostenBis: s.kostenBis, satzCent: f.satzCent, istKostenCent: Math.round(ist * f.satzCent) });
       });
     });
     return out;

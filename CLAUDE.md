@@ -188,6 +188,31 @@ melden), beide geschärft und einzeln nachgefahren: gefangen. Voller Lauf über 
 1 aus falschem Grund · 0 tote Anker** — der alte Fall „UEB: Platzhalter bleibt im Kundenfeld“ fing nur noch über den
 Cache: seit § 1b decken `kundeExtern` und `rein()` einander. Der Fall nimmt jetzt beide weg, einzeln nachgefahren: gefangen.
 
+## Tomys Hub — Gesamtprogramm (2026-10-07, abends)
+
+Klaus: *„einen Beispielvorgang mit den kompletten Angaben … Tommy's Hub komplettes Programm … was es theoretisch
+gekostet hätte“* · *„Beispiel Bilder und PDFs mit einfügen … PDFs und EMLs … bei Tomys Workflow reingepackt“* ·
+*„Wofür du keine Daten hast, erfinde welche … auch mit einer gefälschten Unterschrift“*.
+
+- `assets/daten/beispiel-tomys-gesamt.js` (bid `tomys-gesamt`): Tomys Hub als Kunde, alle 18 Bereiche, 4 Fassungen
+  (F1 WorkFloh + BookLedgerPro bis 07-03 · F2 Internetseite, Gestalter, Brücke, Tresor bis 07-16 · F3 Netz, Feinschliff,
+  BLP-Ausbau bis 09-23 · F4 PDF-Werkzeug, Scanner, Prüfung bis 10-07), alles beauftragt (`grenzeManuell: "keine"`),
+  Erklärung/Vereinbarung/Wartung mit erfundenen Unterschriften (`assets/daten/beispiel-unterschriften.js`).
+  Ohne eigene Firmendaten steht in den eingefrorenen Blättern „Werkstatt Beispiel“.
+- **Ist-Stunden VEREINIGT** über Tomys-Hub (alle), BookLedgerPro (alle), Mein-WorkFloh (bis zum Abzweig 2026-07-04),
+  Workflow-PDF und Auslieferung-Pruefer (nur Commits an den Dateien, die byte-gleich in Tomys' WorkFloh stecken):
+  **108,6 · 154,3 · 199,9 · 248,4 h** (einzeln addiert 300,6). Gleiche Methode wie `markt.js`, Untergrenze, `--all`,
+  Autorzeit. ⚠ Nicht gezählt: Sage-Netz-Module.
+- **Tabellen → „Eigene Aufträge“** hat zwei neue Spalten (intern): Schätzung netto und **Ist × Satz netto**
+  (`istVergleich` → `istKostenCent`). Bei 80 €: F4 Ist 19.872 € gegen Schätzung 30.324–54.458 €, Angebot 42.071 € netto.
+- **Sieben erfundene Anhänge** unter `beispiele/tomys-gesamt/`, gebaut mit `python3 tools/beispiel-dateien.py`
+  (Pillow + reportlab): 2 E-Mails (eine mit Foto, eine mit CSV), 2 PDFs, 3 Bilder. Registry-Feld `anhaenge`;
+  `beispielLaden` holt sie, hängt sie als Blob mit Typ an (`message/rfc822` für .eml), die Übergabe trägt sie an WorkFloh.
+  Im Vorrat (≈ 300 KB). Telefonnummern aus dem Berliner Film-Block 030 23125 …
+- Das alte Beispiel `tomys` heißt jetzt „Tomys Hub — nur die Hub-App“.
+- Gemessen: kern **254 grün · 0 ROT** · browser **122 grün · 0 ROT** · Gegenprobe `GESAMT:` **7 gefangen · 0 blind**.
+  ⚠ Nicht gemessen: ob WorkFloh die .eml beim Import auspackt (das macht WorkFlohs eigener Posteingang, hier nur die Übergabe).
+
 ## Benannte Grenzen
 
 - Platzhalter sind **keine Verschlüsselung**: der Klartext geht nur gar nicht erst hinaus. Was
