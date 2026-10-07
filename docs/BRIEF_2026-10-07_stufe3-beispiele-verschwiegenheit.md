@@ -251,6 +251,29 @@ nächsten Aktualisierung nicht mehr benutzbar.
      (nächste Aktualisierung). Wer nie wieder online geht oder die Dateien kopiert, behält die alte
      Fassung. Das heißt „unbrauchbar ab der nächsten Aktualisierung“, nicht „sofort“ — so benennen.
 
+**C2 · Klaus' Festlegung (2026-10-07, vierte Nachricht) — gilt:**
+
+> „Die Sperre für den Kunden … werden wir erstmal festhalten, später einbauen. Die wird in der App
+> eingebaut … ich werde sie dann … in der App aktivieren, wenn es Not tut. Das soll auch vereinbart
+> werden, dass wenn es nicht zur Zahlung kommt, die App dann deaktiviert wird. … Eine Bedienungssperre …
+> Die Daten bleiben erhalten. Er braucht keine Angst haben, dass irgendwas verloren geht. … Aktualisierung
+> erfolgt automatisch … lebenslang eine Verbesserung der App, automatisch, wenn es erwünscht ist … die
+> Aktualisierung wird die ersten zwei Jahre kostenlos sein.“
+
+- **In dieser Stufe NICHT bauen:** den Sperr-Mechanismus. Er kommt später in die jeweilige Kunden-App;
+  Klaus schaltet ihn dort ein, „wenn es Not tut“. Hier nur: der Satz in der Vereinbarung und der
+  Katalog-Baustein „Freischaltung / Lizenz“ (Schätzung).
+- **Satz für die Vereinbarung (4e), Entwurf:** „Kommt es nach der Abnahme nicht zur vereinbarten
+  Zahlung, wird die Bedienung der App gesperrt. Ihre Daten bleiben vollständig erhalten und lassen sich
+  weiterhin exportieren; es geht nichts verloren.“
+- **Aktualisierungen:** kommen **automatisch**, solange der Kunde sie wünscht (abschaltbar), lebenslang.
+  Die **ersten zwei Jahre kostenlos**; danach: noch offen (Frage 13). Satz für die Vereinbarung:
+  „Aktualisierungen der App erhalten Sie automatisch, solange Sie das wünschen. In den ersten zwei Jahren
+  ab Abnahme sind sie kostenlos.“
+- Abgrenzung zu D: **Aktualisierung** = Klaus verbessert die Grundversion von sich aus (kostenlos 2 Jahre);
+  **Verbesserung auf Wunsch des Kunden** = Nachtrag oder neuer Vorgang (bezahlt). Diese Grenze steht so im
+  Blatt, sonst ist „kostenlos“ missverständlich.
+
 **D · Grundversion, Verbesserungen und Wartung**
 
 - Ausgeliefert wird eine **Grundversion** (die Fassung, die zur Vereinbarung unterschrieben ist). Die
@@ -282,7 +305,7 @@ nächsten Aktualisierung nicht mehr benutzbar.
 
 ## 6 · Offene Fragen an Klaus (vor dem Bauen stellen)
 
-1. Vier Beispiele mit Tomys Hub **als** Werbeartikel-Betrieb — oder fünf (eigener erfundener)?
+1. ~~vier oder fünf~~ — beantwortet (Klaus „1. ok“): **vier**, Tomys Hub ist der Werbeartikel-Betrieb.
 2. Perfect Skin Beauty: welches Repo gilt (`Perfect-Skin-Beauty` oder `New-Perfect-Skin-Beauty-`)?
 3. Beispiel 4: ein Vorgang mit allen eigenen Apps — oder je App ein Vorgang?
 4. Verschwiegenheit: wie lange nach Ende der Zusammenarbeit (Vorschlag 3 Jahre)? Unterschreibt
@@ -297,8 +320,12 @@ nächsten Aktualisierung nicht mehr benutzbar.
    als Nachtrag oder neuer Vorgang; dazu ein Wartungsvertrag mit eingerechneten Freistunden.
 10. Sterne der Mitarbeiter: zu beiden Zeitpunkten (Bedarf und Abnahme)? Am Gerät oder auf Papier?
 11. Wartungsvertrag: bleibt der Stundensatz ungenannt („nach Aufwand“), oder soll er dort stehen?
-12. Sperre ohne Zahlung: einverstanden mit den drei Grenzen in § 4f C (nur Bedienung, Export bleibt,
+12. ~~Sperre~~ — beantwortet (§ 4f C2): Bedienungssperre, Daten bleiben, später in der Kunden-App gebaut,
+    hier nur vereinbart. (Alte Frage zum Nachlesen: einverstanden mit den drei Grenzen in § 4f C (nur Bedienung, Export bleibt,
     erst ab der nächsten Aktualisierung) und damit, dass sie in der Kunden-App gebaut wird, nicht hier?
+
+13. Aktualisierungen nach den zwei kostenlosen Jahren: bezahlt (wie — Wartungsvertrag, je Aktualisierung)
+    oder weiter kostenlos?
 
 ## 7 · Zugriff (gemessen in dieser Sitzung)
 
