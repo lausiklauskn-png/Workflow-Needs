@@ -237,6 +237,10 @@ const FAELLE = [
     an: [["assets/app.js", "\"data-erklaer-chip\": art + \":\" + id, onclick: function () { erklaerUmschalten(v, f, bs, art, id); } });", "\"data-erklaer-chip\": art + \":\" + id, onclick: function () { if (art === \"deckt\") { bs.deckt = umschalten(bs.deckt, id); merken(v); } erklaerUmschalten(v, f, bs, art, id); } });"]] },
   { name: "PAGES: .gitignore sperrt nur das Verzeichnis", probe: K, erwartet: "PAGES: .gitignore sperrt node_modules",
     an: [[".gitignore", "node_modules", "node_modules/"]] },
+  { name: "ERKLÄREN: kein Weg zur neuen Fassung in der unterschriebenen", probe: B, erwartet: "ERKLÄREN: unterschrieben — Grenzlinie gesperrt",
+    an: [["assets/app.js", "    if (f.unterschrieben && f === F.aktuelle(v)) {", "    if (false) {"]] },
+  { name: "ERKLÄREN: alter Satz „deckt den Punkt nicht ab“", probe: B, erwartet: "ERKLÄREN: der Satz sagt, was folgt",
+    an: [["assets/app.js", "an && andere.length ? t(\"Dieser Baustein deckt den Punkt ab — nicht allein. Auch abgedeckt von\") + \": \" + andere.join(\", \")", "an && andere.length ? t(\"Dieser Baustein deckt den Punkt ab.\")"]] },
 ];
 
 function vorkommen(text, teil) { let n = 0, i = 0; while ((i = text.indexOf(teil, i)) >= 0) { n++; i += teil.length; } return n; }
