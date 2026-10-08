@@ -699,6 +699,7 @@
 
     /* Gewählte Bausteine */
     var gew = h("div", { class: "karte" }, h("h2", { text: t("Umfang") + " · " + (u.bausteine || []).length + " " + t("Bausteine") }));
+    gew.append(preisLeiste(v, f, ro));
     (u.bausteine || []).forEach(function (bs, i) { gew.append(bausteinKarte(v, f, bs, s.zeilen[i], ro)); });
     var ungedeckt = BD.bedarfe(f.protokoll).concat(f.protokoll.bereiche[8].eintraege).filter(function (e) {
       return !(u.bausteine || []).some(function (b) { return (b.deckt || []).indexOf(e.id) >= 0; });
@@ -731,47 +732,168 @@
       "data-manuell": markiert ? "1" : "0", onchange: function (e) { fn(zahl(e.target.value)); merken(v); zeichne(); } });
   }
   function bausteinDazu(v, f, katalog, name, deckt) {
+    vorher(v, f);
     var b = { id: BD.neueKennung(v, "K"), katalog: katalog, name: name || "", menge: 1, groesse: katalog ? "klein" : null, faktoren: [], deckt: deckt || [] };
     f.umfang.bausteine.push(b); merken(v); zeichne();
+  }
+
+  /* ── Erklären, an Ort und Stelle ändern, zurück (Klaus 2026-10-08) ──
+     „Die B-Nummern … sind noch nicht als Link … man klickt an, sieht, ah, okay, B01 bedeutet das …
+     ein X oder so lassen … sehen, wie sich der Preis verändert. Und einmal wieder ein Zurück-Button.“
+     Jeder Chip am Baustein (Kennung K-nn, Größe, Faktor, deckt B-/O-nn) öffnet ein Feld darunter:
+     was er bedeutet und was eine Änderung am Preis bewirkt — VORHER gerechnet an einer Kopie der
+     Fassung, nicht geraten. Geändert wird erst auf Tipp. Zurück hält bis zu 50 Stände des Umfangs,
+     je Vorgang und Fassung, nur im Speicher (nicht in IndexedDB). In einer unterschriebenen Fassung
+     erklärt das Feld, ändert aber nichts. */
+  var ZURUECK = {};
+  function zKey(v, f) { return v.id + ":" + f.nr; }
+  function preisBild(f) {
+    var s = R.schaetze(f, S.tabellen), kn = R.kostenNutzen(f, s, S.einst.zeitraum);
+    var p = R.positionen(f, s, kn, S.tabellen, S.lang), sum = function (l) { return l.reduce(function (a, x) { return a + x.nettoCent; }, 0); };
+    return { von: s.kostenVon, bis: s.kostenBis, angebot: sum(p.haupt), optional: sum(p.optional) };
+  }
+  function vorher(v, f) {
+    var k = zKey(v, f), st = ZURUECK[k] = ZURUECK[k] || [];
+    st.push({ umfang: JSON.stringify(f.umfang), preis: preisBild(f) });
+    if (st.length > 50) st.shift();
+  }
+  function zurueckNehmen(v, f) {
+    var st = ZURUECK[zKey(v, f)] || [];
+    if (!st.length || !F.bearbeitbar(v, f)) return;
+    f.umfang = JSON.parse(st.pop().umfang);
+    merken(v); zeichne();
+  }
+  function delta(a, b) { var d = b - a; return d === 0 ? "±0 €" : (d > 0 ? "+" : "−") + euroG(Math.abs(d)); }
+  function preisLeiste(v, f, ro) {
+    var jetzt = preisBild(f), st = ZURUECK[zKey(v, f)] || [];
+    var l = h("div", { class: "preis-leiste", "data-preis-leiste": "" },
+      h("span", { "data-angebot-jetzt": String(jetzt.angebot) }, h("b", { text: t("Angebot netto") + ": " }), euroG(jetzt.angebot),
+        jetzt.optional ? " · " + t("optional") + " " + euroG(jetzt.optional) : ""));
+    if (st.length && !ro) {
+      var alt = st[st.length - 1].preis;
+      l.append(h("span", { class: "gedaempft klein", "data-preis-vorher": String(alt.angebot) },
+        t("vor der letzten Änderung") + ": " + euroG(alt.angebot) + " (" + delta(alt.angebot, jetzt.angebot) + ")"),
+        knopf("↶ " + t("Zurück") + " (" + st.length + ")", function () { zurueckNehmen(v, f); }, "klein", { "data-umfang-zurueck": String(st.length) }));
+    }
+    return l;
+  }
+  function offenesErklaer(v, f, bs, art, id) {
+    var I = S.info; return !!(I && I.v === v.id && I.f === f.nr && I.bs === bs.id && I.art === art && I.id === id);
+  }
+  function erklaerUmschalten(v, f, bs, art, id) {
+    S.info = offenesErklaer(v, f, bs, art, id) ? null : { v: v.id, f: f.nr, bs: bs.id, art: art, id: id };
+    zeichne();
+  }
+  function erklaerChip(v, f, bs, art, id, cls, text) {
+    var offen = offenesErklaer(v, f, bs, art, id);
+    return h("button", { type: "button", class: cls + " erklaer-chip" + (offen ? " erklaer-offen" : ""), text: text, "aria-expanded": offen ? "true" : "false",
+      "data-erklaer-chip": art + ":" + id, onclick: function () { erklaerUmschalten(v, f, bs, art, id); } });
+  }
+  function bsIn(ff, id) { return (ff.umfang.bausteine || []).filter(function (b) { return b.id === id; })[0]; }
+  function umschalten(liste, id) { liste = liste || []; return liste.indexOf(id) >= 0 ? liste.filter(function (x) { return x !== id; }) : liste.concat(id); }
+  function erklaerInhalt(v, f, bs, art, id) {
+    var z = [], a = [];
+    if (art === "deckt") {
+      var x = BD.alleEintraege(f.protokoll).filter(function (y) { return y.e.id === id; })[0];
+      var e = x ? x.e : { text: "?" }, an = (bs.deckt || []).indexOf(id) >= 0;
+      var andere = (f.umfang.bausteine || []).filter(function (b) { return b !== bs && (b.deckt || []).indexOf(id) >= 0; }).map(function (b) { return b.id; });
+      if (x) z.push(t("Bereich") + " " + x.nr + " · " + nm(WN.BEREICHE[x.nr - 1].name));
+      z.push(h("span", { "data-erklaer-text": "" }, e.text || "–"));
+      if (e.prio) z.push(t("Priorität") + ": " + nm(WN.PRIO_NAME[e.prio]));
+      z.push(an ? t("Dieser Baustein deckt den Punkt ab.") : t("Dieser Baustein deckt den Punkt nicht ab."));
+      z.push(andere.length ? t("Auch abgedeckt von") + ": " + andere.join(", ") : t("Kein anderer Baustein deckt ihn ab."));
+      z.push(h("span", { class: "gedaempft" }, t("Der Punkt selbst bleibt im Bedarfsprotokoll — streichen im Reiter „1 Bedarf“. Die Abdeckung bestimmt Priorität und Nutzen, also die Grenzlinie (fest oder optional im Angebot).")));
+      a.push(an ? { key: "weg", label: "✕ " + t("Nicht durch diesen Baustein"), tun: function (ff, b) { b.deckt = umschalten(b.deckt, id); } }
+        : { key: "dazu", label: "✓ " + t("Durch diesen Baustein abdecken"), tun: function (ff, b) { b.deckt = umschalten(b.deckt, id); } });
+      if (andere.length) a.push({ key: "ueberall", label: "✕ " + t("Aus allen Bausteinen nehmen"), tun: function (ff) {
+        (ff.umfang.bausteine || []).forEach(function (b) { b.deckt = (b.deckt || []).filter(function (y) { return y !== id; }); }); } });
+      return { titel: id, zeilen: z, aktionen: a };
+    }
+    if (art === "faktor") {
+      var fk = S.tabellen.faktoren.filter(function (q) { return q.id === id; })[0] || { name: { de: id }, mal: 1 };
+      var fan = (bs.faktoren || []).indexOf(id) >= 0;
+      z.push(t("Faktor") + " ×" + String(fk.mal).replace(".", S.lang === "en" ? "." : ",") + " " + t("auf die Stunden dieses Bausteins (Schätzung, nicht gemessen; änderbar unter „Tabellen“)."));
+      z.push(fan ? t("Gesetzt.") : t("Nicht gesetzt."));
+      a.push({ key: fan ? "weg" : "dazu", label: fan ? "✕ " + t("Faktor entfernen") : "✓ " + t("Faktor setzen"), tun: function (ff, b) { b.faktoren = umschalten(b.faktoren, id); } });
+      return { titel: nm(fk.name), zeilen: z, aktionen: a };
+    }
+    if (art === "groesse") {
+      var kk = R.katalogVon(S.tabellen, bs.katalog), sp = kk && kk.spannen && kk.spannen[id];
+      z.push(sp ? t("Spanne laut Katalog") + ": " + std(sp[0]) + "–" + std(sp[1]) + " h " + t("je Stück, vor der Wiederverwendung") : t("Kein Katalog-Baustein: Stunden von Hand setzen."));
+      z.push(bs.groesse === id ? t("Gewählt.") : t("Nicht gewählt."));
+      if (bs.groesse !== id) a.push({ key: "waehlen", label: "✓ " + t("Diese Größe nehmen"), tun: function (ff, b) { b.groesse = id; } });
+      return { titel: t({ klein: "klein", mittel: "mittel", gross: "groß" }[id]), zeilen: z, aktionen: a };
+    }
+    var k = R.katalogVon(S.tabellen, bs.katalog);
+    z.push(R.bausteinName(bs, S.tabellen, S.lang));
+    if (k && k.vorlage) z.push(t("Vorlage") + ": " + k.vorlage + " · " + Math.round(k.wv * 100) + " % " + t("Wiederverwendung"));
+    if (k && k.hinweis) z.push(h("span", { class: "gedaempft" }, k.hinweis));
+    z.push(t("deckt:") + " " + ((bs.deckt || []).join(", ") || "–"));
+    a.push({ key: "entfernen", label: "✕ " + t("Baustein entfernen"), tun: function (ff) { ff.umfang.bausteine = (ff.umfang.bausteine || []).filter(function (b) { return b.id !== bs.id; }); } });
+    return { titel: bs.id, zeilen: z, aktionen: a };
+  }
+  function erklaerFeld(v, f, bs, ro, art, id) {
+    if (!offenesErklaer(v, f, bs, art, id)) return null;
+    var d = erklaerInhalt(v, f, bs, art, id), zu = function () { S.info = null; zeichne(); };
+    var box = h("div", { class: "erklaer-feld", "data-erklaer": art + ":" + id },
+      h("div", { class: "bereich-kopf" }, h("b", { text: d.titel }), knopf("✕", zu, "klein", { "aria-label": t("Erklärung schließen"), "data-erklaer-zu": "" })));
+    d.zeilen.forEach(function (zl) { box.append(h("p", { class: "klein" }, zl)); });
+    if (ro) box.append(h("p", { class: "gedaempft klein", "data-erklaer-nurlesen": "" }, t("Unterschriebene oder ältere Fassung: hier nur ansehen. Ändern geht in einer neuen Fassung (Reiter „Fassungen“).")));
+    else {
+      var jetzt = preisBild(f);
+      d.aktionen.forEach(function (ak) {
+        var kopie = JSON.parse(JSON.stringify(f)); ak.tun(kopie, bsIn(kopie, bs.id));
+        var nach = preisBild(kopie);
+        box.append(h("div", { class: "zeile erklaer-aktion" },
+          knopf(ak.label, function () { vorher(v, f); ak.tun(f, bsIn(f, bs.id)); if (ak.key === "entfernen") S.info = null; merken(v); zeichne(); }, "klein", { "data-erklaer-tun": ak.key }),
+          h("span", { class: "klein gedaempft", "data-wirkung": String(nach.angebot - jetzt.angebot) },
+            t("Angebot netto") + " " + euroG(jetzt.angebot) + " → " + euroG(nach.angebot) + " (" + delta(jetzt.angebot, nach.angebot) + ") · " +
+            t("Schätzung") + " " + euroG(nach.von) + "–" + euroG(nach.bis))));
+      });
+    }
+    box.append(knopf("✓ " + t("So lassen"), zu, "klein", { "data-erklaer-lassen": "" }));
+    return box;
   }
   function bausteinKarte(v, f, bs, z, ro) {
     var k = R.katalogVon(S.tabellen, bs.katalog);
     var karte = h("div", { class: "baustein" + (z.geschaetzt ? "" : " offen"), "data-baustein": bs.id, "data-geschaetzt": z.geschaetzt ? "1" : "0" });
     karte.append(h("div", { class: "bereich-kopf" },
-      h("div", { class: "band" }, h("span", { class: "badge kennung", text: bs.id }),
+      h("div", { class: "band" }, erklaerChip(v, f, bs, "kennung", bs.id, "badge kennung", bs.id),
         ro || k ? h("b", { text: R.bausteinName(bs, S.tabellen, S.lang) })
           : h("input", { value: bs.name, "data-key": "bn-" + bs.id, oninput: function (e) { bs.name = e.target.value; merken(v); } }),
         z.geschaetzt ? h("span", { class: "badge", text: std(z.von) + "–" + std(z.bis) + " h" }) : h("span", { class: "badge gelb", "data-noch-nicht": "", text: t("noch nicht geschätzt") })),
-      ro ? null : knopf("✕", function () { f.umfang.bausteine = f.umfang.bausteine.filter(function (x) { return x !== bs; }); merken(v); zeichne(); }, "klein gefahr", { "aria-label": t("Baustein entfernen") })));
+      ro ? null : knopf("✕", function () { vorher(v, f); f.umfang.bausteine = f.umfang.bausteine.filter(function (x) { return x !== bs; }); merken(v); zeichne(); }, "klein gefahr", { "aria-label": t("Baustein entfernen") })));
+    anhaengen(karte, erklaerFeld(v, f, bs, ro, "kennung", bs.id));
     if (k && k.vorlage) karte.append(h("div", { class: "gedaempft klein", text: t("Vorlage") + ": " + k.vorlage + " · " + Math.round(k.wv * 100) + " % " + t("Wiederverwendung") + (k.geprueft ? " · ✓ " + t("nachgesehen") : " · " + t("laut Brief, nicht nachgesehen")) }));
     var zeile = h("div", { class: "zeile" });
-    zeile.append(t("Menge"), zaehler(bs.menge, ro, function (n) { bs.menge = Math.max(1, n); merken(v); zeichne(); }, "m-" + bs.id));
+    zeile.append(t("Menge"), zaehler(bs.menge, ro, function (n) { vorher(v, f); bs.menge = Math.max(1, n); merken(v); zeichne(); }, "m-" + bs.id));
     var seg = h("span", { class: "seg", "data-groesse": bs.id });
     WN.GROESSEN.forEach(function (gr) {
-      seg.append(h("button", { type: "button", class: bs.groesse === gr ? "on" : "", disabled: ro, text: t({ klein: "klein", mittel: "mittel", gross: "groß" }[gr]), "data-g": gr,
-        onclick: function () { bs.groesse = gr; merken(v); zeichne(); } }));
+      seg.append(h("button", { type: "button", class: (bs.groesse === gr ? "on" : "") + (offenesErklaer(v, f, bs, "groesse", gr) ? " erklaer-offen" : ""), text: t({ klein: "klein", mittel: "mittel", gross: "groß" }[gr]), "data-g": gr,
+        "aria-expanded": offenesErklaer(v, f, bs, "groesse", gr) ? "true" : "false", onclick: function () { erklaerUmschalten(v, f, bs, "groesse", gr); } }));
     });
     zeile.append(seg);
     karte.append(zeile);
+    WN.GROESSEN.forEach(function (gr) { anhaengen(karte, erklaerFeld(v, f, bs, ro, "groesse", gr)); });
     var fz = h("div", { class: "band" });
     S.tabellen.faktoren.forEach(function (fk) {
       var an = (bs.faktoren || []).indexOf(fk.id) >= 0;
-      fz.append(knopf(nm(fk.name) + " ×" + String(fk.mal).replace(".", S.lang === "en" ? "." : ","), function () {
-        bs.faktoren = an ? bs.faktoren.filter(function (x) { return x !== fk.id; }) : (bs.faktoren || []).concat(fk.id); merken(v); zeichne();
-      }, "chip klein" + (an ? " on" : ""), { disabled: ro, "data-faktor": fk.id }));
+      var ch = erklaerChip(v, f, bs, "faktor", fk.id, "btn chip klein" + (an ? " on" : ""), nm(fk.name) + " ×" + String(fk.mal).replace(".", S.lang === "en" ? "." : ","));
+      ch.setAttribute("data-faktor", fk.id); fz.append(ch);
     });
     karte.append(fz);
+    S.tabellen.faktoren.forEach(function (fk) { anhaengen(karte, erklaerFeld(v, f, bs, ro, "faktor", fk.id)); });
     /* deckt Bedarf */
     var kand = BD.bedarfe(f.protokoll).concat(f.protokoll.bereiche[8].eintraege, f.protokoll.bereiche[12].eintraege);
     if (kand.length) {
       var dz = h("div", { class: "band", style: "margin-top:6px" }, h("span", { class: "gedaempft klein", text: t("deckt:") }));
       kand.forEach(function (e) {
         var an = (bs.deckt || []).indexOf(e.id) >= 0;
-        dz.append(knopf(e.id, function () {
-          bs.deckt = an ? bs.deckt.filter(function (x) { return x !== e.id; }) : (bs.deckt || []).concat(e.id); merken(v); zeichne();
-        }, "chip klein" + (an ? " on" : ""), { title: e.text, disabled: ro, "data-deckt": e.id }));
+        var ch = erklaerChip(v, f, bs, "deckt", e.id, "btn chip klein" + (an ? " on" : ""), e.id);
+        ch.setAttribute("data-deckt", e.id); ch.setAttribute("title", e.text); dz.append(ch);
       });
       karte.append(dz);
+      kand.forEach(function (e) { anhaengen(karte, erklaerFeld(v, f, bs, ro, "deckt", e.id)); });
     }
     /* von Hand, eigener Satz, Rechenweg */
     var m = bs.manuell || {};
@@ -865,7 +987,7 @@
     });
     k.append(h("div", { class: "tabelle-huelle" }, tb));
     /* Linie verschieben */
-    var sel = h("select", { disabled: ro, id: "grenze-wahl", onchange: function (e) { u.grenzeManuell = e.target.value || null; merken(v); zeichne(); } },
+    var sel = h("select", { disabled: ro, id: "grenze-wahl", onchange: function (e) { vorher(v, f); u.grenzeManuell = e.target.value || null; merken(v); zeichne(); } },
       h("option", { value: "", text: t("Grenzlinie automatisch") }), h("option", { value: "keine", text: t("keine Grenzlinie") }));
     kn.zeilen.forEach(function (r) { sel.append(h("option", { value: r.id, text: t("Linie vor") + " " + r.id })); });
     sel.value = u.grenzeManuell || "";

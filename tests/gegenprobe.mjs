@@ -221,6 +221,20 @@ const FAELLE = [
     an: [["assets/kern/mail.js", 'if (cte === "base64") return b64bytes(rumpf);', 'if (cte === "base64") return b64bytes(rumpf).subarray(1);']] },
   { name: "PIN: Modul 25 abgewandelt", probe: K, erwartet: "PIN: Modul 25 ist byte-gleich mit Sage",
     an: [["modules/25_pseudonym.js", "  var KEIN_NAME = [\"herr\",", "  var KEIN_NAME = [\"chef2\", \"herr\","]] },
+  { name: "ERKLÄREN: leeres Feld hängt „null“ an", probe: B, erwartet: "ERKLÄREN: kein „null“",
+    an: [["assets/app.js", "anhaengen(karte, erklaerFeld(v, f, bs, ro, \"kennung\", bs.id));", "karte.append(erklaerFeld(v, f, bs, ro, \"kennung\", bs.id));"]] },
+  { name: "ERKLÄREN: Wirkung wird nicht an der Kopie gerechnet", probe: B, erwartet: "ERKLÄREN: die vorher gerechnete Wirkung stimmt",
+    an: [["assets/app.js", "var kopie = JSON.parse(JSON.stringify(f)); ak.tun(kopie, bsIn(kopie, bs.id));", "var kopie = JSON.parse(JSON.stringify(f));"]] },
+  { name: "ERKLÄREN: kein Zurück-Knopf", probe: B, erwartet: "ERKLÄREN: ↶ Zurück steht da",
+    an: [["assets/app.js", "    if (st.length && !ro) {", "    if (false) {"]] },
+  { name: "ERKLÄREN: Zurück stellt nichts her", probe: B, erwartet: "ERKLÄREN: Zurück stellt die B-Nummer",
+    an: [["assets/app.js", "f.umfang = JSON.parse(st.pop().umfang);", "st.pop();"]] },
+  { name: "ERKLÄREN: Änderung im Feld merkt keinen Stand", probe: B, erwartet: "ERKLÄREN: ↶ Zurück steht da",
+    an: [["assets/app.js", "knopf(ak.label, function () { vorher(v, f); ak.tun", "knopf(ak.label, function () { ak.tun"]] },
+  { name: "ERKLÄREN: unterschriebene Fassung lässt ändern", probe: B, erwartet: "ERKLÄREN: in einer unterschriebenen Fassung",
+    an: [["assets/app.js", "    if (ro) box.append(h(\"p\", { class: \"gedaempft klein\", \"data-erklaer-nurlesen\"", "    if (false) box.append(h(\"p\", { class: \"gedaempft klein\", \"data-erklaer-nurlesen\""]] },
+  { name: "ERKLÄREN: Tipp schaltet die B-Nummer sofort um (alter Weg)", probe: B, erwartet: "ERKLÄREN: ein Tipp aufs Feld ändert noch nichts",
+    an: [["assets/app.js", "\"data-erklaer-chip\": art + \":\" + id, onclick: function () { erklaerUmschalten(v, f, bs, art, id); } });", "\"data-erklaer-chip\": art + \":\" + id, onclick: function () { if (art === \"deckt\") { bs.deckt = umschalten(bs.deckt, id); merken(v); } erklaerUmschalten(v, f, bs, art, id); } });"]] },
 ];
 
 function vorkommen(text, teil) { let n = 0, i = 0; while ((i = text.indexOf(teil, i)) >= 0) { n++; i += teil.length; } return n; }

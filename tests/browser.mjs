@@ -272,9 +272,10 @@ try {
     ok("VORGÄNGE: „Laden“ legt das Beispiel an, öffnet es und hakt es in der Auswahl ab", nach.bid === "tomys-gesamt" && nach.reiter === "vorgaenge" && nach.anh === 7 && nach.haken.includes("tomys-gesamt"), nach);
     /* 👁 Ansicht der Anhänge (Klaus 2026-10-08) */
     const idVon = (name) => s.p.evaluate((n) => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); return (v.anhaenge.find((a) => a.name === n) || {}).id; }, name);
-    const oeffne = async (name) => { const id = await idVon(name); await s.p.click(`[data-anhang-ansehen="${id}"]`); await s.p.waitForFunction(() => document.getElementById("ansicht").dataset.fertig === "1", null, { timeout: 30000 }).catch(() => {}); };
+    const oeffne = async (name) => { const id = await idVon(name); if (!id || !(await s.p.locator(`[data-anhang-ansehen="${id}"]`).count())) return; /* fehlt der Anhang, melden die Zeilen danach — kein Stolpern */ await s.p.click(`[data-anhang-ansehen="${id}"]`); await s.p.waitForFunction(() => document.getElementById("ansicht").dataset.fertig === "1", null, { timeout: 30000 }).catch(() => {}); };
     const zu = async () => { await s.p.click("[data-ansicht-zu]").catch(() => {}); };
     ok("ANSICHT: jeder Anhang hat einen 👁-Knopf", await s.p.locator("[data-anhang-ansehen]").count() === 7);
+    if (await s.p.locator("[data-anhang-ansehen]").count() === 7) { /* ohne die sieben Anhänge meldet die Zeile darüber — die Ansicht-Proben würden nur stolpern */
     await oeffne("Auftragszettel-Papier.jpg");
     const bild = await s.p.evaluate(() => { const d = document.getElementById("ansicht"), i = d.querySelector("[data-ansicht-bild]"); return { offen: d.open, art: d.querySelector(".ansicht-inhalt").dataset.ansichtArt, w: i ? i.naturalWidth : 0, sicht: i ? i.getBoundingClientRect().width : 0 }; });
     ok("ANSICHT: Bild groß im Fenster (breiter als das Vorschaubild in der Liste)", bild.offen && bild.art === "bild" && bild.w === 750 && bild.sicht > 300, bild);
@@ -293,6 +294,7 @@ try {
     ok("ANSICHT: der Anhang IN der E-Mail lässt sich ebenfalls ansehen (das Foto des Auftragszettels)", await s.p.evaluate(() => { const i = document.querySelector("[data-ansicht-unter] img"); return !!i && i.naturalWidth === 750; }));
     await zu();
     ok("ANSICHT: ✕ schließt das Fenster", !(await s.p.evaluate(() => document.getElementById("ansicht").open)));
+    }
     await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); v.anhaenge.push({ id: "A-99", name: "boese.html", typ: "text/html", groesse: 60, datum: "2026-10-08", blob: new Blob(["<script>window.__boese=1</script><b>Hallo</b>"], { type: "text/html" }) }); window.WNApp.zeichne && window.WNApp.zeichne(); });
     await reiter(s.p, "vorgaenge");
     await s.p.click('[data-anhang-ansehen="A-99"]'); await s.p.waitForFunction(() => document.getElementById("ansicht").dataset.fertig === "1", null, { timeout: 5000 }).catch(() => {});
@@ -457,6 +459,66 @@ try {
     await p2.waitForSelector("body[data-bereit]", { timeout: 8000 }).catch(() => {});
     ok("OFFLINE: App lädt nach dem ersten Laden ohne Netz", await p2.evaluate(() => !!document.body && !!document.body.dataset.bereit && !!window.WN && !!window.SbkimPseudonym).catch(() => false));
     await s.ctx.close();
+  }
+
+  /* ── ERKLÄREN: jeder Chip am Baustein öffnet ein Feld, ✕/✓ an Ort und Stelle, Preis vorher → nachher, Zurück (Klaus 2026-10-08) ── */
+  {
+    const r = await seite(1300);
+    const q = r.p;
+    await q.goto(url); await q.waitForSelector("body[data-bereit]");
+    await reiter(q, "umfang");
+    /* fehlt ein Teil, meldet die Probe es über ihre Zeile, statt 30 s zu warten und zu stolpern */
+    const att = async (loc, name) => (await loc.count()) ? loc.first().getAttribute(name) : null;
+    const angebot = async () => Number(await att(q.locator("[data-angebot-jetzt]"), "data-angebot-jetzt"));
+    ok("ERKLÄREN: Preisleiste nennt das Angebot netto", Number.isFinite(await angebot()) && await angebot() > 0);
+    const ersterAn = q.locator(".baustein").first().locator("[data-deckt].on").first();
+    const id = await ersterAn.getAttribute("data-deckt"), text = await ersterAn.getAttribute("title");
+    const chip = q.locator(".baustein").first().locator(`[data-deckt="${id}"]`);
+    await chip.click();
+    const feld = q.locator(`[data-erklaer="deckt:${id}"]`);
+    ok("ERKLÄREN: Tipp auf eine B-Nummer öffnet ihr Feld mit dem Text des Punkts", await feld.count() === 1 && (await feld.locator("[data-erklaer-text]").textContent()) === text, { id, text });
+    ok("ERKLÄREN: kein „null“ als Text in den Baustein-Karten", await q.evaluate(() => { const w = document.createTreeWalker(document.getElementById("inhalt"), NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) if (/\bnull\b/.test(n.nodeValue)) return false; return true; }));
+    ok("ERKLÄREN: die B-Nummer ist ein echter Knopf und zeigt, dass sie offen ist", (await att(chip, "aria-expanded")) === "true");
+    const vorher = await angebot();
+    const wirkung = Number(await att(feld.locator("[data-wirkung]"), "data-wirkung"));
+    ok("ERKLÄREN: ein Tipp aufs Feld ändert noch nichts", (await q.locator(".baustein").first().locator(`[data-deckt="${id}"].on`).count()) === 1 && await angebot() === vorher);
+    if (await feld.locator('[data-erklaer-tun="weg"]').count()) await feld.locator('[data-erklaer-tun="weg"]').click();
+    ok("ERKLÄREN: ✕ nimmt die B-Nummer an Ort und Stelle aus dem Baustein", (await q.locator(".baustein").first().locator(`[data-deckt="${id}"].on`).count()) === 0);
+    ok("ERKLÄREN: die vorher gerechnete Wirkung stimmt mit dem neuen Preis", await angebot() === vorher + wirkung, { vorher, wirkung, jetzt: await angebot() });
+    ok("ERKLÄREN: die Leiste nennt den Preis vor der Änderung", Number(await att(q.locator("[data-preis-vorher]"), "data-preis-vorher")) === vorher);
+    ok("ERKLÄREN: ↶ Zurück steht da", (await att(q.locator("[data-umfang-zurueck]"), "data-umfang-zurueck")) === "1");
+    if (await q.locator("[data-umfang-zurueck]").count()) await q.click("[data-umfang-zurueck]");
+    ok("ERKLÄREN: Zurück stellt die B-Nummer und den Preis wieder her", (await q.locator(".baustein").first().locator(`[data-deckt="${id}"].on`).count()) === 1 && await angebot() === vorher && await q.locator("[data-umfang-zurueck]").count() === 0);
+    /* Faktor: Schätzung ändert sich, Zurück nimmt es zurück */
+    const preisText = async () => q.textContent("[data-preis]");
+    const p0 = await preisText();
+    const fk = q.locator(".baustein").first().locator('[data-faktor="server"]');
+    await fk.click();
+    ok("ERKLÄREN: Faktor-Chip öffnet sein Feld", await q.locator('[data-erklaer="faktor:server"]').count() === 1);
+    if (await q.locator('[data-erklaer="faktor:server"] [data-erklaer-tun]').count()) await q.locator('[data-erklaer="faktor:server"] [data-erklaer-tun]').click();
+    ok("ERKLÄREN: Faktor setzen ändert die Schätzung", (await preisText()) !== p0);
+    if (await q.locator("[data-umfang-zurueck]").count()) await q.click("[data-umfang-zurueck]");
+    ok("ERKLÄREN: Zurück nimmt den Faktor zurück", (await preisText()) === p0);
+    /* Größe: Tipp erklärt nur */
+    const gr = q.locator(".baustein").first().locator("[data-g]:not(.on)").first();
+    const g = await gr.getAttribute("data-g");
+    await gr.click();
+    ok("ERKLÄREN: Größe öffnet ihr Feld, ändert aber nichts", await q.locator(`[data-erklaer="groesse:${g}"]`).count() === 1 && (await preisText()) === p0);
+    if (await q.locator("[data-erklaer-lassen]").count()) await q.click("[data-erklaer-lassen]");
+    ok("ERKLÄREN: „So lassen“ schließt das Feld", await q.locator("[data-erklaer]").count() === 0);
+    /* Kennung K-nn */
+    await q.locator(".baustein").first().locator('[data-erklaer-chip^="kennung:"]').click();
+    ok("ERKLÄREN: die K-Kennung erklärt den Baustein und bietet Entfernen an", await q.locator('[data-erklaer^="kennung:"] [data-erklaer-tun="entfernen"]').count() === 1);
+    /* Unterschrieben: nur erklären */
+    await reiter(q, "angebot");
+    q.once("dialog", (d) => d.accept());
+    await q.click("#unterschreiben");
+    await reiter(q, "umfang");
+    await q.locator(".baustein").first().locator("[data-deckt]").first().click();
+    ok("ERKLÄREN: in einer unterschriebenen Fassung erklärt das Feld, ändert aber nichts",
+      await q.locator("[data-erklaer^='deckt:'] [data-erklaer-nurlesen]").count() === 1 && await q.locator("[data-erklaer^='deckt:'] [data-erklaer-tun]").count() === 0);
+    ok("ERKLÄREN: läuft bei 380 px nicht quer", await (async () => { await q.setViewportSize({ width: 380, height: 800 }); return q.evaluate(() => document.documentElement.scrollWidth - innerWidth); })() <= 0);
+    await r.ctx.close();
   }
 
   /* ── Impressum und Datenschutz ── */
