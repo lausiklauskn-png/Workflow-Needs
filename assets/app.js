@@ -197,6 +197,17 @@
       f.unterschrieben ? t("Diese Fassung ist unterschrieben und eingefroren — nur lesen. Änderungen ergeben eine neue Fassung (Reiter „Fassungen“).")
         : t("Das ist eine ältere Fassung — nur lesen."),
       S.fNr ? [" ", knopf(t("zur aktuellen Fassung"), function () { S.fNr = null; zeichne(); }, "klein")] : null));
+    /* Klaus 2026-10-08: in der unterschriebenen Fassung ging die Grenzlinie „nicht mehr“ — sie ist dort gesperrt.
+       Der Weg zum Ändern steht deshalb gleich hier, nicht erst im Reiter „Fassungen“. Die Unterschrift bleibt. */
+    if (f.unterschrieben && f === F.aktuelle(v)) {
+      var anl = h("input", { value: t("Anpassung im Umfang"), id: "anlass-hier", "data-key": "anlass-hier", style: "flex:1 1 200px" });
+      var von = h("select", { id: "anlass-von-hier" }, h("option", { value: "betrieb", text: t("Betrieb") }), h("option", { value: "kunde", text: t("Kunde") }), h("option", { value: "bau", text: t("Befund beim Bau") }));
+      main.append(h("div", { class: "zeile", "data-neue-fassung-hier": "" }, anl, von, knopf("✎ " + t("Neue Fassung zum Ändern"), function () {
+        var r = F.neueFassung(v, { anlass: anl.value, von: von.value });
+        if (!r.ok) { melde(t("Bitte einen Anlass nennen."), "warn"); return; }
+        S.fNr = null; merken(v); melde(t("Fassung") + " " + r.fassung.nr + " " + t("angelegt.") + " " + t("Fassung") + " " + f.nr + " " + t("bleibt unterschrieben."), "");
+      }, "pri", { id: "neue-fassung-hier" })));
+    }
     return true;
   }
 
@@ -800,8 +811,13 @@
       if (x) z.push(t("Bereich") + " " + x.nr + " · " + nm(WN.BEREICHE[x.nr - 1].name));
       z.push(h("span", { "data-erklaer-text": "" }, e.text || "–"));
       if (e.prio) z.push(t("Priorität") + ": " + nm(WN.PRIO_NAME[e.prio]));
-      z.push(an ? t("Dieser Baustein deckt den Punkt ab.") : t("Dieser Baustein deckt den Punkt nicht ab."));
-      z.push(andere.length ? t("Auch abgedeckt von") + ": " + andere.join(", ") : t("Kein anderer Baustein deckt ihn ab."));
+      /* Klaus 2026-10-08: „deckt den Punkt nicht ab · kein anderer“ las sich, als wäre der Punkt überflüssig.
+         Vier Lagen, jede sagt, was daraus folgt. */
+      z.push(h("span", { "data-erklaer-lage": (an ? "an" : "aus") + (andere.length ? "-andere" : "-allein") },
+        an && andere.length ? t("Dieser Baustein deckt den Punkt ab — nicht allein. Auch abgedeckt von") + ": " + andere.join(", ")
+          : an ? t("Nur dieser Baustein deckt den Punkt ab. Ohne ihn bleibt der Punkt offen.")
+          : andere.length ? t("Dieser Baustein ist dafür nicht eingeplant — den Punkt deckt schon") + ": " + andere.join(", ")
+          : t("Bisher deckt kein Baustein den Punkt ab — er ist noch offen. Mit „✓ Durch diesen Baustein abdecken“ übernimmt ihn dieser.")));
       z.push(h("span", { class: "gedaempft" }, t("Der Punkt selbst bleibt im Bedarfsprotokoll — streichen im Reiter „1 Bedarf“. Die Abdeckung bestimmt Priorität und Nutzen, also die Grenzlinie (fest oder optional im Angebot).")));
       a.push(an ? { key: "weg", label: "✕ " + t("Nicht durch diesen Baustein"), tun: function (ff, b) { b.deckt = umschalten(b.deckt, id); } }
         : { key: "dazu", label: "✓ " + t("Durch diesen Baustein abdecken"), tun: function (ff, b) { b.deckt = umschalten(b.deckt, id); } });
@@ -838,7 +854,7 @@
     var box = h("div", { class: "erklaer-feld", "data-erklaer": art + ":" + id },
       h("div", { class: "bereich-kopf" }, h("b", { text: d.titel }), knopf("✕", zu, "klein", { "aria-label": t("Erklärung schließen"), "data-erklaer-zu": "" })));
     d.zeilen.forEach(function (zl) { box.append(h("p", { class: "klein" }, zl)); });
-    if (ro) box.append(h("p", { class: "gedaempft klein", "data-erklaer-nurlesen": "" }, t("Unterschriebene oder ältere Fassung: hier nur ansehen. Ändern geht in einer neuen Fassung (Reiter „Fassungen“).")));
+    if (ro) box.append(h("p", { class: "gedaempft klein", "data-erklaer-nurlesen": "" }, t("Unterschriebene oder ältere Fassung: hier nur ansehen. Zum Ändern oben „✎ Neue Fassung zum Ändern“ tippen.")));
     else {
       var jetzt = preisBild(f);
       d.aktionen.forEach(function (ak) {
@@ -886,7 +902,7 @@
     /* deckt Bedarf */
     var kand = BD.bedarfe(f.protokoll).concat(f.protokoll.bereiche[8].eintraege, f.protokoll.bereiche[12].eintraege);
     if (kand.length) {
-      var dz = h("div", { class: "band", style: "margin-top:6px" }, h("span", { class: "gedaempft klein", text: t("deckt:") }));
+      var dz = h("div", { class: "band", style: "margin-top:6px" }, h("span", { class: "gedaempft klein", title: t("Alle Bedarfe stehen hier; hervorgehoben sind die, die dieser Baustein abdeckt."), text: t("deckt (hervorgehoben):") }));
       kand.forEach(function (e) {
         var an = (bs.deckt || []).indexOf(e.id) >= 0;
         var ch = erklaerChip(v, f, bs, "deckt", e.id, "btn chip klein" + (an ? " on" : ""), e.id);

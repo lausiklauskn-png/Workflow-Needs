@@ -246,6 +246,16 @@ Gefunden beim Hinsehen, nicht von einer Probe: `karte.append(null)` schrieb „n
 Probe sucht „null“. Gegenprobe `ERKLÄREN:` 7 Fälle: erst **4 gefangen · 3 aus falschem Grund** (Probe wartete 30 s auf Fehlendes),
 geschärft: **7 gefangen**. Cache v16, `app.js?v=9`, `app.css?v=8`, `texte.js?v=7`.
 
+**✎ Neue Fassung zum Ändern — gleich im Banner** (Klaus 2026-10-08: *„Grenzlinie automatisch … funktioniert nicht mehr“* —
+er stand in einer unterschriebenen Fassung, dort ist sie gesperrt; *„sie sollte als eine neue Fassung gebaut werden können …
+beim Duplizieren sollten die Unterschriften wieder gelöscht werden“*): in jeder unterschriebenen aktuellen Fassung steht unter dem
+Nur-lesen-Banner Anlass (vorbelegt „Anpassung im Umfang“), von wem (Vorgabe Betrieb) und `#neue-fassung-hier`. Das ist
+`F.neueFassung`: Kopie mit `unterschrieben: null`, `ust: null` — offen, sofort änderbar, später im Angebot neu unterschreiben;
+die alte bleibt unterschrieben. Rechtsblätter am Vorgang (Erklärung, Vereinbarung, Wartung) bleiben, wie sie sind.
+Der Satz im Erklär-Feld hat vier Lagen (`data-erklaer-lage`): an · nicht allein („Auch abgedeckt von“) · nur dieser
+(„Ohne ihn bleibt der Punkt offen“) · nicht eingeplant, deckt schon K-nn · offen. „deckt“ heißt jetzt „deckt (hervorgehoben):“.
+Gegenprobe `ERKLÄREN:` 9 gefangen. Cache v17, `app.js?v=10`, `texte.js?v=8`.
+
 **Voller Gegenprobe-Lauf über `main` nach #6–#9** (2026-10-08, Stand `6319fab`, Wegwerf-Kopien, echter Baum vor/nach gleich):
 **95 gefangen · 0 blind · 1 aus falschem Grund · 0 tote Anker** (96 Fälle). Der eine: „GESAMT: Beispiel-Dateien werden nicht
 angehängt“ — die Ansicht-Proben klickten auf fehlende Anhänge und stolperten. `oeffne` meldet jetzt, und der Ansicht-Block läuft

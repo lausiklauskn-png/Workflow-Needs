@@ -479,6 +479,9 @@ try {
     ok("ERKLÄREN: Tipp auf eine B-Nummer öffnet ihr Feld mit dem Text des Punkts", await feld.count() === 1 && (await feld.locator("[data-erklaer-text]").textContent()) === text, { id, text });
     ok("ERKLÄREN: kein „null“ als Text in den Baustein-Karten", await q.evaluate(() => { const w = document.createTreeWalker(document.getElementById("inhalt"), NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) if (/\bnull\b/.test(n.nodeValue)) return false; return true; }));
     ok("ERKLÄREN: die B-Nummer ist ein echter Knopf und zeigt, dass sie offen ist", (await att(chip, "aria-expanded")) === "true");
+    const lage = await att(feld.locator("[data-erklaer-lage]"), "data-erklaer-lage");
+    const lageText = (await feld.locator("[data-erklaer-lage]").count()) ? await feld.locator("[data-erklaer-lage]").textContent() : "";
+    ok("ERKLÄREN: der Satz sagt, was folgt (an · nicht allein / nur dieser)", (lage === "an-andere" && /nicht allein/.test(lageText)) || (lage === "an-allein" && /Ohne ihn bleibt der Punkt offen/.test(lageText)), { lage, lageText });
     const vorher = await angebot();
     const wirkung = Number(await att(feld.locator("[data-wirkung]"), "data-wirkung"));
     ok("ERKLÄREN: ein Tipp aufs Feld ändert noch nichts", (await q.locator(".baustein").first().locator(`[data-deckt="${id}"].on`).count()) === 1 && await angebot() === vorher);
@@ -517,6 +520,18 @@ try {
     await q.locator(".baustein").first().locator("[data-deckt]").first().click();
     ok("ERKLÄREN: in einer unterschriebenen Fassung erklärt das Feld, ändert aber nichts",
       await q.locator("[data-erklaer^='deckt:'] [data-erklaer-nurlesen]").count() === 1 && await q.locator("[data-erklaer^='deckt:'] [data-erklaer-tun]").count() === 0);
+    /* Klaus 2026-10-08: in der unterschriebenen Fassung „ging die Grenzlinie nicht mehr“ — der Weg zum Ändern steht hier */
+    ok("ERKLÄREN: unterschrieben — Grenzlinie gesperrt, aber „Neue Fassung zum Ändern“ steht gleich da",
+      await q.$eval("#grenze-wahl", (x) => x.disabled) && await q.locator("#neue-fassung-hier").count() === 1);
+    const nrVor = await q.evaluate(() => window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv).fassungen.length);
+    if (await q.locator("#neue-fassung-hier").count()) await q.click("#neue-fassung-hier");
+    ok("ERKLÄREN: „Neue Fassung zum Ändern“ legt eine offene Fassung an, die Grenzlinie geht wieder",
+      await q.evaluate(() => window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv).fassungen.length) === nrVor + 1 &&
+      !(await q.$eval("#grenze-wahl", (x) => x.disabled)) && await q.locator("[data-nur-lesen]").count() === 0);
+    const vorGr = await angebot();
+    const grOpts = await q.$$eval("#grenze-wahl option", (o) => o.map((x) => x.value).filter((x) => /^K-/.test(x)));
+    await q.selectOption("#grenze-wahl", grOpts[0]);
+    ok("ERKLÄREN: Grenzlinie vor den ersten Baustein senkt das feste Angebot, Zurück steht da", await angebot() < vorGr && await q.locator("[data-umfang-zurueck]").count() === 1, { vorGr, jetzt: await angebot() });
     ok("ERKLÄREN: läuft bei 380 px nicht quer", await (async () => { await q.setViewportSize({ width: 380, height: 800 }); return q.evaluate(() => document.documentElement.scrollWidth - innerWidth); })() <= 0);
     await r.ctx.close();
   }
