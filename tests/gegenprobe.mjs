@@ -235,6 +235,8 @@ const FAELLE = [
     an: [["assets/app.js", "    if (ro) box.append(h(\"p\", { class: \"gedaempft klein\", \"data-erklaer-nurlesen\"", "    if (false) box.append(h(\"p\", { class: \"gedaempft klein\", \"data-erklaer-nurlesen\""]] },
   { name: "ERKLÄREN: Tipp schaltet die B-Nummer sofort um (alter Weg)", probe: B, erwartet: "ERKLÄREN: ein Tipp aufs Feld ändert noch nichts",
     an: [["assets/app.js", "\"data-erklaer-chip\": art + \":\" + id, onclick: function () { erklaerUmschalten(v, f, bs, art, id); } });", "\"data-erklaer-chip\": art + \":\" + id, onclick: function () { if (art === \"deckt\") { bs.deckt = umschalten(bs.deckt, id); merken(v); } erklaerUmschalten(v, f, bs, art, id); } });"]] },
+  { name: "PAGES: .gitignore sperrt nur das Verzeichnis", probe: K, erwartet: "PAGES: .gitignore sperrt node_modules",
+    an: [[".gitignore", "node_modules", "node_modules/"]] },
 ];
 
 function vorkommen(text, teil) { let n = 0, i = 0; while ((i = text.indexOf(teil, i)) >= 0) { n++; i += teil.length; } return n; }
