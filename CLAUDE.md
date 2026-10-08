@@ -228,6 +228,29 @@ E-Mail: Von/An/Betreff/Datum, Text, Anhänge — die man darin wieder ansehen ka
 ausgeführt**. Sonst „keine Voransicht“ + Speichern. Gemessen: kern 262 · browser 134 grün · Gegenprobe `ANSICHT:` 4 gefangen.
 ⚠ Am Tablet nicht gemessen (Zeit für große PDFs, Speicher bei vielen Seiten).
 
+**🔎 Erklären an Ort und Stelle** (Klaus 2026-10-08, Bild vom Tablet: *„Die B-Nummern … sind noch nicht als Link … man klickt
+an, sieht, ah, okay, B01 bedeutet das … ein X oder so lassen … wie sich der Preis verändert. Und einmal wieder ein Zurück-Button“* ·
+*„alle, die aussehen wie ein Link“*): in „2 Umfang“ ist jeder Chip am Baustein ein Knopf — Kennung K-nn, Größe, Faktor
+(Offline ×1,15 … Druck / PDF ×1,1 …), deckt B-/O-nn. Ein Tipp öffnet darunter ein Feld (`erklaerFeld`, `[data-erklaer="art:id"]`):
+was er bedeutet (Bereich, Text, Priorität, wer ihn sonst abdeckt · Faktor · Katalog-Spanne · Vorlage) und je Möglichkeit
+(✕ nicht durch diesen Baustein · ✕ aus allen · ✓ abdecken · Faktor setzen/entfernen · Größe nehmen · Baustein entfernen) die
+**Wirkung, vorher gerechnet an einer Kopie der Fassung**: „Angebot netto X → Y (Δ) · Schätzung“. Geändert wird erst auf Tipp.
+Über den Bausteinen steht die Preisleiste (`[data-preis-leiste]`: Angebot netto, optional, „vor der letzten Änderung“) und
+**↶ Zurück (n)** (`[data-umfang-zurueck]`): bis zu 50 Stände des Umfangs je Vorgang und Fassung, NUR im Speicher (`ZURUECK`).
+Auch Menge, Baustein dazu/✕ und die Grenzlinie legen einen Stand ab. In einer unterschriebenen Fassung erklärt das Feld, ändert
+nichts (`[data-erklaer-nurlesen]`). ⚠ **Tafel-Evolution, benannt:** bis dahin schaltete ein Tipp auf B-nn/Faktor/Größe sofort um,
+und in einer unterschriebenen Fassung waren die Chips gesperrt (Klaus' Tipp tat nichts). Die Abdeckung ändert NICHT die Schätzung,
+sondern Priorität/Nutzen und damit die Grenzlinie, also was im Angebot fest oder optional steht — das Feld sagt das.
+⚠ Nicht gebaut: Kennungen in der Kosten-Nutzen-Tabelle und in „Bausteine anklicken“ sind weiter nur Anzeige. Am Tablet nicht gemessen.
+Gefunden beim Hinsehen, nicht von einer Probe: `karte.append(null)` schrieb „null“ in die Karten — jetzt `anhaengen`, und die
+Probe sucht „null“. Gegenprobe `ERKLÄREN:` 7 Fälle: erst **4 gefangen · 3 aus falschem Grund** (Probe wartete 30 s auf Fehlendes),
+geschärft: **7 gefangen**. Cache v16, `app.js?v=9`, `app.css?v=8`, `texte.js?v=7`.
+
+**Voller Gegenprobe-Lauf über `main` nach #6–#9** (2026-10-08, Stand `6319fab`, Wegwerf-Kopien, echter Baum vor/nach gleich):
+**95 gefangen · 0 blind · 1 aus falschem Grund · 0 tote Anker** (96 Fälle). Der eine: „GESAMT: Beispiel-Dateien werden nicht
+angehängt“ — die Ansicht-Proben klickten auf fehlende Anhänge und stolperten. `oeffne` meldet jetzt, und der Ansicht-Block läuft
+nur mit sieben Anhängen; nachgefahren: gefangen. Danach: kern **262** · browser **152** grün · `NUR_ANKER` **103 · 0 tot**.
+
 ## Benannte Grenzen
 
 - Platzhalter sind **keine Verschlüsselung**: der Klartext geht nur gar nicht erst hinaus. Was
