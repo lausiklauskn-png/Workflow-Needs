@@ -241,6 +241,10 @@ const FAELLE = [
     an: [["assets/app.js", "    if (f.unterschrieben && f === F.aktuelle(v)) {", "    if (false) {"]] },
   { name: "ERKLÄREN: alter Satz „deckt den Punkt nicht ab“", probe: B, erwartet: "ERKLÄREN: der Satz sagt, was folgt",
     an: [["assets/app.js", "an && andere.length ? t(\"Dieser Baustein deckt den Punkt ab — nicht allein. Auch abgedeckt von\") + \": \" + andere.join(\", \")", "an && andere.length ? t(\"Dieser Baustein deckt den Punkt ab.\")"]] },
+  { name: "KOPF: Kopfzeile ohne Kunde (alter Stand)", probe: B, erwartet: "KOPF: oben stehen Kunde",
+    an: [["assets/app.js", 'var text = v ? wer + " · " + t("Fassung")', 'var text = v ? v.id + " · " + t("Fassung")']] },
+  { name: "KOPF: am Handy ausgeblendet (alter Stand)", probe: B, erwartet: "KOPF: auch bei 380 px",
+    an: [["assets/app.css", "  .marke small{font-size:.68rem}", "  .marke small{display:none}"]] },
 ];
 
 function vorkommen(text, teil) { let n = 0, i = 0; while ((i = text.indexOf(teil, i)) >= 0) { n++; i += teil.length; } return n; }
