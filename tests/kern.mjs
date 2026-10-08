@@ -575,6 +575,14 @@ function kundenVorgang() {
   ok("STERNE: Bogen zum Ankreuzen nur mit freigegebenen Bedarfen, ohne Namen", sb.zeitpunkt === "abnahme" && sb.bedarfe.length === 1 && sb.bedarfe[0].id === e1.id && !JSON.stringify(sb).includes("STERNPRUEF"));
 }
 
+/* ── PAGES: node_modules nie im Depot (2026-10-08: ein eingecheckter Verweis node_modules → ../… brach den
+   Jekyll-Bau von GitHub Pages ab, die Seite blieb auf dem alten Stand). „node_modules/" mit Schrägstrich
+   sperrt nur ein Verzeichnis, keinen Verweis. ── */
+{
+  const gi = existsSync(join(WURZEL, ".gitignore")) ? readFileSync(join(WURZEL, ".gitignore"), "utf8").split(/\r?\n/) : [];
+  ok("PAGES: .gitignore sperrt node_modules auch als Verweis (ohne Schrägstrich)", gi.includes("node_modules"), gi);
+}
+
 /* ── TEXTE (DE/EN) ── */
 {
   const app = readFileSync(join(WURZEL, "assets/app.js"), "utf8");

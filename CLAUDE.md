@@ -251,6 +251,11 @@ geschärft: **7 gefangen**. Cache v16, `app.js?v=9`, `app.css?v=8`, `texte.js?v=
 angehängt“ — die Ansicht-Proben klickten auf fehlende Anhänge und stolperten. `oeffne` meldet jetzt, und der Ansicht-Block läuft
 nur mit sieben Anhängen; nachgefahren: gefangen. Danach: kern **262** · browser **152** grün · `NUR_ANKER` **103 · 0 tot**.
 
+⚠ **Pages-Bau brach nach #10 ab** (2026-10-08): `git add -A` aus einer Arbeitskopie nahm den Verweis `node_modules → ../…`
+mit — `.gitignore` hieß `node_modules/` und sperrt mit Schrägstrich nur ein Verzeichnis, keinen Verweis. Jekyll stieg mit
+`No such file or directory … /node_modules` aus, die Seite blieb auf v14. Verweis entfernt, `.gitignore` ohne Schrägstrich,
+Wächter `PAGES:` in `tests/kern.mjs`. **Nach jedem Merge den Lauf „pages build and deployment“ ansehen.**
+
 ## Benannte Grenzen
 
 - Platzhalter sind **keine Verschlüsselung**: der Klartext geht nur gar nicht erst hinaus. Was
