@@ -398,7 +398,7 @@
         h("span", { class: "gedaempft klein", text: t(anhangArt(a)) + " · " + groesse(a.groesse || 0) + (a.blob ? "" : " · " + t("Inhalt fehlt")) }));
       if (a.blob && /^image\/(png|jpeg|webp|gif)$/.test(a.typ || "")) {
         var u = URL.createObjectURL(a.blob);
-        mitte.append(h("div", null, h("img", { src: u, alt: a.name, class: "anhang-bild", title: t("Ansehen"), style: "cursor:zoom-in", onclick: function () { anhangAnsehen(a); }, onload: function () { URL.revokeObjectURL(u); } })));
+        mitte.append(h("div", null, h("img", { src: u, alt: a.name, class: "anhang-bild", title: t("Ansehen"), style: "cursor:pointer", onclick: function () { anhangAnsehen(a); }, onload: function () { URL.revokeObjectURL(u); } })));
       }
       z.append(mitte, h("div", { class: "band" },
         a.blob ? knopf("👁 " + t("Ansehen"), function () { anhangAnsehen(a); }, "klein", { "data-anhang-ansehen": a.id, "aria-label": t("Ansehen") + ": " + a.name }) : null,
@@ -416,7 +416,7 @@
 
   /* ════ 👁 Ansicht eines Anhangs (Klaus 2026-10-08: „mit einem Auge … als Voransicht größer gemacht
      werden … ob es die richtigen Dokumente sind … komplett drauf“) ════
-     Bild in voller Größe (Tipp = Originalgröße) · PDF: alle Seiten, gezeichnet mit pdf.js (Android-Chrome
+     Bild eingepasst (keine Lupe, Klaus 2026-10-08) · PDF: alle Seiten, gezeichnet mit pdf.js (Android-Chrome
      zeigt PDFs nicht in einem Rahmen) · E-Mail: Kopf, Text, Anhänge (die man wieder ansehen kann) ·
      Text/CSV als Text. NICHTS wird ausgeführt: HTML und SVG-Quelltext erscheinen als Text, nie als Seite. */
   var PDFJS = "vendor/pdfjs/", pdfjsHolen = null;
@@ -447,8 +447,8 @@
     ziel.dataset.ansichtArt = art || "keine";
     if (art === "bild") {
       var u = URL.createObjectURL(blob);
-      var img = h("img", { src: u, alt: name, class: "ansicht-bild", "data-ansicht-bild": "", title: t("Tippen: Originalgröße / einpassen"),
-        onclick: function () { img.classList.toggle("voll"); } });
+      /* Klaus 2026-10-08: „Ansehen ist ja schon die Vergrößerung … Lupe wegnehmen“ — kein Tipp-Zoom, kein Lupen-Zeiger */
+      var img = h("img", { src: u, alt: name, class: "ansicht-bild", "data-ansicht-bild": "" });
       ziel.append(img); return Promise.resolve();
     }
     if (art === "pdf") {
@@ -463,8 +463,7 @@
         for (var n = 1; n <= doc.numPages; n++) (function (n) {
           kette = kette.then(function () { return doc.getPage(n); }).then(function (pg) {
             var v1 = pg.getViewport({ scale: 1 }), sc = breite / v1.width, vp = pg.getViewport({ scale: sc * dpr });
-            var c = h("canvas", { class: "ansicht-seite", "data-ansicht-seite": String(n), width: String(Math.round(vp.width)), height: String(Math.round(vp.height)), "aria-label": t("Seite") + " " + n, title: t("Tippen: Originalgröße / einpassen") });
-            c.addEventListener("click", function () { c.classList.toggle("voll"); });
+            var c = h("canvas", { class: "ansicht-seite", "data-ansicht-seite": String(n), width: String(Math.round(vp.width)), height: String(Math.round(vp.height)), "aria-label": t("Seite") + " " + n });
             ziel.append(c);
             return pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
           });

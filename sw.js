@@ -1,12 +1,12 @@
 /* Offline-Vorrat der Workflow Bedarfsanalyse. Wer eine Datei aus CORE ändert,
    erhöht CACHE_VERSION — sonst liefert der Worker die alte Fassung weiter.
    Fremde Adressen fasst er nicht an (die App ruft keine auf). */
-const CACHE_VERSION = "workflow-needs-v19";
-const CORE = ["./", "index.html", "manifest.json", "assets/app.css?v=9", "modules/25_pseudonym.js",
+const CACHE_VERSION = "workflow-needs-v20";
+const CORE = ["./", "index.html", "manifest.json", "assets/app.css?v=10", "modules/25_pseudonym.js",
   "assets/kern/geld.js?v=1", "assets/daten/bausteine.js?v=3", "assets/daten/markt.js?v=2", "assets/kern/bedarf.js?v=2",
   "assets/kern/rechnen.js?v=4", "assets/kern/fassungen.js?v=2", "assets/kern/aussen.js?v=3", "assets/kern/bauauftrag.js?v=2", "assets/schluesseltresor.js?v=1", "assets/kern/sicherung.js?v=1", "assets/kern/uebergabe.js?v=2", "assets/kern/mail.js?v=1",
   "assets/daten/beispiel.js?v=3", "assets/daten/beispiel-tomys.js?v=2", "assets/daten/beispiel-psb.js?v=1", "assets/daten/beispiel-alis.js?v=1", "assets/daten/beispiel-eigene.js?v=1", "assets/daten/beispiel-unterschriften.js?v=1", "assets/daten/beispiel-tomys-gesamt.js?v=3",
-  "assets/texte.js?v=8", "assets/app.js?v=11", "assets/installieren.js",
+  "assets/texte.js?v=9", "assets/app.js?v=12", "assets/installieren.js",
   "beispiele/tomys-gesamt/Anfrage-Tomys-Hub.eml", "beispiele/tomys-gesamt/Auftragszettel-Papier.jpg", "beispiele/tomys-gesamt/Rueckfrage-Buchhaltung.eml",
   "beispiele/tomys-gesamt/Ablauf-Motiv-bis-Rechnung.pdf", "beispiele/tomys-gesamt/Preisliste-Beispiel.pdf", "beispiele/tomys-gesamt/Logo-Entwurf-Kunde.png", "beispiele/tomys-gesamt/Skizze-Schaufenster.png",
   "impressum.html", "datenschutz.html", "icons/favicon-32.png", "icons/favicon-48.png", "assets/bild-prisma.webp", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];

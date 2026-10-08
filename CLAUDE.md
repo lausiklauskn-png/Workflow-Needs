@@ -222,8 +222,9 @@ erste noch nicht geladene. Die Vorgangsliste zeigt bei leerem Kunden „ohne Kun
 Anschrift im Gesamtbeispiel einzeilig (das Feld ist einzeilig). Gegenprobe `VORGÄNGE:` 2 gefangen · browser 127 grün.
 
 **👁 Ansicht der Anhänge** (Klaus 2026-10-08: *„mit einem Auge … als Voransicht größer … ob es die richtigen Dokumente
-sind … komplett drauf“*): an jedem Anhang „👁 Ansehen“ (und Tipp aufs Vorschaubild) → Fenster `#ansicht`. Bild groß (Tipp =
-Originalgröße) · PDF: alle Seiten mit pdf.js gezeichnet (Android-Chrome zeigt PDFs nicht im Rahmen; Tipp = volle Auflösung) ·
+sind … komplett drauf“*): an jedem Anhang „👁 Ansehen“ (und Tipp aufs Vorschaubild) → Fenster `#ansicht`. Bild eingepasst · PDF: alle Seiten mit
+pdf.js gezeichnet (Android-Chrome zeigt PDFs nicht im Rahmen) · **keine Lupe** (Klaus 2026-10-08: *„Ansehen ist ja schon die
+Vergrößerung … Lupe wegnehmen“* — Tipp-Zoom und Lupen-Zeiger raus, Gegenprobe `ANSICHT:` 5 gefangen, Cache v20) ·
 E-Mail: Von/An/Betreff/Datum, Text, Anhänge — die man darin wieder ansehen kann · Text/CSV/HTML/SVG-Quelltext als Text, **nie
 ausgeführt**. Sonst „keine Voransicht“ + Speichern. Gemessen: kern 262 · browser 134 grün · Gegenprobe `ANSICHT:` 4 gefangen.
 ⚠ Am Tablet nicht gemessen (Zeit für große PDFs, Speicher bei vielen Seiten).

@@ -245,6 +245,8 @@ const FAELLE = [
     an: [["assets/app.js", 'var text = v ? wer + " · " + t("Fassung")', 'var text = v ? v.id + " · " + t("Fassung")']] },
   { name: "KOPF: am Handy ausgeblendet (alter Stand)", probe: B, erwartet: "KOPF: auch bei 380 px",
     an: [["assets/app.css", "  .marke small{font-size:.68rem}", "  .marke small{display:none}"]] },
+  { name: "ANSICHT: Lupe wieder da (Tipp vergrößert)", probe: B, erwartet: "ANSICHT: keine Lupe",
+    an: [["assets/app.js", 'var img = h("img", { src: u, alt: name, class: "ansicht-bild", "data-ansicht-bild": "" });', 'var img = h("img", { src: u, alt: name, class: "ansicht-bild", "data-ansicht-bild": "", style: "cursor:zoom-in", onclick: function () { img.style.maxWidth = "none"; img.style.width = "2000px"; } });']] },
 ];
 
 function vorkommen(text, teil) { let n = 0, i = 0; while ((i = text.indexOf(teil, i)) >= 0) { n++; i += teil.length; } return n; }

@@ -441,7 +441,6 @@
     "(kein Text)": "(no text)",
     "Anhänge der E-Mail": "Attachments of the e-mail",
     "Für diese Dateiart gibt es keine Voransicht. Über „Speichern“ öffnet das passende Programm sie.": "There is no preview for this file type. “Save” opens it in the matching app.",
-    "Tippen: Originalgröße / einpassen": "Tap: original size / fit",
     "oder ein Beispiel ansehen:": "or look at an example:",
     "eigenes Vorhaben": "own project",
     "ohne Kunde": "no client",

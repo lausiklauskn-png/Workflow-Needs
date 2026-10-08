@@ -279,6 +279,13 @@ try {
     await oeffne("Auftragszettel-Papier.jpg");
     const bild = await s.p.evaluate(() => { const d = document.getElementById("ansicht"), i = d.querySelector("[data-ansicht-bild]"); return { offen: d.open, art: d.querySelector(".ansicht-inhalt").dataset.ansichtArt, w: i ? i.naturalWidth : 0, sicht: i ? i.getBoundingClientRect().width : 0 }; });
     ok("ANSICHT: Bild groß im Fenster (breiter als das Vorschaubild in der Liste)", bild.offen && bild.art === "bild" && bild.w === 750 && bild.sicht > 300, bild);
+    /* Klaus 2026-10-08: „Ansehen ist ja schon die Vergrößerung … Lupe wegnehmen“ */
+    if (await s.p.locator("#ansicht [data-ansicht-bild]").count()) {
+      const vorB = await s.p.$eval("#ansicht [data-ansicht-bild]", (i) => i.getBoundingClientRect().width);
+      await s.p.click("#ansicht [data-ansicht-bild]");
+      const lupe = await s.p.$eval("#ansicht [data-ansicht-bild]", (i) => ({ breite: i.getBoundingClientRect().width, zeiger: getComputedStyle(i).cursor }));
+      ok("ANSICHT: keine Lupe — ein Tipp ändert die Größe nicht, kein Lupen-Zeiger", lupe.breite === vorB && !/zoom/.test(lupe.zeiger), { vorB, lupe });
+    }
     await zu();
     await oeffne("Ablauf-Motiv-bis-Rechnung.pdf");
     const pdf = await s.p.evaluate(() => { const d = document.getElementById("ansicht"), c = d.querySelectorAll("[data-ansicht-seite]");
