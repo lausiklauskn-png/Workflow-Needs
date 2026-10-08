@@ -467,6 +467,13 @@ try {
     const q = r.p;
     await q.goto(url); await q.waitForSelector("body[data-bereit]");
     await reiter(q, "umfang");
+    /* Klaus 2026-10-08: oben steht, in welchem Auftrag man ist */
+    {
+      const kopf = await q.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); const el = document.getElementById("app-unter");
+        return { text: el.textContent, wer: el.dataset.kopfKunde, firma: v.kunde.firma, titel: v.titel, id: v.id }; });
+      ok("KOPF: oben stehen Kunde (oder „ohne Kunde“), Titel, Fassung und Kennung — nie ein Platzhalter",
+        kopf.text.startsWith((kopf.firma || "ohne Kunde") + " · Fassung ") && (!kopf.titel || kopf.text.includes(kopf.titel)) && /Fassung \d/.test(kopf.text) && kopf.text.includes(kopf.id) && !kopf.text.includes("⟦"), kopf);
+    }
     /* fehlt ein Teil, meldet die Probe es über ihre Zeile, statt 30 s zu warten und zu stolpern */
     const att = async (loc, name) => (await loc.count()) ? loc.first().getAttribute(name) : null;
     const angebot = async () => Number(await att(q.locator("[data-angebot-jetzt]"), "data-angebot-jetzt"));
@@ -532,6 +539,7 @@ try {
     const grOpts = await q.$$eval("#grenze-wahl option", (o) => o.map((x) => x.value).filter((x) => /^K-/.test(x)));
     await q.selectOption("#grenze-wahl", grOpts[0]);
     ok("ERKLÄREN: Grenzlinie vor den ersten Baustein senkt das feste Angebot, Zurück steht da", await angebot() < vorGr && await q.locator("[data-umfang-zurueck]").count() === 1, { vorGr, jetzt: await angebot() });
+    ok("KOPF: auch bei 380 px steht der Auftrag oben", await (async () => { await q.setViewportSize({ width: 380, height: 800 }); return q.evaluate(() => { const r = document.getElementById("app-unter").getBoundingClientRect(); return r.width > 50 && r.height > 5; }); })());
     ok("ERKLÄREN: läuft bei 380 px nicht quer", await (async () => { await q.setViewportSize({ width: 380, height: 800 }); return q.evaluate(() => document.documentElement.scrollWidth - innerWidth); })() <= 0);
     await r.ctx.close();
   }

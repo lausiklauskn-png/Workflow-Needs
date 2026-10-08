@@ -157,7 +157,15 @@
     var b = document.getElementById("app-name"); if (b) b.textContent = appName();
     var v = aktiverVorgang(), f = v && sichtFassung(v);
     var sub = document.getElementById("app-unter");
-    if (sub) sub.textContent = v ? v.id + " · " + t("Fassung") + " " + f.nr + (f.unterschrieben ? " · ✍ " + t("unterschrieben") : "") : t("kein Vorgang offen");
+    /* Klaus 2026-10-08: oben muss stehen, in welchem Auftrag man ist — Kunde und Titel zuerst, dann die Fassung
+       (wie im Angebot). Nur in der App, nie auf einem Blatt; ein leerer Kunde heißt „ohne Kunde“, nie ⟦KUNDE-1⟧. */
+    if (sub) {
+      var wer = v ? (v.kunde && v.kunde.firma) || (v.eigenesVorhaben ? t("eigenes Vorhaben") : t("ohne Kunde")) : "";
+      var text = v ? wer + " · " + t("Fassung") + " " + f.nr + (f.unterschrieben ? " ✍ " + t("unterschrieben") : "") + (v.titel ? " · " + v.titel : "") + " · " + v.id
+        : t("kein Vorgang offen");
+      sub.textContent = text; sub.title = text;
+      if (v) sub.setAttribute("data-kopf-kunde", wer); else sub.removeAttribute("data-kopf-kunde");
+    }
     var sp = document.getElementById("sprache"); if (sp) { sp.textContent = S.lang === "en" ? "DE" : "EN"; sp.title = S.lang === "en" ? "Deutsch" : "English"; }
     var th = document.getElementById("thema");
     if (th) { var hell = document.documentElement.dataset.theme === "light"; th.textContent = hell ? "🌙" : "☀"; th.title = hell ? t("Dunkel") : t("Hell"); }

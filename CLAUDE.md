@@ -256,6 +256,12 @@ Der Satz im Erklär-Feld hat vier Lagen (`data-erklaer-lage`): an · nicht allei
 („Ohne ihn bleibt der Punkt offen“) · nicht eingeplant, deckt schon K-nn · offen. „deckt“ heißt jetzt „deckt (hervorgehoben):“.
 Gegenprobe `ERKLÄREN:` 9 gefangen. Cache v17, `app.js?v=10`, `texte.js?v=8`.
 
+**Kopfzeile nennt den Auftrag** (Klaus 2026-10-08: *„oben … nicht von welchem Auftrag für welchen Kunden … damit man nicht
+jedes Mal zurückgehen muss … Kunde und dann die Fassung“*): `#app-unter` = Kunde (oder „ohne Kunde“/„eigenes Vorhaben“, nie
+⟦KUNDE-1⟧) · Fassung n ✍ · Titel · Kennung, Kunde und Fassung vorn (langer Titel wird hinten abgeschnitten, ganzer Text im `title`).
+Am Handy (≤ 640 px) war die Zeile ganz ausgeblendet — jetzt klein sichtbar. Nur in der App, nie auf einem Blatt.
+Gegenprobe `KOPF:` 2 gefangen. Cache v19, `app.js?v=11`, `app.css?v=9`.
+
 **Voller Gegenprobe-Lauf über `main` nach #6–#9** (2026-10-08, Stand `6319fab`, Wegwerf-Kopien, echter Baum vor/nach gleich):
 **95 gefangen · 0 blind · 1 aus falschem Grund · 0 tote Anker** (96 Fälle). Der eine: „GESAMT: Beispiel-Dateien werden nicht
 angehängt“ — die Ansicht-Proben klickten auf fehlende Anhänge und stolperten. `oeffne` meldet jetzt, und der Ansicht-Block läuft
