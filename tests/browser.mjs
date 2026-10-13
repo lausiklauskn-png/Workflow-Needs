@@ -551,6 +551,48 @@ try {
     await r.ctx.close();
   }
 
+  /* ── KNOTEN: SBKIM-Knoten mit Netz-Einstellung (2026-10-13) ── */
+  for (const breite of [1300, 380, 360, 320]) {
+    const r = await seite(breite);
+    const ws = []; r.p.on("websocket", (w) => ws.push(w.url()));
+    await r.p.goto(url); await r.p.waitForSelector("body[data-bereit]");
+    const bereit = await r.p.waitForFunction(() => window.WN_KNOTEN_BEREIT === true, null, { timeout: 30000 }).then(() => true, () => false);
+    ok(`KNOTEN ${breite}: die Kette lief durch (Storage, Siegel, Rendezvous geladen)`, bereit && await r.p.evaluate(() => !!(window.SbkimStorage && window.SbkimSiegel && window.SbkimRendezvous && window.SbkimRendezvousUI)));
+    const k = await r.p.evaluate(() => {
+      const kopf = document.querySelector(".kopf").getBoundingClientRect();
+      const teile = [...document.querySelectorAll(".kopf *")].filter((e) => e.getClientRects().length && e.checkVisibility());
+      return { quer: document.documentElement.scrollWidth - innerWidth, rechts: Math.max(...teile.map((e) => e.getBoundingClientRect().right)) - innerWidth,
+        kopfH: kopf.height, lampen: ["lamp-alive", "lamp-traffic", "lamp-fremd"].every((id) => { const e = document.getElementById(id); return e && e.getBoundingClientRect().width > 0; }),
+        reiterTop: document.getElementById("reiter").getBoundingClientRect().top };
+    });
+    ok(`KNOTEN ${breite}: die Kopfleiste läuft nicht über (nichts ragt rechts hinaus)`, k.quer <= 0 && k.rechts <= 0, k);
+    ok(`KNOTEN ${breite}: drei Lampen sichtbar`, k.lampen, k);
+    if (breite === 1300) {
+      const b = await r.p.evaluate(() => { const e = document.getElementById("sbkim-siegel-badge"); if (!e) return null; const x = e.getBoundingClientRect(); return [x.width, x.height, !!e.closest("#siegel-platz")]; });
+      ok("KNOTEN 1300: Siegel-Abzeichen steht in der Kopfleiste (28×28)", b && b[0] === 28 && b[1] === 28 && b[2], b);
+    } else {
+      await r.p.click("#lampen");
+      const m = await r.p.evaluate(() => { const e = document.getElementById("netz-mehr").getBoundingClientRect(); return { sichtbar: e.width > 0 && e.height > 0, links: e.left, rechts: e.right - innerWidth }; });
+      ok(`KNOTEN ${breite}: ein Tipp auf die Lampen klappt Siegel und Netz auf, ohne über den Rand`, m.sichtbar && m.links >= 0 && m.rechts <= 0, m);
+    }
+    const mk = r.p.locator("[data-sbkim-mycel-platz] button").first();
+    ok(`KNOTEN ${breite}: Mycel-Knopf steht im Mycel-Platz`, await mk.count() === 1);
+    if (await mk.count()) await mk.click();
+    const box = await r.p.waitForSelector("[data-sbkim-netz-box]", { timeout: 5000 }).then(() => true, () => false);
+    ok(`KNOTEN ${breite}: die Mycel-Blase trägt die Box „Netz“`, box);
+    ok(`KNOTEN ${breite}: Gerätename-Feld hängt im Verbinden-Panel`, await r.p.locator("#sbkim-rdv-panel [data-sbkim-geraetename]").count() === 1);
+    ok(`KNOTEN ${breite}: Laden und Öffnen der Blase bauen keine Verbindung auf (kein WebSocket)`, ws.length === 0, ws);
+    if (breite === 1300) {
+      await r.p.keyboard.press("Escape");
+      await r.p.emulateMedia({ media: "print" });
+      const druckSicht = await r.p.evaluate(() => ["netzleiste", "lampen", "sbkim-siegel-badge"].map((id) => { const e = document.getElementById(id); return e ? e.checkVisibility() : false; })
+        .concat([...document.querySelectorAll("[data-sbkim-mycel-platz] *, [data-sbkim-netz-box], #sbkim-rdv-panel")].map((e) => e.checkVisibility())));
+      ok("KNOTEN: beim Drucken ist keine Lampe, kein Siegel, keine Mycel-Blase zu sehen", druckSicht.every((x) => x === false), druckSicht);
+      await r.p.emulateMedia({ media: "screen" });
+    }
+    await r.ctx.close();
+  }
+
   /* ── Impressum und Datenschutz ── */
   {
     const r = await seite(380);

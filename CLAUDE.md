@@ -49,6 +49,9 @@ das „weggelassen", nicht „null"), `verdeckt: ja|nein`. Der Stundensatz steht
 | `assets/daten/*.js` | Baustein-Katalog, Faktoren, Markt, Kalibrierung, Beispiel „Boutique“ (Testfall) und Register; seit Stufe 3 `beispiel-tomys/-psb/-alis/-eigene.js` |
 | `assets/app.js` · `app.css` · `texte.js` | Oberfläche, Glas-Knöpfe, englische Texte |
 | `assets/installieren.js` | byte-1:1 aus Sage (`INSTALLIEREN_SHA`) |
+| `modules/01…23, 05b, 16b, noble-secp256k1` | **SBKIM-Module byte-1:1 aus Sage** (`49fb020`), SHA-gepinnt in `tests/kern.mjs` (`KNOTEN_PINS`). Nie hier abwandeln — nicht im Installations-Vorrat |
+| `assets/sbkim-init.js` | Klebstoff des Knotens (Kette, Lampen, Gerätename) nach dem Sende-Prüfer; im Vorrat |
+| `assets/siegel-inhalt.js` | Identität für das Siegel (`window.SBKIM_SIEGEL_WIZ`) — wird nie verteilt |
 
 **Speicher (nie ändern):** IndexedDB `WorkflowNeeds1` / Store `vorgaenge` (Vorgänge samt
 Zuordnung Platzhalter ⟷ Klartext) · localStorage `workflowneeds_einstellungen`,
@@ -272,6 +275,30 @@ nur mit sieben Anhängen; nachgefahren: gefangen. Danach: kern **262** · browse
 mit — `.gitignore` hieß `node_modules/` und sperrt mit Schrägstrich nur ein Verzeichnis, keinen Verweis. Jekyll stieg mit
 `No such file or directory … /node_modules` aus, die Seite blieb auf v14. Verweis entfernt, `.gitignore` ohne Schrägstrich,
 Wächter `PAGES:` in `tests/kern.mjs`. **Nach jedem Merge den Lauf „pages build and deployment“ ansehen.**
+
+## SBKIM-Knoten mit Netz-Einstellung (2026-10-13)
+
+Workflow-Needs ist ein SBKIM-Knoten mit fester Leiste in der Kopfzeile (Bauart Sende-Prüfer, **kein Modul 17**):
+Lampen LEBT · VERKEHR · FREMD, Siegel (`#siegel-platz`, Band „WORKFLOW NEEDS“) und Mycel-Blase
+(`[data-sbkim-mycel-platz]`) mit der Box **„Netz“** (`[data-sbkim-netz-box]`, öffentlich oder eigenes Firmennetz).
+Bis 1100 px stehen nur die Lampen da; ein Tipp klappt Siegel und Mycel darunter auf (≤ 640 px an der Kopfzeile verankert).
+
+- **Schublade `workflowneeds`** (`window.SBKIM_DB_SUFFIX` im `<head>` vor jedem Skript, Modul-01-DB `sbkim_workflowneeds`).
+  **Nie ändern.** Getrennt von der App-Datenbank `WorkflowNeeds1`.
+- **Beschreibung** (`assets/siegel-inhalt.js`) beginnt mit „Workflow Bedarfsanalyse (Workflow-Needs)“ und nennt
+  Zweck, 18 Bereiche, SBKIM, Mycel, Sage-Protokol, Knoten, WorkFloh — **nie** Kundendaten, Beträge oder den Stundensatz
+  (die Probe sucht danach). `allowedOrigins: []`.
+- **Beim Laden geht nichts ins Netz** (kein `ensureIdentity`, gemessen: kein WebSocket beim Laden und beim Öffnen der Blase).
+- **Der Netz-Code steht nie im Depot**; er kommt über den Beitritts-Link oder von Hand und liegt nur im Browser.
+- Gerätename hängt der Klebstoff ins Verbinden-Panel (`data-sbkim-geraetename`), nie eine Panel-Datei.
+- Beim Drucken ist die Leiste weg (`body>*:not(#druck)`). Cache v21, `app.css?v=11`, `sbkim-init.js?v=1`.
+
+Gemessen 2026-10-13: `kern` **281 grün · 0 ROT** · `browser` **192 grün · 0 ROT** (Kopfzeile bei 1300/380/360/320 ohne
+Überlauf, Höhe unverändert) · Gegenprobe `KNOTEN:` (10 Fälle) **10 gefangen · 0 blind** · `NUR_ANKER` 119 Fälle · 0 tot.
+Erster Lauf: 9 gefangen · 1 blind — der Fall „Klappfenster über den Rand“ nahm die falsche Zeile weg (die Lage hängt an
+`.netzleiste{position:static}`, nicht an `right:12px`); geschärft, danach gefangen.
+⚠ Nicht gemessen: das Tablet, ein echter Beitritt zu einem eigenen Netz (das interne Relais steht noch nicht),
+der Andock-Wizard bis zur signierten Spore. Eine `sbkim/spore.json` liegt nicht im Depot.
 
 ## Benannte Grenzen
 
