@@ -617,5 +617,62 @@ function kundenVorgang() {
   ok("SPEICHER: app-eigene Namen (WorkflowNeeds1, workflowneeds_*), nicht toolpoint_lang", /DB_NAME = "WorkflowNeeds1"/.test(speicher) && !/toolpoint_lang/.test(speicher));
 }
 
+/* ── KNOTEN: SBKIM-Knoten mit Netz-Einstellung (2026-10-13) ──
+   Die 13 Module sind byte-1:1 aus Sage (49fb020, dieselben Pins wie im Sende-Prüfer).
+   Wer ein Modul neu kopiert, zieht hier den Pin nach. */
+const KNOTEN_PINS = {
+  "modules/01_storage.js": "5a5a4bf64dfcc107da7ed70fb755d7db5cce7d80e963b3e2fbc2004537747820",
+  "modules/02_spore.js": "6789fe6e903ad2e53f39b2dee576c640698555ef71ef4e9134eb75573fdb7d68",
+  "modules/03_embedding.js": "a6ac64d7536da3fa5cc426d0f7db9440fdaf5ab4460f0bdc66a10eb8203b1b68",
+  "modules/04_match.js": "5de95923c3f62f141e94f576feebcac0eecc55c60e40b564540a56420436a4cd",
+  "modules/05_anastomose.js": "255ac79aeb3b0203e92f0cebd0a905e47c488b43efe18f41332a7d35520bbf23",
+  "modules/05b_nostr_relay.js": "6edc89091861184da3b702b744691a596bbed6051fd40dbdd45492fba2bec363",
+  "modules/07_apoptose.js": "0acdd6ab2d95e131fa6953061cc0e95a2396e05fff091a7dc690b2668a4c035a",
+  "modules/15_membran.js": "829a5bc01976b59c5ce428125314b87b314b6212cd5a473634c2d22c02579397",
+  "modules/16_siegel.js": "d84fa539e76e0cc54c956b648fcb1505f08843662d97854dc1a95e6ab65b7e25",
+  "modules/16b_andock_wizard.js": "c415eafdb1b660a5256e19957c667074b64b0c3990cc8acc4daeeef34a57e85d",
+  "modules/23_rendezvous.js": "b02f1a1c93130ae74e81796b500d1c613b2504a53c9a9d852ef55ba9eb93891b",
+  "modules/23_rendezvous_ui.js": "bff48ea0d0292afa745e7d85a655c99f49b1c03c6058bef06f0f757b3d270a2d",
+  "modules/noble-secp256k1.js": "8f3879ca422c4fdfe7ca0361688636fa7cc550a59bd94d512ed6ec79aa3d55d1"
+};
+{
+  const falsch = Object.keys(KNOTEN_PINS).filter((f) => !existsSync(join(WURZEL, f)) || sha(f) !== KNOTEN_PINS[f]);
+  ok("KNOTEN: die 13 Module sind byte-gleich mit Sage", falsch.length === 0, falsch);
+  const idx = readFileSync(join(WURZEL, "index.html"), "utf8");
+  const kopf = idx.split("</head>")[0];
+  const suffixAt = kopf.search(/<script>\s*window\.SBKIM_DB_SUFFIX\s*=\s*"workflowneeds"\s*;?\s*<\/script>/);
+  const erstesSkript = kopf.search(/<script(?![^>]*>\s*window\.SBKIM_DB_SUFFIX)/);
+  ok("KNOTEN: Schublade „workflowneeds“ steht im <head> vor jedem anderen Skript", suffixAt >= 0 && (erstesSkript < 0 || suffixAt < erstesSkript), { suffixAt, erstesSkript });
+  const glue = readFileSync(join(WURZEL, "assets/sbkim-init.js"), "utf8");
+  ok("KNOTEN: Klebstoff nutzt dieselbe Schublade", /dbSuffix:\s*"workflowneeds"/.test(glue));
+  const kette = (glue.match(/var KANON = \[([\s\S]*?)\n\s*\];/) || [])[1] || "";
+  const glieder = kette.split("\n").map((z) => z.replace(/\/\/.*$/, "").trim()).filter((z) => z.startsWith("["));
+  const ohneKomma = glieder.slice(0, -1).filter((z) => !z.endsWith(","));
+  ok("KNOTEN: zwischen den Kettengliedern steht je ein Komma", glieder.length === 13 && ohneKomma.length === 0, { glieder: glieder.length, ohneKomma });
+  const namen = glieder.map((z) => (z.match(/"([^"]+\.js)"/) || [])[1]);
+  const pflicht = Object.keys(KNOTEN_PINS).filter((f) => f !== "modules/noble-secp256k1.js").concat(["assets/siegel-inhalt.js"]);
+  ok("KNOTEN: die Kette lädt jedes Pflicht-Modul und die Identität", pflicht.every((f) => namen.includes(f)), pflicht.filter((f) => !namen.includes(f)));
+  ok("KNOTEN: 05b als ES-Modul, kein Modul 17", /\["module",\s*"modules\/05b_nostr_relay\.js"\]/.test(kette) && !/17_/.test(kette) && !/17_/.test(idx));
+  ok("KNOTEN: die Identität steht vor dem Andock-Werkzeug", namen.indexOf("assets/siegel-inhalt.js") >= 0 && namen.indexOf("assets/siegel-inhalt.js") < namen.indexOf("modules/16b_andock_wizard.js"));
+  const sw = readFileSync(join(WURZEL, "sw.js"), "utf8");
+  const core = JSON.parse(sw.match(/const CORE = (\[[\s\S]*?\]);/)[1]);
+  const imVorrat = core.filter((u) => /^modules\/(?!25_)/.test(u) || /siegel-inhalt/.test(u));
+  ok("KNOTEN: kein SBKIM-Modul im Installations-Vorrat (der Worker legt sie beim ersten Abruf ab)", imVorrat.length === 0, imVorrat);
+  ok("KNOTEN: der Worker legt gleich-ursprüngliche Abrufe ab", /r\.status === 200\)\s*\{[^}]*caches\.open\(CACHE_VERSION\)[^}]*c\.put/.test(sw));
+  ok("KNOTEN: keine fremde Herkunft (allowedOrigins leer)", /allowedOrigins:\s*\[\]/.test(glue));
+  ok("KNOTEN: Siegel-Band „WORKFLOW NEEDS“ im Badge-Platz der Kopfleiste", /ribbonText:\s*"WORKFLOW NEEDS"/.test(glue) && /badgeSelector:\s*"#siegel-platz"/.test(glue));
+  ok("KNOTEN: beim Start keine eigene Identität erzwungen (kein ensureIdentity)", !/ensureIdentity\s*\(/.test(glue.replace(/\/\*[\s\S]*?\*\//g, "")));
+  ok("KNOTEN: Gerätename über den Klebstoff ins Verbinden-Panel", /setAttribute\("data-sbkim-geraetename"/.test(glue) && /getElementById\("sbkim-rdv-panel"\)/.test(glue));
+  const leiste = ["id=\"netzleiste\"", "id=\"lamp-alive\"", "id=\"lamp-traffic\"", "id=\"lamp-fremd\"", "id=\"siegel-platz\"", "data-sbkim-mycel-platz"];
+  ok("KNOTEN: die Kopfleiste trägt Lampen, Siegel-Platz und Mycel-Platz", leiste.every((x) => idx.includes(x)), leiste.filter((x) => !idx.includes(x)));
+  const fenster = {}; new Function("window", readFileSync(join(WURZEL, "assets/siegel-inhalt.js"), "utf8"))(fenster);
+  const W = fenster.SBKIM_SIEGEL_WIZ || {};
+  const d = String(W.domainDescription || "");
+  ok("KNOTEN: Beschreibung beginnt mit dem eigenen Namen", d.startsWith("Workflow Bedarfsanalyse (Workflow-Needs)"));
+  ok("KNOTEN: Beschreibung nennt Zweck, 18 Bereiche, SBKIM, Mycel, Sage-Protokol, Knoten", ["ZWECK", "18 Bereichen", "SBKIM", "Mycel", "Sage-Protokol", "Knoten", "WorkFloh"].every((w) => d.includes(w)));
+  ok("KNOTEN: Beschreibung trägt keinen Betrag, keinen Stundensatz, keine Kundenadresse", !/\d+\s*(€|EUR|Euro)|€\s*\d|Stundensatz|\d+\s*€\/h|@|⟦KUNDE/.test(d));
+  ok("KNOTEN: Endpunkt ist die eigene Adresse", W.endpoint === "https://lausiklauskn-png.github.io/Workflow-Needs/" && W.nodeName === "Workflow Bedarfsanalyse");
+}
+
 console.log(`kern: ${gruen} grün · ${rot} ROT`);
 process.exit(rot ? 1 : 0);
