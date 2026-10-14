@@ -624,7 +624,7 @@ const KNOTEN_PINS = {
   "modules/01_storage.js": "5a5a4bf64dfcc107da7ed70fb755d7db5cce7d80e963b3e2fbc2004537747820",
   "modules/02_spore.js": "6789fe6e903ad2e53f39b2dee576c640698555ef71ef4e9134eb75573fdb7d68",
   "modules/03_embedding.js": "a6ac64d7536da3fa5cc426d0f7db9440fdaf5ab4460f0bdc66a10eb8203b1b68",
-  "modules/04_match.js": "5de95923c3f62f141e94f576feebcac0eecc55c60e40b564540a56420436a4cd",
+  "modules/04_match.js": "721eecc3c0d6ea4c259259e6071215ec1cd16f1c43c87b42ce9e72e9a0b5e41c",
   "modules/05_anastomose.js": "255ac79aeb3b0203e92f0cebd0a905e47c488b43efe18f41332a7d35520bbf23",
   "modules/05b_nostr_relay.js": "37eee5b196b3efad57131edd1cc3c0ee23acb97b5ca40740d6a0771db4b4a421",
   "modules/07_apoptose.js": "0acdd6ab2d95e131fa6953061cc0e95a2396e05fff091a7dc690b2668a4c035a",
@@ -648,10 +648,13 @@ const KNOTEN_PINS = {
   const kette = (glue.match(/var KANON = \[([\s\S]*?)\n\s*\];/) || [])[1] || "";
   const glieder = kette.split("\n").map((z) => z.replace(/\/\/.*$/, "").trim()).filter((z) => z.startsWith("["));
   const ohneKomma = glieder.slice(0, -1).filter((z) => !z.endsWith(","));
-  ok("KNOTEN: zwischen den Kettengliedern steht je ein Komma", glieder.length === 13 && ohneKomma.length === 0, { glieder: glieder.length, ohneKomma });
+  ok("KNOTEN: zwischen den Kettengliedern steht je ein Komma", glieder.length === 14 && ohneKomma.length === 0, { glieder: glieder.length, ohneKomma });
   const namen = glieder.map((z) => (z.match(/"([^"]+\.js)"/) || [])[1]);
   const pflicht = Object.keys(KNOTEN_PINS).filter((f) => f !== "modules/noble-secp256k1.js").concat(["assets/siegel-inhalt.js"]);
   ok("KNOTEN: die Kette lädt jedes Pflicht-Modul und die Identität", pflicht.every((f) => namen.includes(f)), pflicht.filter((f) => !namen.includes(f)));
+  // Prüfliste vor dem KI-Richter (Sage Bau 04.J, 2026-10-14): ohne sie läuft der Richter in Modul 04 nicht
+  ok("KNOTEN: die Prüfliste (assets/pruefer-mail.js) lädt direkt nach Modul 04", namen.indexOf("assets/pruefer-mail.js") === namen.indexOf("modules/04_match.js") + 1, namen);
+  ok("KNOTEN: assets/pruefer-mail.js byte-1:1 aus dem Auslieferungsprüfer (Pin)", existsSync(join(WURZEL, "assets/pruefer-mail.js")) && sha("assets/pruefer-mail.js") === "cdf3ca7881bfa68763a2c0be7436d35a65bea4dbd03f606e02eaec5c613632d7");
   ok("KNOTEN: 05b als ES-Modul, kein Modul 17", /\["module",\s*"modules\/05b_nostr_relay\.js"\]/.test(kette) && !/17_/.test(kette) && !/17_/.test(idx));
   ok("KNOTEN: die Identität steht vor dem Andock-Werkzeug", namen.indexOf("assets/siegel-inhalt.js") >= 0 && namen.indexOf("assets/siegel-inhalt.js") < namen.indexOf("modules/16b_andock_wizard.js"));
   const sw = readFileSync(join(WURZEL, "sw.js"), "utf8");
