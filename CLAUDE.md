@@ -347,3 +347,9 @@ Offline-Fall **blind** (siehe oben) — alle drei geschärft und nachgefahren.
 
 Freibrief zum Selbst-Mergen · frisch von `origin/main` · Ton · kein PII · Ehrlichkeit:
 [Sage-Protokol/docs/NETZWEIT.md](https://github.com/lausiklauskn-png/Sage-Protokol/blob/main/docs/NETZWEIT.md)
+
+
+## 🛡 Prüfliste vor dem KI-Richter (Sage Bau 04.J, 2026-10-14)
+
+Modul 04 kommt neu aus dem Kanon (Sage #1082). Der Richter prüft die Suchfrage und die Antworten fremder Knoten mit der Prüfliste (`pruefer-mail.js`). Fehlt die Liste, läuft er nicht. Eine Antwort, in der eine Anweisung an eine KI steht, geht nicht an die KI. Sie bekommt „gefahr“ und `ausgeschlossen: "ki-anweisung"`.
+`assets/pruefer-mail.js` ist neu: byte-1:1 aus dem Auslieferungsprüfer, steht in der Kette direkt nach 04 und ist in `tests/kern.mjs` gepinnt. Wie die Module steht die Datei nicht im Installations-Vorrat. Gemessen im Browser: `prueflisteGeladen` ist true. Cache v23. Das Tablet ist nicht gemessen.
