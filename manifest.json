@@ -2,7 +2,7 @@
   "name": "Workflow Bedarfsanalyse",
   "short_name": "Bedarfsanalyse",
   "description": "Bedarfsprotokoll, Schätzung, Fassungen und Angebot — offline. Kundendaten gehen nie hinaus.",
-  "id": "./",
+  "id": "/Workflow-Needs/index.html",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
