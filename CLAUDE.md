@@ -353,3 +353,7 @@ Freibrief zum Selbst-Mergen · frisch von `origin/main` · Ton · kein PII · Eh
 
 Modul 04 kommt neu aus dem Kanon (Sage #1082). Der Richter prüft die Suchfrage und die Antworten fremder Knoten mit der Prüfliste (`pruefer-mail.js`). Fehlt die Liste, läuft er nicht. Eine Antwort, in der eine Anweisung an eine KI steht, geht nicht an die KI. Sie bekommt „gefahr“ und `ausgeschlossen: "ki-anweisung"`.
 `assets/pruefer-mail.js` ist neu: byte-1:1 aus dem Auslieferungsprüfer, steht in der Kette direkt nach 04 und ist in `tests/kern.mjs` gepinnt. Wie die Module steht die Datei nicht im Installations-Vorrat. Gemessen im Browser: `prueflisteGeladen` ist true. Cache v23. Das Tablet ist nicht gemessen.
+
+## ⬇ Installieren-Erklärtext ohne „Daten löschen“ (2026-10-18)
+
+`assets/installieren.js` neu byte-1:1 aus Sage-Protokol (PR #1151). Der alte Rat „Websiteeinstellungen → Daten löschen“ ist ersetzt: auf `lausiklauskn-png.github.io` teilen sich alle Apps einen Speicher, das hätte die Daten ALLER Apps gelöscht. Pin `INSTALLIEREN_SHA` = `09c533b3…2193`, Cache v35, `installieren.js?v=2`.
