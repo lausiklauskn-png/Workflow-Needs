@@ -184,6 +184,7 @@
     zeichneKopf();
     var main = document.getElementById("inhalt");
     main.replaceChildren();
+    main.setAttribute("data-reiter", S.reiter);   /* Ziel für den Installieren-Knopf in den Einstellungen (installieren.js data-in) */
     if (!P) main.append(h("div", { class: "hinweis bad", "data-modul25-fehlt": "" },
       t("Modul 25 (Platzhalter) ist nicht geladen. Der Bauauftrag kann deshalb weder gespeichert noch kopiert noch geteilt werden.")));
     if (S.meldung) main.append(h("div", { class: "hinweis " + (S.meldung.art || ""), role: "status", "data-meldung": "" }, S.meldung.text));

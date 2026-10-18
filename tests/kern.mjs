@@ -36,7 +36,7 @@ function ohneZuschlag(f) { f.umfang.firmenanpassung = { von: 0, bis: 0 }; f.umfa
 
 /* ── PINS (byte-1:1-Kopien) ── */
 const MODUL25_SHA = "8c3092babee80b8fce2c6607cc4c8ced4bbef4addf31a5f0f3de6ba5c92c2ad7"; // Sage-Protokol src/modules/25_pseudonym.js (df54f0c)
-const INSTALLIEREN_SHA = "874d2a29f163b33662d26ed3066a2f32c08a55815d308de59dbe167c3ba08dc4"; // Sage-Protokol assets/installieren.js (PR #1152)
+const INSTALLIEREN_SHA = "e0644084e2e72773608633190a3e5ed287f93d88f438e7473f03c765c7f873c3"; // Sage-Protokol assets/installieren.js (PR #1153)
 const PRUEFERMAIL_SHA = "cdf3ca7881bfa68763a2c0be7436d35a65bea4dbd03f606e02eaec5c613632d7"; // Sende-Pruefer assets/pruefer-mail.js (78dde3d), nur für die Probe
 ok("PIN: Modul 25 ist byte-gleich mit Sage", sha("modules/25_pseudonym.js") === MODUL25_SHA, sha("modules/25_pseudonym.js"));
 ok("PIN: installieren.js ist byte-gleich mit Sage", sha("assets/installieren.js") === INSTALLIEREN_SHA);
