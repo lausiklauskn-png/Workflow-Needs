@@ -217,6 +217,17 @@ try {
     const uf = (ueb.auftraege && ueb.auftraege[0] && ueb.auftraege[0].files) || [];
     ok("ÜBERGABE: Auftragsdatei für WorkFloh mit allen Anhängen (Name und Art bleiben)", ueb.wf === "forward" && /^Auftrag_V-\d{4}-\d{4}-F1\.json$/.test(dlU.suggestedFilename()) &&
       uf.length === 3 && uf[0].name === "Anhangpruefwort-Plan.pdf" && Buffer.from(uf[0].data.split(",")[1], "base64").equals(pdf) && uf[1].mime === "message/rfc822" && uf[2].mime === "image/png", [dlU.suggestedFilename(), uf.map((x) => x.name + "|" + x.mime)]);
+    /* An BookLedgerPro (D22): kein Sprung in der Probe — der Haken wie in Workflow Calculate fängt die Adresse */
+    const gesprungen = [];   // ein echter Sprung nach github.io würde die Seite verlassen — hier abgefangen und gezählt
+    await s.p.route("https://lausiklauskn-png.github.io/**", (r) => { gesprungen.push(r.request().url()); r.fulfill({ status: 200, contentType: "text/html", body: "<title>abgefangen</title>" }); });
+    await s.p.evaluate(() => { window.__wnSprungAbfangen = true; window.__wnSprung = null; });
+    await s.p.click("#an-blp");
+    await s.p.waitForTimeout(800);
+    ok("ÜBERGABE-BLP: die Seite bleibt in Workflow-Needs (kein Sprung, der Haken fängt die Adresse)", gesprungen.length === 0 && !s.p.url().includes("uebernahme="), gesprungen);
+    const blpUrl = await s.p.evaluate(() => window.__wnSprung).catch(() => null);
+    const blpNutz = blpUrl && blpUrl.includes("?uebernahme=") ? JSON.parse(Buffer.from(blpUrl.split("?uebernahme=")[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8")) : null;
+    ok("ÜBERGABE-BLP: „An BookLedgerPro“ baut die Adresse …/BookLedgerPro/?uebernahme= (Vertrag v1, quelle workflow-needs, Positionen netto, kein Stundensatz)", !!blpNutz && blpUrl.startsWith("https://lausiklauskn-png.github.io/BookLedgerPro/?uebernahme=") && blpNutz.v === 1 && blpNutz.quelle === "workflow-needs" && blpNutz.positionen.length > 0 && blpNutz.positionen.every((p) => p.menge === 1 && p.einzelpreisCent > 0) && !/Anhangpruefwort|Stundensatz|⟦/.test(JSON.stringify(blpNutz)), blpUrl ? blpUrl.slice(0, 120) : blpUrl);
+    await s.p.unroute("https://lausiklauskn-png.github.io/**");
     /* Sichern */
     await reiter(s.p, "einstellungen");
     await s.p.fill('[data-firma="name"]', "Sicherung Prüf-Firma");

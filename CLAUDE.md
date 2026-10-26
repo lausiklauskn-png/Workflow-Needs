@@ -300,6 +300,21 @@ Erster Lauf: 9 gefangen · 1 blind — der Fall „Klappfenster über den Rand�
 ⚠ Nicht gemessen: das Tablet, ein echter Beitritt zu einem eigenen Netz (das interne Relais steht noch nicht),
 der Andock-Wizard bis zur signierten Spore. Eine `sbkim/spore.json` liegt nicht im Depot.
 
+## 🧾 An BookLedgerPro (Klaus 2026-10-26, D22: „Needs … Angebote für Software … beide über BLP")
+
+Im Reiter Angebot steht neben „📤 Auftragsdatei speichern" der Knopf **„🧾 An BookLedgerPro"** (`#an-blp`): er baut aus der
+Whitelist (`WN.aussen.angebotExtern`) die Adresse `…/BookLedgerPro/?uebernahme=<base64url(JSON)>` im **Datenvertrag v1**
+(`quelle: "workflow-needs"`, `modus: "angebot"`, jede Hauptposition als 1 × Netto mit USt-Satz, Optionales bleibt draußen,
+Text 140, Nummern 32, höchstens 20 Positionen, 20 kB) — dieselbe Bauart wie Workflow Calculate (`WC.uebergabe.blpAdresse`).
+BookLedgerPro füllt damit nur sein Angebots-Formular vor; gespeichert wird dort erst auf Klick. Vorher wird der Vorgang
+gespeichert (`jetztSpeichern`). Eingebettet in BookLedgerPro fängt dessen Brücke den Sprung über `window.__wnSprungAbfangen`
+/ `window.__wnSprung` ab (wie `__wcSprung` bei Calculate) — die Proben nutzen denselben Haken.
+Kein Stundensatz, keine Stunden, kein Platzhalter in der Nutzlast (gemessen). `uebergabe.js?v=3`, `app.js?v=14`, `texte.js?v=10`,
+Cache v38. Proben: `kern` **292 grün** (6 neue `ÜBERGABE-BLP:`) · `browser` **194 grün** (Knopf, kein Sprung, Nutzlast) ·
+Gegenprobe `NUR_FALL="UEB-BLP:"` **4 gefangen · 0 blind** (einer war zuerst „aus falschem Grund": der echte Sprung nach
+github.io verließ die Seite, bevor die Probe maß — jetzt fängt eine Route den Sprung und zählt ihn).
+⚠ Am Tablet nicht gemessen; BookLedgerPro muss `workflow-needs` als Quelle kennen (dort nachgezogen).
+
 ## Benannte Grenzen
 
 - Platzhalter sind **keine Verschlüsselung**: der Klartext geht nur gar nicht erst hinaus. Was
