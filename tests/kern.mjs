@@ -408,6 +408,26 @@ function kundenVorgang() {
   ok("ÜBERGABE: unterschriebene Fassung sagt das in der Beschreibung", !f.unterschrieben || a.data.beschreibung.includes("Unterschrieben am"));
 }
 
+/* ── ÜBERGABE-BLP an BookLedgerPro (Datenvertrag v1, nur aus der Whitelist; Klaus 2026-10-26 D22) ── */
+{
+  const U = WN.uebergabe;
+  const v = WN.beispiel.boutique(3, EINST); const f = F.aktuelle(v);
+  f.satzCent = 7300;
+  const a = A.angebotExtern(v, f, {}, EINST.ust, null, EINST.zeitraum, "de");
+  const ad = U.blpAdresse(a), n = ad.nutzlast;
+  const txt = JSON.stringify(n);
+  ok("ÜBERGABE-BLP: Vertrag v1, quelle workflow-needs, modus angebot, Adresse auf BookLedgerPro mit ?uebernahme=", ad.ok && n.v === 1 && n.quelle === "workflow-needs" && n.modus === "angebot" && ad.url.startsWith(U.BLP_ZIEL + "?uebernahme=") && /^[A-Za-z0-9_-]+$/.test(ad.url.split("?uebernahme=")[1]), ad);
+  ok("ÜBERGABE-BLP: jede Hauptposition als 1 × Netto mit USt-Satz; Summe gleich dem Angebot netto; Optionales bleibt draußen", n.positionen.length === a.positionen.length && n.positionen.every((p, i) => p.menge === 1 && p.einzelpreisCent === Math.round(a.positionen[i].nettoCent) && [0, 7, 19].includes(p.ustSatz) && p.beschreibung.length <= 140)
+    && n.positionen.reduce((x, p) => x + p.einzelpreisCent, 0) === a.summen.netto && !a.optional.some((o) => txt.includes(o.beschreibung.slice(0, 40))), n.positionen);
+  ok("ÜBERGABE-BLP: kein Stundensatz (gestellt 73 €), keine Stunden, kein Platzhalter", !/73,00|7300|Stundensatz|€\/h|\d+–\d+ h\b|⟦/.test(txt), txt.match(/.{0,30}(73,00|7300|Stundensatz|⟦).{0,30}/));
+  ok("ÜBERGABE-BLP: Kunde und Angebotsnummer im Klartext, Fassung > 1 an der Nummer", n.kundeName === "Boutique Beispiel" && n.angebotsNr === a.nummer + (a.fassung > 1 ? "-F" + a.fassung : "") && n.titel.length > 0, [n.kundeName, n.angebotsNr, n.titel]);
+  const leer = U.blpAdresse(Object.assign({}, a, { positionen: [] }));
+  const viele = U.blpAdresse(Object.assign({}, a, { positionen: Array.from({ length: 21 }, (_, i) => ({ beschreibung: "P" + i, nettoCent: 100, ustSatz: 19 })) }));
+  ok("ÜBERGABE-BLP: ohne Position und über 20 Positionen wird nicht übergeben, mit Grund", !leer.ok && /keine Position/.test(leer.grund) && !viele.ok && /höchstens 20/.test(viele.grund), [leer, viele]);
+  const dec = JSON.parse(Buffer.from(ad.url.split("?uebernahme=")[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+  ok("ÜBERGABE-BLP: die Adresse trägt genau die Nutzlast (base64url, UTF-8)", JSON.stringify(dec) === txt);
+}
+
 /* ── KALIBRIERUNG gegen eigene Aufträge (intern) ── */
 {
   const v = WN.beispiel.boutique(4, EINST);
