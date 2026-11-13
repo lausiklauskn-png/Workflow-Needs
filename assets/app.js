@@ -27,10 +27,17 @@
       wartung: { freistunden: 4, wochen: 8, pauschaleCent: null } }, lsJson(LS.einst, {})),
     tabellen: null, mdOpts: { stunden: true, euro: false }, antwort: null, meldung: null,
   };
+  /* Neue Vorgabe-Bausteine (z. B. U2, 2026-11-13) kommen zu gespeicherten Tabellen dazu — eigene Zahlen bleiben unberührt. */
+  function fehlendeDazu(eigene, vorgabe) {
+    var da = {}; eigene.forEach(function (b) { da[b.id] = 1; });
+    var out = eigene.slice(), neuIdx = out.findIndex(function (b) { return b.id === "neu"; });
+    vorgabe.forEach(function (b) { if (!da[b.id]) { if (neuIdx >= 0) out.splice(neuIdx++, 0, F.kopie(b)); else out.push(F.kopie(b)); } });
+    return out;
+  }
   function tabellenLaden() {
     var t = lsJson(LS.tab, null);
     S.tabellen = {
-      bausteine: t && Array.isArray(t.bausteine) ? t.bausteine : F.kopie(WN.BAUSTEINE),
+      bausteine: t && Array.isArray(t.bausteine) ? fehlendeDazu(t.bausteine, WN.BAUSTEINE) : F.kopie(WN.BAUSTEINE),
       faktoren: t && Array.isArray(t.faktoren) ? t.faktoren : F.kopie(WN.FAKTOREN),
       markt: t && Array.isArray(t.markt) ? t.markt : F.kopie(WN.MARKT),
     };
@@ -597,10 +604,51 @@
         karte.append(h("div", { class: "zeile" }, inp, knopf("＋", dazu, "klein", { "data-dazu": String(b.nr), "aria-label": t("Eintrag hinzufügen") })));
       }
     }
+    anhaengen(karte, rahmenBlock(v, f, b, ro));
     karte.append(h("label", { class: "feld", style: "margin-top:8px" }, "🔒 " + t("Interne Notiz (erscheint nie im Kundenausdruck)"),
       h("textarea", { value: roh.notiz || "", disabled: ro, "data-key": "notiz-" + b.nr, "data-notiz": String(b.nr), rows: 2,
         oninput: function (e) { roh.notiz = e.target.value; merken(v); } })));
     return karte;
+  }
+
+  /* Rahmen (Klaus 2026-11-13, Ja zu F1–F4, F6): Geräte und offline (10), eigene Programme (12), Datenort und Sicherung (13),
+     Budget und „nicht gewünscht“ (15). Wahl per Chip; nichts ist vorbelegt — was nicht gefragt wurde, bleibt leer. */
+  function rahmenBlock(v, f, b, ro) {
+    var felder = WN.RAHMEN_FELDER.filter(function (k) { return WN.RAHMEN[k].bereich === b.nr; });
+    if (!felder.length && b.nr !== 15) return null;
+    var RA = WN.rahmen, ra = RA.von(f.protokoll), box = h("div", { class: "rahmen-block", "data-rahmen-block": String(b.nr) });
+    felder.forEach(function (k) {
+      var def = WN.RAHMEN[k], wert = ra[k];
+      var band = h("div", { class: "band", style: "margin:4px 0" }, h("span", { class: "gedaempft klein", text: nm(def.frage) + (def.mehrfach ? " (" + t("mehrere möglich") + ")" : "") }));
+      def.wahl.forEach(function (w) {
+        var an = Array.isArray(wert) ? wert.indexOf(w.id) >= 0 : wert === w.id;
+        band.append(h("button", { type: "button", class: "btn chip klein" + (an ? " on" : ""), disabled: ro, "data-rahmen": k + ":" + w.id, "aria-pressed": String(an),
+          text: (an ? "✓ " : "") + nm(w.name), onclick: function () { RA.umschalten(f.protokoll, k, w.id); merken(v); zeichne(); } }));
+      });
+      box.append(band);
+      if (k === "eigene") box.append(h("input", { placeholder: t("Welche eigenen Programme? (z. B. Buchhaltung, Ablage)"), value: ra.eigeneText || "", disabled: ro, "data-key": "rahmen-eigene", "data-rahmen-text": "eigene",
+        oninput: function (e) { RA.sicher(f.protokoll).eigeneText = e.target.value; merken(v); } }));
+    });
+    if (b.nr === 15) {
+      box.append(h("label", { class: "feld", style: "flex:0 1 220px" }, "🔒 " + t("Budget-Rahmen gesamt in € (Angabe des Kunden, nur intern)"),
+        h("input", { type: "number", min: "0", step: "100", class: "kurz", value: ra.budgetEuro == null ? "" : ra.budgetEuro, disabled: ro, "data-key": "rahmen-budget", "data-rahmen-budget": "",
+          onchange: function (e) { RA.sicher(f.protokoll).budgetEuro = zahl(e.target.value); merken(v); zeichne(); } })));
+      box.append(h("h4", { style: "margin:8px 0 4px", text: t("Nicht gewünscht — was die Lösung ausdrücklich NICHT tun soll") }));
+      RA.nicht(f.protokoll).forEach(function (e) {
+        box.append(h("div", { class: "eintrag" + (e.sichtbar ? "" : " intern"), "data-nicht": e.id },
+          h("span", { class: "badge kennung", text: e.id }),
+          h("input", { class: "text", value: e.text, disabled: ro, "data-key": "t-" + e.id, oninput: function (ev) { e.text = ev.target.value; merken(v); } }),
+          ro ? h("span") : knopf("✕", function () { f.protokoll.nicht = f.protokoll.nicht.filter(function (x) { return x !== e; }); merken(v); zeichne(); }, "klein gefahr", { "aria-label": t("Eintrag entfernen"), "data-nicht-weg": e.id }),
+          h("div", { class: "mehr" }, sichtSchalter(e, ro, "s-" + e.id, v))));
+      });
+      if (!ro) {
+        var ni = h("input", { placeholder: t("z. B. keine Daten in einer fremden Cloud"), "data-key": "nicht-neu", "data-nicht-neu": "", style: "flex:1 1 220px" });
+        var nd = function () { if (!ni.value.trim()) return; RA.nichtNeu(v, f.protokoll, ni.value); ni.value = ""; merken(v); zeichne(); var n2 = document.querySelector("[data-nicht-neu]"); if (n2) n2.focus(); };
+        ni.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); nd(); } });
+        box.append(h("div", { class: "zeile" }, ni, knopf("＋", nd, "klein", { "data-nicht-dazu": "", "aria-label": t("Eintrag hinzufügen") })));
+      }
+    }
+    return box;
   }
 
   function eintragZeile(v, f, b, e, ro) {
@@ -614,6 +662,14 @@
       merken(v); zeichne();
     }, "klein gefahr", { "aria-label": t("Eintrag entfernen"), "data-weg": e.id }));
     var mehr = h("div", { class: "mehr" });
+    if (b.nr === 6) {
+      var hs = h("span", { class: "seg", "data-handeln": e.id, title: t("Soll die Lösung vorschlagen oder selbst handeln?") });
+      WN.HANDELN.forEach(function (w) {
+        hs.append(h("button", { type: "button", class: e.handeln === w.id ? "on" : "", disabled: ro, text: nm(w.name), "data-handeln-wahl": w.id,
+          onclick: function () { e.handeln = e.handeln === w.id ? "" : w.id; merken(v); zeichne(); } }));
+      });
+      mehr.append(hs);
+    }
     if (b.nr === 3) mehr.append(t("Anzahl"), zaehler(e.anzahl || 0, ro, function (n) { e.anzahl = Math.max(0, n); merken(v); zeichne(); }, "anz-" + e.id));
     if (b.nr === 18) {
       mehr.append(h("input", { class: "mittel", placeholder: t("wer klärt"), value: e.wer || "", disabled: ro, "data-key": "wer-" + e.id, oninput: function (ev) { e.wer = ev.target.value; merken(v); } }),
@@ -725,6 +781,15 @@
     });
     if (ungedeckt.length) gew.append(h("div", { class: "hinweis warn", "data-ungedeckt": ungedeckt.map(function (e) { return e.id; }).join(",") },
       ungedeckt.map(function (e) { return e.id; }).join(", ") + " " + t("ist noch nicht abgedeckt.")));
+    /* U1 (Klaus 2026-11-13): nicht schlüssig — Muss ohne Baustein, Baustein zeigt auf einen Bedarf, den es nicht mehr gibt. */
+    var sl = WN.rahmen.schluessig(f);
+    if (!sl.ok) gew.append(h("div", { class: "hinweis warn", "data-schluessig": "nein" },
+      [sl.mussOhne.length ? sl.mussOhne.join(", ") + " (" + t("Muss") + ") " + t("hat keinen Baustein.") : "",
+        sl.verwaist.map(function (x) { return x.baustein + " " + t("deckt") + " " + x.bedarf + ", " + t("den es nicht mehr gibt."); }).join(" ")].filter(Boolean).join(" · ")));
+    /* F6: Budget-Rahmen des Kunden gegen die Schätzung (nur intern) */
+    var bu = WN.rahmen.budget(f, s);
+    if (bu && bu.ueber) gew.append(h("div", { class: "hinweis warn", "data-budget-ueber": "" },
+      t("Die Schätzung") + " (" + euroG(bu.kostenVon) + "–" + euroG(bu.kostenBis) + " " + t("netto") + ") " + t("liegt über dem Budget-Rahmen des Kunden") + " (" + euroG(bu.budgetCent) + "). " + t("Grenzlinie prüfen oder mit dem Kunden sprechen.")));
     /* Zuschläge */
     var fa = u.firmenanpassung = u.firmenanpassung || { von: 0, bis: 0 };
     gew.append(h("h3", { style: "margin-top:12px", text: t("Zuschläge") }),
@@ -1712,11 +1777,19 @@
           txt += ": " + teile.join(", ") + " (" + t("Angabe des Kunden") + ")";
         }
         if (e.sterne) txt += " — ★ " + std(e.sterne.schnitt) + " (" + e.sterne.anzahl + " " + t("Bewertungen der Mitarbeiter") + ")";
+        if (e.handeln) txt += " — " + WN.rahmen.name("handeln", e.handeln, S.lang);
         if (x.nr === 18 && (e.wer || e.bis)) txt += " — " + [e.wer ? t("klärt") + " " + e.wer : "", e.bis ? t("bis") + " " + datumText(e.bis) : ""].filter(Boolean).join(" ");
         ul.append(h("li", null, h("span", { class: "kenn", text: e.id }), " ", txt));
       });
       b.append(ul);
     });
+    if ((d.rahmen && d.rahmen.length) || (d.nicht && d.nicht.length)) {
+      b.append(h("h2", { "data-blatt-rahmen": "", text: t("Rahmen") }));
+      var ur = h("ul");
+      (d.rahmen || []).forEach(function (r) { ur.append(h("li", null, h("b", { text: nm(WN.RAHMEN[r.feld].frage) + " " }), r.text)); });
+      (d.nicht || []).forEach(function (e) { ur.append(h("li", null, h("span", { class: "kenn", text: e.id }), " " + t("Nicht gewünscht") + ": " + e.text)); });
+      b.append(ur);
+    }
     if (d.erklaerungVom) b.append(h("p", { class: "klein", "data-erklaerung-satz": "", text: t("Es gilt die Verschwiegenheits- und Datenschutzerklärung vom") + " " + datumText(d.erklaerungVom) + "." }));
     b.append(h("p", { class: "klein", style: "margin-top:18px", text: t("Bestätigt durch") + ":" }));
     b.append(unterschriften(t("Auftraggeber"), t("Auftragnehmer")));

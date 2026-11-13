@@ -11,7 +11,7 @@ const WURZEL = join(dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
-  "assets/kern/bedarf.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
+  "assets/kern/bedarf.js", "assets/kern/rahmen.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
   "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/daten/beispiel-familienakte.js", "assets/daten/beispiel-bookledgerpro.js", "assets/daten/beispiel-workflowpdfpro.js", "assets/daten/beispiel-privatebrainpro.js", "assets/daten/beispiel-proverbund.js", "assets/daten/beispiel-rezeptbuch.js", "assets/daten/beispiel-mixarium.js", "assets/daten/beispiel-mixariumpage.js", "assets/daten/beispiel-calculate.js", "assets/daten/beispiel-kimsync.js", "assets/daten/beispiel-workflohpage.js", "assets/daten/beispiel-dateiorganizer.js", "assets/daten/beispiel-needs.js", "assets/daten/beispiel-toolpoint.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
@@ -634,6 +634,75 @@ function kundenVorgang() {
 {
   const gi = existsSync(join(WURZEL, ".gitignore")) ? readFileSync(join(WURZEL, ".gitignore"), "utf8").split(/\r?\n/) : [];
   ok("PAGES: .gitignore sperrt node_modules auch als Verweis (ohne Schrägstrich)", gi.includes("node_modules"), gi);
+}
+
+
+/* ── RAHMEN (Klaus 2026-11-13, Ja zu F1–F6, A1–A5, U1, U2 nach dem Rückwärtstest) ── */
+{
+  const RA = WN.rahmen;
+  { const v = vorgang(); const f = F.aktuelle(v);
+    const md = BA.erzeuge(v, null, f, {}, P).md;
+    ok("RAHMEN: ohne Angaben sagt der Auftrag „noch nicht erfragt“ statt etwas anzunehmen", /## Rahmen\n- noch nicht erfragt/.test(md), md.match(/## Rahmen\n.*/));
+    ok("RAHMEN: der Rahmen steht vor „Zu tun“", md.indexOf("## Rahmen") >= 0 && md.indexOf("## Rahmen") < md.indexOf("## Zu tun"));
+    ok("KOPF: fassungsdatum im Kopf, kopfLesen liest es", /\nfassungsdatum: 2026-10-07\n/.test(md) && BA.kopfLesen(md).fassungsdatum === "2026-10-07");
+    ok("KOPF: ohne Vorgänger steht „Gesamtauftrag“", /\*\*Gesamtauftrag:\*\*/.test(md)); }
+  const v = kundenVorgang(); const f = F.aktuelle(v);
+  ["android", "windows", "browser"].forEach((id) => RA.umschalten(f.protokoll, "geraete", id));
+  RA.umschalten(f.protokoll, "offline", "immer"); RA.umschalten(f.protokoll, "datenort", "ordner");
+  RA.umschalten(f.protokoll, "sicherung", "verschluesselt"); RA.umschalten(f.protokoll, "eigene", "ablageort");
+  RA.sicher(f.protokoll).eigeneText = "Buchhaltung von KUNDE-PRUEFWORT-4Z";
+  RA.sicher(f.protokoll).budgetEuro = 300;
+  ok("RAHMEN: unbekannte Wahl wird abgewiesen", RA.umschalten(f.protokoll, "geraete", "toaster") === false && !RA.von(f.protokoll).geraete.includes("toaster"));
+  RA.umschalten(f.protokoll, "offline", "nein"); RA.umschalten(f.protokoll, "offline", "immer");
+  ok("RAHMEN: „ohne Internet“ hat genau eine Wahl", RA.von(f.protokoll).offline === "immer");
+  const n1 = RA.nichtNeu(v, f.protokoll, "Keine Daten in einer fremden Cloud");
+  const n2 = RA.nichtNeu(v, f.protokoll, "Intern: nie selbst versenden"); n2.sichtbar = false;
+  ok("NICHT: Kennungen N-01, N-02 aus dem Zähler des Vorgangs", n1.id === "N-01" && n2.id === "N-02");
+  const bed = BD.bedarfe(f.protokoll); bed[0].handeln = "vorschlagen";
+  const b8 = BD.eintragNeu(v, f.protokoll, 8, "Das System muss die Seite am Handy lesbar zeigen");
+  const b8o = BD.eintragNeu(v, f.protokoll, 8, "Das System muss ohne Netz starten");
+  f.umfang.bausteine[0].deckt.push(b8.id); f.umfang.bausteine[0].faktoren = ["offline"];
+  const r = BA.erzeuge(v, null, f, {}, P); const md = r.md || "";
+  ok("RAHMEN: Bauauftrag wird erzeugt", r.ok, r.grund || r.fund);
+  const rahmen = (md.split("## Rahmen")[1] || "").split("## Zu tun")[0];
+  ok("RAHMEN: Geräte, offline, Datenort, Sicherung, eigene Programme im Rahmen",
+    /- Geräte: Android-Handy, Windows-PC, im Browser/.test(rahmen) && /- Ohne Internet: ja, immer/.test(rahmen) && /- Daten liegen: eigener Ordner/.test(rahmen) && /- Sicherung: verschlüsselt/.test(rahmen) && /- Eigene Programme: gemeinsamer Ablageort; Buchhaltung von ⟦KUNDE-1⟧/.test(rahmen), rahmen);
+  ok("RAHMEN: Kundendaten im Freitext sind verdeckt", !md.includes("KUNDE-PRUEFWORT-4Z"));
+  ok("HANDELN: „schlägt vor“ steht mit Kennung im Rahmen", rahmen.includes("- Schlägt vor, der Kunde bestätigt: " + bed[0].id));
+  ok("NICHT: beide Punkte als „Nicht bauen“ im Rahmen (auch der interne — der Auftrag geht an die eigene Sitzung)", rahmen.includes("N-01 Keine Daten in einer fremden Cloud") && rahmen.includes("N-02"));
+  ok("BUDGET: ohne „Euro“ kein Budget im Auftrag", !/Budget-Rahmen/.test(md) && !/budgetEuro/.test(md));
+  const mdE = BA.erzeuge(v, null, f, { euro: true }, P).md;
+  ok("BUDGET: mit „Euro“ steht der Budget-Rahmen im Rahmen", /- Budget-Rahmen des Kunden: 300 € gesamt/.test(mdE), (mdE.match(/.*Budget.*/) || [""])[0]);
+  ok("ABNAHME: Bereich 8 steht als Abnahme unter seinem Baustein", md.includes("- " + f.umfang.bausteine[0].id + " · ") && md.includes("  - Abnahme " + b8.id + ": Das System muss die Seite am Handy lesbar zeigen"));
+  ok("ABNAHME: Bereich 8 ohne Baustein wird trotzdem genannt", md.includes("- ohne Baustein (trotzdem abnehmen):") && md.includes("  - " + b8o.id + ": Das System muss ohne Netz starten"));
+  ok("VORLAGE: je Baustein Vorlage mit Wiederverwendung und Faktoren", /Vorlage Mein-Rezeptbuch-Page, Workfloh-PDF-Page \(50 % wiederverwendet\) · Faktoren Offline ×1,15/.test(md), (md.match(/.*Vorlage.*/) || [""])[0]);
+  const stand = (md.split("## Vollständiger Stand (zum Einlesen)")[1] || "");
+  ok("STAND: nur noch JSON, keine Liste der Einträge davor", /^\n```json\n/.test(stand) && !/\n- B-\d+ \[Bereich/.test(md), stand.slice(0, 80));
+  const j = BA.einlesen(md, P);
+  ok("STAND: JSON trägt Rahmen, „nicht“ und handeln", j.ok && j.stand.rahmen.geraete.length === 3 && j.stand.nicht.length === 2 && j.stand.bedarf.some((o) => o.handeln === "vorschlagen"));
+  const w = kopie(v); const back = BA.standAnwenden(j.stand, F.aktuelle(w), w, P).fassung;
+  const ra2 = RA.von(back.protokoll);
+  ok("STAND: Einlesen bringt Rahmen, Klartext, „nicht“, handeln und Budget zurück",
+    ra2.geraete.join() === "android,windows,browser" && ra2.eigeneText === "Buchhaltung von KUNDE-PRUEFWORT-4Z" && ra2.budgetEuro === 300 &&
+    back.protokoll.nicht.length === 2 && BD.bedarfe(back.protokoll)[0].handeln === "vorschlagen", ra2);
+  const kp = A.kundenProtokoll(v, f, {});
+  ok("KUNDENBLATT: Rahmen und sichtbares „nicht gewünscht“ stehen da, das interne nicht", kp.rahmen.some((x) => x.feld === "geraete") && kp.nicht.length === 1 && kp.nicht[0].id === "N-01");
+  ok("KUNDENBLATT: Budget nie auf dem Kundenblatt", !JSON.stringify(kp).includes("300") && !/budget/i.test(JSON.stringify(kp)));
+  f.protokoll.bereiche[10].sichtbar = false;
+  ok("KUNDENBLATT: Bereich 10 ausgeblendet → keine Geräte", !A.kundenProtokoll(v, f, {}).rahmen.some((x) => x.feld === "geraete"));
+  const s = R.schaetze(f);
+  ok("BUDGET: Schätzung über 300 € wird gemeldet", RA.budget(f, s).ueber === true && RA.budget(f, s).budgetCent === 30000);
+  RA.sicher(f.protokoll).budgetEuro = null;
+  ok("BUDGET: ohne Angabe keine Meldung", RA.budget(f, s) === null);
+  ok("SCHLÜSSIG: Muss mit Baustein und vorhandene Kennungen → schlüssig", RA.schluessig(f).ok, RA.schluessig(f));
+  bed[1].prio = "muss"; f.umfang.bausteine[0].deckt.push("B-99");
+  const sl = RA.schluessig(f);
+  ok("SCHLÜSSIG: Muss ohne Baustein und verwaiste Kennung werden gemeldet", !sl.ok && sl.mussOhne.includes(bed[1].id) && sl.verwaist.some((x) => x.bedarf === "B-99"), sl);
+  ok("KATALOG: vier neue Bausteine (Plattform, verschlüsselte Ablage, Kalender, Postfach)", ["plattform", "tresor", "kalender", "postfach"].every((id) => R.katalogVon(null, id)));
+  const alt = { protokoll: BD.leeresProtokoll() };
+  ok("ALT: Fassung ohne Rahmen bricht nichts", RA.von(alt.protokoll).geraete.length === 0 && RA.nicht(alt.protokoll).length === 0 && !RA.erfragt(alt.protokoll));
+  const appQ = readFileSync(join(WURZEL, "assets/app.js"), "utf8");
+  ok("KATALOG: gespeicherte Tabellen bekommen neue Vorgabe-Bausteine dazu, eigene bleiben", /bausteine: t && Array\.isArray\(t\.bausteine\) \? fehlendeDazu\(t\.bausteine, WN\.BAUSTEINE\)/.test(appQ));
 }
 
 /* ── TEXTE (DE/EN) ── */
