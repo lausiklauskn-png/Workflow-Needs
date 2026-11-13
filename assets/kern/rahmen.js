@@ -17,6 +17,10 @@
         o("windows", "Windows-PC", "Windows PC"), o("mac", "Mac", "Mac"), o("browser", "im Browser", "in the browser")] },
     offline: { bereich: 10, mehrfach: false, frage: { de: "Muss es ohne Internet gehen?", en: "Must it work without internet?" },
       wahl: [o("immer", "ja, immer", "yes, always"), o("unterwegs", "reicht unterwegs", "on the road is enough"), o("nein", "nein", "no")] },
+    /* Klaus 2026-11-13: Abgleich zwischen Geräten ist heute Standard (Bestellung am Tablet → sofort in der Küche). */
+    abgleich: { bereich: 10, mehrfach: false, frage: { de: "Sollen mehrere Geräte dieselben Daten sehen?", en: "Should several devices see the same data?" },
+      wahl: [o("sofort", "ja, sofort (z. B. Tablet → Küche)", "yes, instantly (e.g. tablet → kitchen)"), o("abundzu", "ja, Abgleich ab und zu reicht", "yes, occasional sync is enough"),
+        o("eins", "nein, ein Gerät reicht", "no, one device is enough")] },
     eigene: { bereich: 12, mehrfach: true, frage: { de: "Eigene Programme, die schon da sind: was soll zusammenpassen?", en: "Own programs already in use: what must fit together?" },
       wahl: [o("ablageort", "gemeinsamer Ablageort", "shared storage place"), o("hinher", "Dateien hin- und hergeben", "pass files back and forth"),
         o("suche", "gemeinsame Suche", "shared search")] },
@@ -26,11 +30,17 @@
     sicherung: { bereich: 13, mehrfach: true, frage: { de: "Sicherung", en: "Backup" },
       wahl: [o("verschluesselt", "verschlüsselt", "encrypted"), o("zweiterort", "an einen zweiten Ort", "to a second place"),
         o("selbst", "selbst anstoßen", "started by hand"), o("allein", "von allein", "automatic")] },
+    /* Klaus 2026-11-13: KI auf dem Gerät, wenn gewünscht, oder über einen Dienst — der Kunde wählt. Hardware ist eine eigene Entscheidung. */
+    ki: { bereich: 14, mehrfach: false, frage: { de: "Wo darf eine KI laufen?", en: "Where may an AI run?" },
+      wahl: [o("keine", "keine KI", "no AI"), o("geraet", "nur auf dem Gerät", "only on the device"), o("dienst", "über einen Dienst (nach Bestätigung)", "via a service (after confirmation)"),
+        o("wahl", "beides — der Nutzer wählt in der App", "both — the user chooses in the app")] },
   };
-  WN.RAHMEN_FELDER = ["geraete", "offline", "eigene", "datenort", "sicherung"];
+  WN.RAHMEN_FELDER = ["geraete", "offline", "abgleich", "eigene", "datenort", "sicherung", "ki"];
   WN.HANDELN = [o("vorschlagen", "schlägt vor, ich bestätige", "suggests, I confirm"), o("selbst", "macht es selbst", "does it itself"), o("egal", "egal", "either")];
 
-  function leer() { return { geraete: [], offline: "", eigene: [], eigeneText: "", datenort: [], sicherung: [], budgetEuro: null }; }
+  /* Budget (Klaus 2026-11-13): einmalig gesamt UND/ODER Monatsrate über eine Laufzeit, die den Kaufpreis abgilt; Wartung kann darin stecken. */
+  function leer() { return { geraete: [], offline: "", abgleich: "", eigene: [], eigeneText: "", datenort: [], sicherung: [], ki: "",
+    budgetEuro: null, budgetMonatEuro: null, budgetMonate: null, budgetWartung: false }; }
   /* Lesen ohne zu verändern (für Bauauftrag, Ausdruck, Proben) */
   function von(protokoll) {
     var r = (protokoll && protokoll.rahmen) || {}, l = leer();
@@ -86,14 +96,29 @@
     return { ok: !mussOhne.length && !verwaist.length, mussOhne: mussOhne, verwaist: verwaist };
   }
   /* F6 · Budget gegen Schätzung (nur intern): Rahmen des Kunden in Euro gesamt gegen die untere Schätzung netto. */
-  function budget(fassung, schaetzung) {
-    var b = von(fassung.protokoll).budgetEuro;
-    var n = Number(b);
-    if (b === null || b === "" || !Number.isFinite(n) || n <= 0 || !schaetzung) return null;
-    var cent = Math.round(n * 100);
-    return { budgetCent: cent, kostenVon: schaetzung.kostenVon, kostenBis: schaetzung.kostenBis, ueber: schaetzung.kostenVon > cent };
+  function zahlOk(x) { var n = Number(x); return x !== null && x !== "" && Number.isFinite(n) && n > 0 ? n : 0; }
+  /* Budget-Gegenwert: einmalig + Monatsrate × Laufzeit (ohne Laufzeit: monateVorgabe, Vorgabe 24 = Kosten-Nutzen-Zeitraum). */
+  function budget(fassung, schaetzung, monateVorgabe) {
+    var r = von(fassung.protokoll);
+    var einmal = zahlOk(r.budgetEuro), monat = zahlOk(r.budgetMonatEuro);
+    if ((!einmal && !monat) || !schaetzung) return null;
+    var monate = zahlOk(r.budgetMonate) || zahlOk(monateVorgabe) || 24;
+    var cent = Math.round((einmal + (monat ? monat * monate : 0)) * 100);
+    return { budgetCent: cent, einmalCent: Math.round(einmal * 100), monatCent: Math.round(monat * 100), monate: monat ? monate : 0,
+      laufzeitGeschaetzt: !!monat && !zahlOk(r.budgetMonate), wartung: !!r.budgetWartung,
+      kostenVon: schaetzung.kostenVon, kostenBis: schaetzung.kostenBis, ueber: schaetzung.kostenVon > cent };
+  }
+  /* Hinweise im Umfang (Klaus 2026-11-13): mehrere Geräte ohne Abgleich-Baustein; Faktor KI ohne Angabe, wo die KI läuft. */
+  function hinweise(fassung) {
+    var r = von(fassung.protokoll), bs = (fassung.umfang && fassung.umfang.bausteine) || [], out = [];
+    var mehrere = r.geraete.length > 1 && r.abgleich !== "eins";
+    if (mehrere && !bs.some(function (b) { return b.katalog === "abgleich"; })) out.push({ art: "abgleich", geraete: r.geraete.slice() });
+    var kiB = bs.filter(function (b) { return (b.faktoren || []).indexOf("ki") >= 0; }).map(function (b) { return b.id; });
+    if (kiB.length && !r.ki) out.push({ art: "ki-ort", bausteine: kiB });
+    if (kiB.length && r.ki === "keine") out.push({ art: "ki-keine", bausteine: kiB });
+    return out;
   }
 
   WN.rahmen = { leer: leer, von: von, sicher: sicher, umschalten: umschalten, nichtNeu: nichtNeu, nicht: nicht, name: name, liste: liste,
-    erfragt: erfragt, schluessig: schluessig, budget: budget };
+    erfragt: erfragt, schluessig: schluessig, budget: budget, hinweise: hinweise };
 })(typeof window !== "undefined" ? window : globalThis);

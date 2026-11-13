@@ -672,7 +672,7 @@ function kundenVorgang() {
   ok("NICHT: beide Punkte als „Nicht bauen“ im Rahmen (auch der interne — der Auftrag geht an die eigene Sitzung)", rahmen.includes("N-01 Keine Daten in einer fremden Cloud") && rahmen.includes("N-02"));
   ok("BUDGET: ohne „Euro“ kein Budget im Auftrag", !/Budget-Rahmen/.test(md) && !/budgetEuro/.test(md));
   const mdE = BA.erzeuge(v, null, f, { euro: true }, P).md;
-  ok("BUDGET: mit „Euro“ steht der Budget-Rahmen im Rahmen", /- Budget-Rahmen des Kunden: 300 € gesamt/.test(mdE), (mdE.match(/.*Budget.*/) || [""])[0]);
+  ok("BUDGET: mit „Euro“ steht der Budget-Rahmen im Rahmen", /- Budget-Rahmen des Kunden: 300 € einmalig/.test(mdE), (mdE.match(/.*Budget.*/) || [""])[0]);
   ok("ABNAHME: Bereich 8 steht als Abnahme unter seinem Baustein", md.includes("- " + f.umfang.bausteine[0].id + " · ") && md.includes("  - Abnahme " + b8.id + ": Das System muss die Seite am Handy lesbar zeigen"));
   ok("ABNAHME: Bereich 8 ohne Baustein wird trotzdem genannt", md.includes("- ohne Baustein (trotzdem abnehmen):") && md.includes("  - " + b8o.id + ": Das System muss ohne Netz starten"));
   ok("VORLAGE: je Baustein Vorlage mit Wiederverwendung und Faktoren", /Vorlage Mein-Rezeptbuch-Page, Workfloh-PDF-Page \(50 % wiederverwendet\) · Faktoren Offline ×1,15/.test(md), (md.match(/.*Vorlage.*/) || [""])[0]);
@@ -703,6 +703,48 @@ function kundenVorgang() {
   ok("ALT: Fassung ohne Rahmen bricht nichts", RA.von(alt.protokoll).geraete.length === 0 && RA.nicht(alt.protokoll).length === 0 && !RA.erfragt(alt.protokoll));
   const appQ = readFileSync(join(WURZEL, "assets/app.js"), "utf8");
   ok("KATALOG: gespeicherte Tabellen bekommen neue Vorgabe-Bausteine dazu, eigene bleiben", /bausteine: t && Array\.isArray\(t\.bausteine\) \? fehlendeDazu\(t\.bausteine, WN\.BAUSTEINE\)/.test(appQ));
+}
+
+
+/* ── RAHMEN 2 (Klaus 2026-11-13: Budget auch als Rate, Abgleich zwischen Geräten, Ort der KI) ── */
+{
+  const RA = WN.rahmen;
+  const v = kundenVorgang(); const f = F.aktuelle(v);
+  const s = R.schaetze(f);
+  RA.sicher(f.protokoll).budgetMonatEuro = 50; RA.sicher(f.protokoll).budgetMonate = 36;
+  const b1 = RA.budget(f, s, 24);
+  ok("BUDGET2: Rate × Laufzeit ergibt den Gegenwert (50 € × 36 = 1.800 €)", b1 && b1.budgetCent === 180000 && b1.monate === 36 && !b1.laufzeitGeschaetzt, b1);
+  RA.sicher(f.protokoll).budgetEuro = 500;
+  ok("BUDGET2: einmalig + Rate werden zusammengezählt (500 + 1.800)", RA.budget(f, s, 24).budgetCent === 230000);
+  RA.sicher(f.protokoll).budgetMonate = null;
+  const b2 = RA.budget(f, s, 24);
+  ok("BUDGET2: ohne Laufzeit gilt der Zeitraum der Kosten-Nutzen-Rechnung und wird als angenommen gekennzeichnet", b2.monate === 24 && b2.laufzeitGeschaetzt && b2.budgetCent === 50000 + 120000, b2);
+  RA.sicher(f.protokoll).budgetMonate = 36; RA.sicher(f.protokoll).budgetWartung = true;
+  const md = BA.erzeuge(v, null, f, { euro: true }, P).md;
+  ok("BUDGET2: der Auftrag nennt einmalig + Rate mit Laufzeit und Wartung", /- Budget-Rahmen des Kunden: 500 € einmalig \+ 50 € im Monat über 36 Monate \(Rate, gilt den Kaufpreis ab, Wartung inbegriffen\)/.test(md), (md.match(/.*Budget-Rahmen.*/) || [""])[0]);
+  ok("BUDGET2: ohne „Euro“ steht keine Rate im Auftrag", !/im Monat über|budgetMonat/.test(BA.erzeuge(v, null, f, {}, P).md));
+  ok("BUDGET2: Rate nie auf dem Kundenblatt", !/budget|1800|50 €/i.test(JSON.stringify(A.kundenProtokoll(v, f, {}))));
+  ["android", "windows"].forEach((id) => RA.umschalten(f.protokoll, "geraete", id));
+  ok("ABGLEICH: mehrere Geräte ohne Abgleich-Baustein → Hinweis", RA.hinweise(f).some((x) => x.art === "abgleich"));
+  RA.umschalten(f.protokoll, "abgleich", "eins");
+  ok("ABGLEICH: „ein Gerät reicht“ → kein Hinweis", !RA.hinweise(f).some((x) => x.art === "abgleich"));
+  RA.umschalten(f.protokoll, "abgleich", "sofort");
+  bs(v, f, "abgleich", "mittel", { deckt: [] });
+  ok("ABGLEICH: mit Baustein „abgleich“ → kein Hinweis", !RA.hinweise(f).some((x) => x.art === "abgleich"));
+  ok("ABGLEICH: Katalog-Baustein mit Vorlage", !!R.katalogVon(null, "abgleich") && /Familienakte/.test(R.katalogVon(null, "abgleich").vorlage));
+  f.umfang.bausteine[0].faktoren = ["ki"];
+  ok("KI: Faktor KI ohne Angabe zum Ort → Hinweis", RA.hinweise(f).some((x) => x.art === "ki-ort"));
+  RA.umschalten(f.protokoll, "ki", "keine");
+  ok("KI: Faktor KI, obwohl „keine KI“ → Hinweis", RA.hinweise(f).some((x) => x.art === "ki-keine"));
+  RA.umschalten(f.protokoll, "ki", "wahl");
+  ok("KI: mit Angabe kein Hinweis", !RA.hinweise(f).some((x) => /^ki/.test(x.art)));
+  const md2 = BA.erzeuge(v, null, f, { euro: true }, P).md;
+  const rahmen = (md2.split("## Rahmen")[1] || "").split("## Zu tun")[0];
+  ok("RAHMEN2: Abgleich und KI stehen im Rahmen", rahmen.includes("- Abgleich zwischen Geräten: ja, sofort (z. B. Tablet → Küche)") && rahmen.includes("- KI: beides — der Nutzer wählt in der App"), rahmen);
+  const j = BA.einlesen(md2, P); const w = kopie(v); delete F.aktuelle(w).protokoll.rahmen;
+  const ra2 = RA.von(BA.standAnwenden(j.stand, F.aktuelle(w), w, P).fassung.protokoll);
+  ok("RAHMEN2: Einlesen bringt Abgleich, KI, Rate, Laufzeit und Wartung zurück", ra2.abgleich === "sofort" && ra2.ki === "wahl" && ra2.budgetMonatEuro === 50 && ra2.budgetMonate === 36 && ra2.budgetWartung === true, ra2);
+  ok("RAHMEN2: Kundenblatt zeigt Abgleich und KI", ["abgleich", "ki"].every((k) => A.kundenProtokoll(v, f, {}).rahmen.some((x) => x.feld === k)));
 }
 
 /* ── TEXTE (DE/EN) ── */

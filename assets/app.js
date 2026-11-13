@@ -630,9 +630,20 @@
         oninput: function (e) { RA.sicher(f.protokoll).eigeneText = e.target.value; merken(v); } }));
     });
     if (b.nr === 15) {
-      box.append(h("label", { class: "feld", style: "flex:0 1 220px" }, "🔒 " + t("Budget-Rahmen gesamt in € (Angabe des Kunden, nur intern)"),
-        h("input", { type: "number", min: "0", step: "100", class: "kurz", value: ra.budgetEuro == null ? "" : ra.budgetEuro, disabled: ro, "data-key": "rahmen-budget", "data-rahmen-budget": "",
-          onchange: function (e) { RA.sicher(f.protokoll).budgetEuro = zahl(e.target.value); merken(v); zeichne(); } })));
+      /* Budget (Klaus 2026-11-13): einmalig und/oder Monatsrate über eine Laufzeit, die den Kaufpreis abgilt; Wartung kann darin stecken. */
+      var bfeld = function (key, label, schritt, attr) {
+        var a = { type: "number", min: "0", step: schritt, class: "kurz", value: ra[key] == null ? "" : ra[key], disabled: ro, "data-key": "rahmen-" + key,
+          onchange: function (e) { RA.sicher(f.protokoll)[key] = zahl(e.target.value); merken(v); zeichne(); } };
+        a[attr] = "";
+        return h("label", { class: "feld", style: "flex:0 1 170px" }, label, h("input", a));
+      };
+      box.append(h("div", { class: "gedaempft klein", text: "🔒 " + t("Budget-Rahmen (Angabe des Kunden, nur intern) — einmalig, als Monatsrate oder beides") }),
+        h("div", { class: "zeile" },
+          bfeld("budgetEuro", t("einmalig gesamt €"), "100", "data-rahmen-budget"),
+          bfeld("budgetMonatEuro", t("Rate je Monat €"), "10", "data-rahmen-budget-monat"),
+          bfeld("budgetMonate", t("Laufzeit in Monaten"), "1", "data-rahmen-budget-monate"),
+          h("label", { class: "schalter" }, h("input", { type: "checkbox", checked: !!ra.budgetWartung, disabled: ro, "data-key": "rahmen-budgetWartung", "data-rahmen-budget-wartung": "",
+            onchange: function (e) { RA.sicher(f.protokoll).budgetWartung = e.target.checked; merken(v); zeichne(); } }), t("Wartung in der Rate enthalten"))));
       box.append(h("h4", { style: "margin:8px 0 4px", text: t("Nicht gewünscht — was die Lösung ausdrücklich NICHT tun soll") }));
       RA.nicht(f.protokoll).forEach(function (e) {
         box.append(h("div", { class: "eintrag" + (e.sichtbar ? "" : " intern"), "data-nicht": e.id },
@@ -716,7 +727,7 @@
     /* Vorschläge aus Stufe 1 — schreiben nie zurück */
     var regeln = [[/schnittstelle|austausch|datev|kasse|buchhaltung.*(?:übergeben|exportieren)/i, "schnitt"], [/lager|bestand|warenwirtschaft/i, "lager"],
       [/buchhaltung|rechnung/i, "rechnung"], [/dokument|scan|pdf|formular/i, "scan"], [/altbestand|übernehmen|alte daten|excel/i, "altdaten"],
-      [/internetseite|webseite|homepage|website/i, "seite"], [/termin|auftr[aä]g|zeit/i, "auftrag"], [/notiz|liste/i, "liste"]];
+      [/internetseite|webseite|homepage|website/i, "seite"], [/abgleich|synchron|mehrere geräte|küche|tablet.*(?:pc|büro)/i, "abgleich"], [/termin|auftr[aä]g|zeit/i, "auftrag"], [/notiz|liste/i, "liste"]];
     var schon = {}; (f.umfang.bausteine || []).forEach(function (b) { if (b.katalog) schon[b.katalog] = 1; });
     var gedeckt = {}; (f.umfang.bausteine || []).forEach(function (b) { (b.deckt || []).forEach(function (id) { gedeckt[id] = 1; }); });
     var out = {};
@@ -787,9 +798,17 @@
       [sl.mussOhne.length ? sl.mussOhne.join(", ") + " (" + t("Muss") + ") " + t("hat keinen Baustein.") : "",
         sl.verwaist.map(function (x) { return x.baustein + " " + t("deckt") + " " + x.bedarf + ", " + t("den es nicht mehr gibt."); }).join(" ")].filter(Boolean).join(" · ")));
     /* F6: Budget-Rahmen des Kunden gegen die Schätzung (nur intern) */
-    var bu = WN.rahmen.budget(f, s);
+    var bu = WN.rahmen.budget(f, s, S.einst.zeitraum);
     if (bu && bu.ueber) gew.append(h("div", { class: "hinweis warn", "data-budget-ueber": "" },
-      t("Die Schätzung") + " (" + euroG(bu.kostenVon) + "–" + euroG(bu.kostenBis) + " " + t("netto") + ") " + t("liegt über dem Budget-Rahmen des Kunden") + " (" + euroG(bu.budgetCent) + "). " + t("Grenzlinie prüfen oder mit dem Kunden sprechen.")));
+      t("Die Schätzung") + " (" + euroG(bu.kostenVon) + "–" + euroG(bu.kostenBis) + " " + t("netto") + ") " + t("liegt über dem Budget-Rahmen des Kunden") + " (" + euroG(bu.budgetCent) +
+      (bu.monatCent ? " = " + (bu.einmalCent ? euroG(bu.einmalCent) + " + " : "") + euroG(bu.monatCent) + " × " + bu.monate + " " + t("Monate") + (bu.laufzeitGeschaetzt ? " (" + t("Laufzeit angenommen") + ")" : "") : "") + "). " +
+      (bu.wartung ? t("Die Rate enthält auch Wartung — für den Bau bleibt weniger.") + " " : "") + t("Grenzlinie prüfen oder mit dem Kunden sprechen.")));
+    WN.rahmen.hinweise(f).forEach(function (x) {
+      gew.append(h("div", { class: "hinweis warn", "data-rahmen-hinweis": x.art },
+        x.art === "abgleich" ? t("Mehrere Geräte gewählt, aber kein Baustein „Abgleich zwischen Geräten“.")
+          : x.art === "ki-ort" ? x.bausteine.join(", ") + ": " + t("Faktor KI, aber nicht erfragt, wo die KI laufen darf (Bereich 14).")
+          : x.bausteine.join(", ") + ": " + t("Faktor KI, obwohl der Kunde keine KI will.")));
+    });
     /* Zuschläge */
     var fa = u.firmenanpassung = u.firmenanpassung || { von: 0, bis: 0 };
     gew.append(h("h3", { style: "margin-top:12px", text: t("Zuschläge") }),

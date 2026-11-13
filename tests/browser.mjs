@@ -621,6 +621,14 @@ try {
     ok("KUNDENBLATT: Rahmen mit Geräten und „Nicht gewünscht“, ohne Budget", blatt.text.includes("Android-Handy") && blatt.text.includes("Nicht gewünscht: Keine Daten in einer fremden Cloud") && !/Budget/.test(blatt.text), blatt.text.slice(-400));
     await reiter(r.p, "umfang");
     ok("BUDGET: Schätzung über dem Budget-Rahmen wird im Umfang gemeldet", await r.p.locator("[data-budget-ueber]").count() === 1);
+    ok("ABGLEICH: mehrere Geräte ohne Abgleich-Baustein → Hinweis im Umfang", await r.p.locator('[data-rahmen-hinweis="abgleich"]').count() === 1);
+    ok("ABGLEICH: Baustein „Abgleich zwischen Geräten“ ist anklickbar", await r.p.locator('[data-katalog="abgleich"]').count() === 1);
+    await reiter(r.p, "bedarf");
+    await r.p.fill("[data-rahmen-budget-monat]", "50"); await r.p.press("[data-rahmen-budget-monat]", "Tab");
+    await r.p.click('[data-rahmen="ki:wahl"]');
+    ok("BUDGET2: Rate je Monat und KI-Wahl lassen sich eintragen", await r.p.inputValue("[data-rahmen-budget-monat]") === "50" && await r.p.getAttribute('[data-rahmen="ki:wahl"]', "aria-pressed") === "true");
+    await reiter(r.p, "umfang");
+    ok("BUDGET2: der Hinweis nennt die Rate × Monate", /50 € × 24/.test(await r.p.textContent("[data-budget-ueber]")), await r.p.textContent("[data-budget-ueber]"));
     ok("KATALOG: neue Bausteine sind anklickbar", await r.p.locator('[data-katalog="plattform"]').count() === 1 && await r.p.locator('[data-katalog="postfach"]').count() === 1);
     await r.ctx.close();
   }

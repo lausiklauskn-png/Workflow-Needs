@@ -121,15 +121,22 @@
     var rz = [];
     if (RA.liste(ra, "geraete", "de")) rz.push("- Geräte: " + RA.liste(ra, "geraete", "de"));
     if (ra.offline) rz.push("- Ohne Internet: " + RA.name("offline", ra.offline, "de"));
+    if (ra.abgleich) rz.push("- Abgleich zwischen Geräten: " + RA.name("abgleich", ra.abgleich, "de"));
     if (RA.liste(ra, "datenort", "de")) rz.push("- Daten liegen: " + RA.liste(ra, "datenort", "de"));
     if (RA.liste(ra, "sicherung", "de")) rz.push("- Sicherung: " + RA.liste(ra, "sicherung", "de"));
     var eig = [RA.liste(ra, "eigene", "de"), V.text(String(ra.eigeneText || "").trim())].filter(Boolean).join("; ");
     if (eig) rz.push("- Eigene Programme: " + eig);
+    if (ra.ki) rz.push("- KI: " + RA.name("ki", ra.ki, "de"));
     var hand = { vorschlagen: [], selbst: [], egal: [] };
     WN.bedarf.bedarfe(neu.protokoll).forEach(function (e) { if (e.handeln && hand[e.handeln]) hand[e.handeln].push(e.id); });
     if (hand.vorschlagen.length) rz.push("- Schlägt vor, der Kunde bestätigt: " + hand.vorschlagen.join(", "));
     if (hand.selbst.length) rz.push("- Darf selbst handeln: " + hand.selbst.join(", "));
-    if (opts.euro && ra.budgetEuro) rz.push("- Budget-Rahmen des Kunden: " + euroG(Math.round(Number(ra.budgetEuro) * 100)) + " gesamt");
+    if (opts.euro) {
+      var bt = [];
+      if (Number(ra.budgetEuro) > 0) bt.push(euroG(Math.round(Number(ra.budgetEuro) * 100)) + " einmalig");
+      if (Number(ra.budgetMonatEuro) > 0) bt.push(euroG(Math.round(Number(ra.budgetMonatEuro) * 100)) + " im Monat" + (Number(ra.budgetMonate) > 0 ? " über " + ra.budgetMonate + " Monate" : "") + " (Rate, gilt den Kaufpreis ab" + (ra.budgetWartung ? ", Wartung inbegriffen" : "") + ")");
+      if (bt.length) rz.push("- Budget-Rahmen des Kunden: " + bt.join(" + "));
+    }
     var nb = RA.nicht(neu.protokoll);
     if (nb.length) rz.push("- Nicht bauen: " + nb.map(function (e) { return e.id + " " + V.text(e.text); }).join(" · "));
     if (!rz.length) rz.push("- noch nicht erfragt (Bereich 10, 12, 13, 15) — Geräte, Datenort und Sicherung beim Kunden klären, nicht annehmen");
@@ -264,8 +271,9 @@
       if (e.handeln) o.handeln = e.handeln;
       stand.bedarf.push(o);
     });
-    stand.rahmen = { geraete: ra.geraete, offline: ra.offline, eigene: ra.eigene, eigeneText: V.text(ra.eigeneText || ""), datenort: ra.datenort, sicherung: ra.sicherung };
-    if (opts.euro) stand.rahmen.budgetEuro = ra.budgetEuro;
+    stand.rahmen = { eigeneText: V.text(ra.eigeneText || "") };
+    WN.RAHMEN_FELDER.forEach(function (k) { stand.rahmen[k] = ra[k]; });
+    if (opts.euro) ["budgetEuro", "budgetMonatEuro", "budgetMonate", "budgetWartung"].forEach(function (k) { stand.rahmen[k] = ra[k]; });
     stand.nicht = nb.map(function (e) { return { id: e.id, text: V.text(e.text), sichtbar: !!e.sichtbar }; });
     (neu.umfang.bausteine || []).forEach(function (b, i) {
       var z = sn.zeilen[i];
@@ -353,9 +361,12 @@
     var raAlt = WN.rahmen.von(basis.protokoll);
     if (stand.rahmen) {
       var ra = WN.rahmen.sicher(f.protokoll);
-      ["geraete", "eigene", "datenort", "sicherung"].forEach(function (k) { ra[k] = Array.isArray(stand.rahmen[k]) ? stand.rahmen[k].slice() : []; });
-      ra.offline = stand.rahmen.offline || ""; ra.eigeneText = auf(stand.rahmen.eigeneText || "");
-      ra.budgetEuro = stand.rahmen.budgetEuro !== undefined ? stand.rahmen.budgetEuro : raAlt.budgetEuro;
+      WN.RAHMEN_FELDER.forEach(function (k) {
+        if (WN.RAHMEN[k].mehrfach) ra[k] = Array.isArray(stand.rahmen[k]) ? stand.rahmen[k].slice() : [];
+        else ra[k] = typeof stand.rahmen[k] === "string" ? stand.rahmen[k] : "";
+      });
+      ra.eigeneText = auf(stand.rahmen.eigeneText || "");
+      ["budgetEuro", "budgetMonatEuro", "budgetMonate", "budgetWartung"].forEach(function (k) { ra[k] = stand.rahmen[k] !== undefined ? stand.rahmen[k] : raAlt[k]; });
     } else if (basis.protokoll.rahmen) f.protokoll.rahmen = WN.fassungen.kopie(basis.protokoll.rahmen);
     if (Array.isArray(stand.nicht)) {
       WN.rahmen.sicher(f.protokoll);
