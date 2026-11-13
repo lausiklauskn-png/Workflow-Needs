@@ -5,11 +5,20 @@
   "use strict";
   var WN = g.WN = g.WN || {};
   WN.EN = {
+    "Budget-Rahmen (Angabe des Kunden, nur intern) — einmalig, als Monatsrate oder beides": "Budget (customer's statement, internal only) — one-off, monthly instalment or both",
+    "einmalig gesamt €": "one-off total €",
+    "Rate je Monat €": "instalment per month €",
+    "Laufzeit in Monaten": "term in months",
+    "Wartung in der Rate enthalten": "maintenance included in the instalment",
+    "Laufzeit angenommen": "term assumed",
+    "Die Rate enthält auch Wartung — für den Bau bleibt weniger.": "The instalment also covers maintenance — less is left for the build.",
+    "Mehrere Geräte gewählt, aber kein Baustein „Abgleich zwischen Geräten“.": "Several devices chosen, but no module “sync between devices”.",
+    "Faktor KI, aber nicht erfragt, wo die KI laufen darf (Bereich 14).": "AI factor, but not asked where the AI may run (area 14).",
+    "Faktor KI, obwohl der Kunde keine KI will.": "AI factor although the customer wants no AI.",
     "Rahmen": "Framework",
     "Nicht gewünscht": "Not wanted",
     "mehrere möglich": "several possible",
     "Welche eigenen Programme? (z. B. Buchhaltung, Ablage)": "Which own programs? (e.g. bookkeeping, filing)",
-    "Budget-Rahmen gesamt in € (Angabe des Kunden, nur intern)": "Total budget in € (customer's statement, internal only)",
     "Nicht gewünscht — was die Lösung ausdrücklich NICHT tun soll": "Not wanted — what the solution must explicitly NOT do",
     "z. B. keine Daten in einer fremden Cloud": "e.g. no data in someone else's cloud",
     "Soll die Lösung vorschlagen oder selbst handeln?": "Should the solution suggest or act on its own?",

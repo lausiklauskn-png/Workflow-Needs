@@ -433,3 +433,18 @@ Vorschau mit Klaus' Wahl: https://claude.ai/artifact/UKsF4XLDoBMhFtVzSsHx8a (all
   bekommen fehlende Vorgabe-Bausteine dazu (`fehlendeDazu`), eigene Zahlen bleiben.
 - Gemessen: kern 529 grün · browser 201 grün (je einmal 1–2 ROT in BEISPIELE/ANSICHT, wechselnd, nicht wiederholbar — bekannte Schwankung) ·
   Gegenprobe `RAHMEN26:` 9 gefangen · 0 blind · Anker 132 · 0 tot. Cache v41. ⚠ Am Tablet nicht gemessen.
+
+## Rahmen 2: Budget als Rate, Abgleich zwischen Geräten, Ort der KI (Klaus 2026-11-13, nach Runde 2)
+
+Klaus: Budget „beide Möglichkeiten … Gesamtbetrag, aber auch einen monatlichen Betrag, womit der Gesamtbetrag abgegolten wird … oder
+Wartungskosten mit einbauen“ · Abgleich: „heute Standard … Tablet im Restaurant, die Daten gehen sofort in die Küche“ · KI: „sowohl auf
+dem Gerät, wenn gewünscht, als auch über einen Dienst … der Kunde wählt“ (Hardware ist eine eigene Entscheidung).
+- Bereich 15: `budgetEuro` (einmalig), `budgetMonatEuro` (Rate), `budgetMonate` (Laufzeit), `budgetWartung` (Wartung in der Rate).
+  `WN.rahmen.budget(f, s, zeitraum)`: Gegenwert = einmalig + Rate × Laufzeit; ohne Laufzeit der Kosten-Nutzen-Zeitraum, als „angenommen“ markiert.
+  Nur intern und im Bauauftrag mit `euro: ja`; nie auf dem Kundenblatt.
+- Bereich 10 `abgleich` (sofort · ab und zu · ein Gerät reicht), Bereich 14 `ki` (keine · nur auf dem Gerät · über einen Dienst · beides, der
+  Nutzer wählt). Beide im Rahmen des Auftrags und auf dem Kundenblatt.
+- Katalog `abgleich` (Vorlage Familienakte-Netzabgleich, Kim-sync; Schätzung). Umfang-Hinweise `WN.rahmen.hinweise`: mehrere Geräte ohne
+  Abgleich-Baustein · Faktor KI ohne Ort · Faktor KI trotz „keine KI“.
+- Gemessen: kern 545 · browser 205 grün · Gegenprobe `RAHMEN27:` 7 gefangen (einer erst aus falschem Grund — die Einlese-Probe startete
+  von einer Kopie, die die Rate schon hatte; geschärft) · Anker 139 · 0 tot. Cache v42. ⚠ Am Tablet nicht gemessen.

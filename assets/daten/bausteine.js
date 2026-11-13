@@ -49,6 +49,9 @@
       "Schätzung; Vorlage laut CLAUDE.md der Familienakte: Termine, Fristen, Android-Benachrichtigung, Google/Microsoft-Kalender"),
     b("postfach", "Postfach lesen und Entwürfe schreiben", "Read mailbox and draft replies", "Private Brain Pro, Familienakte (E-Mail-Wege)", 0.4, [8, 14], [16, 28], [32, 56], false,
       "Schätzung; Vorlage laut CLAUDE.md: Mails und Anlagen lesen, Entwürfe statt selbst versenden"),
+    /* Klaus 2026-11-13: „Heute ist das Standard … Tablet im Restaurant, die Daten gehen sofort in die Küche.“ */
+    b("abgleich", "Abgleich zwischen Geräten (Handy/Tablet ↔ PC/Küche)", "Sync between devices (phone/tablet ↔ PC/kitchen)", "Familienakte (Abgleich im eigenen Netz, Koppeln per Code), Kim-sync (Raum-Code über eigene Relais)", 0.4, [10, 16], [20, 34], [40, 70], false,
+      "Schätzung; Vorlage laut CLAUDE.md: Familienakte NetzDienst (WLAN/LAN, Port 48200/48201), Kim-sync (Relais). Server-Faktor wählen, wenn ein eigener Server dazwischen steht"),
     b("schnitt", "Schnittstelle zu fremdem System", "Interface to another system", "", 0, [6, 12], [14, 26], [30, 60]),
     b("altdaten", "Datenübernahme aus Altbestand", "Data migration", "", 0, [4, 8], [10, 18], [20, 40]),
     b("lizenz", "Freischaltung / Lizenz", "Licence / activation", "", 0, [4, 8], [8, 14], [14, 24], false,
