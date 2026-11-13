@@ -99,6 +99,18 @@
 
     /* Die App ist fertig gebaut: alles beauftragt, keine Grenzlinie (wie Tomys Hub gesamt). */
     v.fassungen.forEach(function (fx) { fx.umfang.grenzeManuell = "keine"; });
+    /* Abstimmung der Mitarbeiter (erfunden, nur Rollenkürzel, keine Namen). */
+    [["bedarf", scan.id, "Büro", "MA1", 5],
+     ["bedarf", scan.id, "Büro", "MA2", 4],
+     ["abnahme", scan.id, "Büro", "MA1", 5],
+     ["abnahme", scan.id, "Büro", "MA2", 4],
+     ["bedarf", formular.id, "Büro", "IN", 5],
+     ["bedarf", formular.id, "Büro", "MA1", 5],
+     ["abnahme", formular.id, "Büro", "IN", 4],
+     ["abnahme", formular.id, "Büro", "MA1", 5],
+     ["bedarf", uebers.id, "Büro", "MA2", 3],
+     ["abnahme", uebers.id, "Büro", "MA2", 4]
+    ].forEach(function (s) { WN.bedarf.sterneDazu(v, { zeitpunkt: s[0], kennung: s[1], bereich: s[2], kuerzel: s[3], sterne: s[4], datum: s[0] === "bedarf" ? "2026-10-19" : "2026-11-09" }); });
     v.ist = { 1: 20.7, 2: 39.4, 3: 60.6, 4: 66.4 };
     return v;
   }
