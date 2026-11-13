@@ -397,3 +397,5 @@ ein Satz erklärt „Muss unter der Grenzlinie“. Neue Proben: `VERDECKT`, `SUM
 einen Baustein, jeder Baustein zeigt auf einen vorhandenen Bedarf — über alle Beispiele). Jede von Hand gegengeprüft (Fehler
 eingebaut → genau diese Zeile rot). Gemessen: kern 357 grün, browser 194 grün (einmal von vier Läufen 1 ROT, nicht wiederholbar,
 Zeile nicht festgehalten), Anker 123 · 0 tot. Cache v39. ⚠ Am Tablet nicht gemessen.
+
+**Freibrief (Klaus 13.11.):** eigene geprüfte PRs (Proben grün) selbst nach `main` mergen und den Auftrag selbstständig zu Ende führen; sichtbare Umbauten an Needs erst als Vorschau (Brief Rückwärtstest).
