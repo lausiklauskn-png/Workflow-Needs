@@ -25,7 +25,7 @@
     v.titel = "Offener Marktplatz für Web-Apps mit nachprüfbaren Messwerten";
     v.beispiel = true; v.bid = "toolpoint";
     v.kunde.firma = "Marktplatz Beispiel";
-    v.kunde.ansprechpartner = "Betreiber Beispiel";
+    v.kunde.ansprechpartner = "Ansprechperson Beispiel";
     v.kunde.mail = "betrieb@marktplatz-beispiel.example";
     var f = v.fassungen[0], p = f.protokoll;
     f.angebot.datum = "2026-08-08";
@@ -85,7 +85,7 @@
     F.unterschreiben(v, f, einst && einst.ust, "2026-08-17");
 
     /* F2 — Auslieferungsprüfer */
-    var f2 = F.neueFassung(v, { anlass: "Anbieter sollen ihre App vor dem Eintragen selbst prüfen können: Schlüssel, fremde Adressen, versteckte Befehle", von: "betreiber", datum: "2026-08-21" }).fassung;
+    var f2 = F.neueFassung(v, { anlass: "Anbieter sollen ihre App vor dem Eintragen selbst prüfen können: Schlüssel, fremde Adressen, versteckte Befehle", von: "betrieb", datum: "2026-08-21" }).fassung;
     var p2 = f2.protokoll;
     var pruefer = H.bed(p2, "Ein Prüfer, der eine Seite, ein Archiv, einen Text oder eine Adresse auf dem Gerät durchsieht und in Klartext sagt, was auffällt", "muss", { h: 2, text: "kein Schlüssel und keine fremde Adresse rutscht mehr mit hinaus" });
     var mail = H.bed(p2, "Auch E-Mails prüfen: Links, versteckter Text, Anweisungen an eine KI", "soll", { h: 1 });
@@ -122,7 +122,7 @@
     F.unterschreiben(v, f3, einst && einst.ust, "2026-09-30");
 
     /* F4 — Sicherheitsnetz aus dem Kanon, neue Einträge */
-    var f4 = F.neueFassung(v, { anlass: "Fremde Knoten im Netz sollen sich nicht als andere ausgeben können; weitere eigene Apps gehören ins Regal", von: "betreiber", datum: "2026-10-01" }).fassung;
+    var f4 = F.neueFassung(v, { anlass: "Fremde Knoten im Netz sollen sich nicht als andere ausgeben können; weitere eigene Apps gehören ins Regal", von: "betrieb", datum: "2026-10-01" }).fassung;
     var p4 = f4.protokoll;
     var echt = H.bed(p4, "Fragen und Antworten im Netz sind unterschrieben, Echtheit wird geprüft, gesperrte Knoten stehen in einer signierten Liste", "muss", {});
     var buergen = H.bed(p4, "Bürgen je App mit Ablauf und Widerruf, Netz-Verwaltung als eigene Seite", "soll", {});

@@ -29,13 +29,27 @@
       if (w.length >= 2) { values.push({ value: w, type: "KUNDE" }); seed[f.token] = w; }
     });
     namenListe(v.weitereNamen).forEach(function (n) { values.push({ value: n, type: "NAME" }); });
-    /* Rückwärtstest 2026-11-13: der Vorname des Ansprechpartners stand allein im Freitext („klärt Sabine“) und ging
-       im Klartext hinaus, obwohl der Kopf „verdeckt: ja“ sagt. Deshalb zählt jeder Namensteil (ab 3 Buchstaben) mit. */
+    return { values: values, seed: seed, teile: namensteile(v) };
+  }
+  /* Rückwärtstest 2026-11-13: der Vorname des Ansprechpartners stand allein im Freitext („klärt Sabine“) und ging
+     im Klartext hinaus, obwohl der Kopf „verdeckt: ja“ sagt. Jeder Namensteil (ab 3 Buchstaben, ohne Anrede) wird
+     deshalb als GANZES WORT durch den Platzhalter des Ansprechpartners ersetzt. Nicht über Modul 25: dessen letzte
+     Sicherung sucht Klartext als Teilzeichenkette, und ein Nachname wie „Beispiel“ steckt auch in „Beispielwert“ –
+     das hielt den ganzen Bauauftrag an (gefunden an einem neuen Beispiel, 2026-11-13). */
+  function namensteile(v) {
+    var teile = [];
     String((v.kunde && v.kunde.ansprechpartner) || "").split(/[\s,]+/).forEach(function (t) {
-      t = t.replace(/^[^A-Za-zÄÖÜäöüß]+|[^A-Za-zÄÖÜäöüß-]+$/g, "");
-      if (t.length >= 3 && !/^(Herr|Frau|Dr|Prof)$/.test(t)) values.push({ value: t, type: "NAME" });
+      t = t.replace(/^[^\p{L}]+|[^\p{L}-]+$/gu, "");
+      if (t.length >= 3 && !/^(Herr|Frau|Dr|Prof)$/i.test(t) && teile.indexOf(t) < 0) teile.push(t);
     });
-    return { values: values, seed: seed };
+    return teile;
+  }
+  function teileErsetzen(t, teile) {
+    teile.forEach(function (n) {
+      var esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      t = t.replace(new RegExp("(^|[^\\p{L}])" + esc + "(?![\\p{L}])", "gu"), "$1⟦KUNDE-2⟧");
+    });
+    return t;
   }
   function zuordnungVon(v) {
     var b = bekannte(v), map = {};
@@ -55,7 +69,7 @@
         if (!t || v.eigenesVorhaben) return t;
         var r = P.pseudonymize(t, { values: b.values, map: map });
         Object.keys(r.map).forEach(function (k) { map[k] = r.map[k]; });
-        return r.text;
+        return teileErsetzen(r.text, b.teile);
       },
       map: function () { return map; },
       values: b.values,

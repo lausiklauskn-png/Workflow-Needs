@@ -22,7 +22,7 @@
     v.titel = "Bedarf erfassen, Umfang schätzen und Angebot erstellen für Software-Aufträge";
     v.beispiel = true; v.bid = "needs";
     v.kunde.firma = "Softwarewerkstatt Beispiel";
-    v.kunde.ansprechpartner = "Inhaber Beispiel";
+    v.kunde.ansprechpartner = "Jana Beispiel";
     v.kunde.mail = "auftrag@werkstatt-beispiel.example";
     var f = v.fassungen[0], p = f.protokoll;
     f.angebot.datum = "2026-10-07";
@@ -78,16 +78,16 @@
     F.unterschreiben(v, f, einst && einst.ust, "2026-10-07");
 
     /* F2 — Beispiele, Ansicht, Erklären an Ort und Stelle */
-    var f2 = F.neueFassung(v, { anlass: "Im Sichttest am Tablet: Kennungen und Faktoren sollen sich erklären, Anhänge groß ansehen, Beispiele gleich in „Vorgänge“", von: "kunde", datum: "2026-10-08" }).fassung;
+    var f2 = F.neueFassung(v, { anlass: "Im Sichttest am Tablet: Kennungen und Faktoren sollen sich erklären, Anhänge groß ansehen, Muster-Vorgänge gleich in „Vorgänge“", von: "kunde", datum: "2026-10-08" }).fassung;
     var p2 = f2.protokoll;
     var erklaeren = H.bed(p2, "Jeder Chip am Baustein erklärt sich und zeigt vorher, wie sich der Preis ändert, mit Zurück", "muss", { h: 1, text: "keine Überraschung im Angebot" });
     var ansicht = H.bed(p2, "Anhänge mit einem Tipp groß ansehen: Bilder, PDFs ganz, E-Mails mit Text und Anhängen", "soll", {});
-    var beispiele = H.bed(p2, "Fertige Beispiel-Vorgänge zum Ausprobieren, gleich neben „Neuer Vorgang“", "kann", {});
+    var beispiele = H.bed(p2, "Fertige Muster-Vorgänge zum Ausprobieren, gleich neben „Neuer Vorgang“", "kann", {});
     H.e(p2, 8, "Das System muss in einer unterschriebenen Fassung nur erklären und mit einem Tipp eine neue offene Fassung anlegen");
     H.e(p2, 8, "Das System muss in der Kopfzeile Kunde, Fassung und Titel des offenen Vorgangs nennen");
     H.bs(f2, "neu", "Erklär-Feld an jedem Chip mit vorgerechneter Preiswirkung, Zurück-Stände, neue Fassung im Banner", "mittel", [erklaeren.id]);
     H.bs(f2, "dateipruef", "Ansicht der Anhänge (Bild, PDF, E-Mail), nichts wird ausgeführt", "mittel", [ansicht.id]);
-    H.bs(f2, "neu", "Beispiel-Vorgänge aus eigenen Aufträgen mit Ist-Stunden", "klein", [beispiele.id]);
+    H.bs(f2, "neu", "Muster-Vorgänge aus eigenen Aufträgen mit Ist-Stunden", "klein", [beispiele.id]);
     F.unterschreiben(v, f2, einst && einst.ust, "2026-10-08");
 
     /* F3 — Netz, Sicherheit, Installieren, Buchhaltung */
@@ -105,12 +105,12 @@
     F.unterschreiben(v, f3, einst && einst.ust, "2026-10-31");
 
     /* F4 — fertige Apps als Beispiele, Rückwärtstest */
-    var f4 = F.neueFassung(v, { anlass: "Die schon gebauten Apps sollen als Beispiele dienen; der Bauauftrag muss sich rückwärts an fertigen Apps bewähren", von: "betrieb", datum: "2026-11-13" }).fassung;
+    var f4 = F.neueFassung(v, { anlass: "Die schon gebauten Apps sollen als Muster dienen; der Bauauftrag muss sich rückwärts an fertigen Apps bewähren", von: "betrieb", datum: "2026-11-13" }).fassung;
     var p4 = f4.protokoll;
-    var fertig = H.bed(p4, "Fertige Apps als Beispiel-Vorgänge mit echten Fassungen und Ist-Stunden", "soll", { h: 1 });
+    var fertig = H.bed(p4, "Fertige Apps als Muster-Vorgänge mit echten Fassungen und Ist-Stunden", "soll", { h: 1 });
     var verdeckt = H.bed(p4, "Der Bauauftrag verdeckt auch Namensteile des Ansprechpartners und nennt die Zuschläge der Summe", "muss", { text: "kein Vorname im Klartext" });
     H.e(p4, 8, "Das System muss für jeden Muss-Bedarf einen Baustein nachweisen und keinen Baustein auf einen fehlenden Bedarf zeigen lassen");
-    H.bs(f4, "neu", "Vier fertige Apps als Beispiele, Schlüssigkeitsprobe", "mittel", [fertig.id]);
+    H.bs(f4, "neu", "Vier fertige Apps als Muster-Vorgänge, Schlüssigkeitsprobe", "mittel", [fertig.id]);
     H.bs(f4, "kipruef", "Bauauftrag: Namensteile verdecken, Summe mit Zuschlägen", "klein", [verdeckt.id]);
     F.unterschreiben(v, f4, einst && einst.ust, "2026-11-13");
 

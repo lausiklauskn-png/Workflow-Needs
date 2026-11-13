@@ -275,7 +275,7 @@ try {
     const lage = await s.p.evaluate(() => { const n = document.getElementById("neuer-vorgang"), w = document.getElementById("vg-beispiel-wahl"), l = document.getElementById("vg-beispiel-laden"), a = document.getElementById("vg-beispiel-alle");
       const sicht = (e) => !!e && e.getClientRects().length > 0 && e.checkVisibility();
       return { alle: [n, w, l, a].every(sicht), gleicheLeiste: !!n && !!w && n.parentElement === w.closest("[data-beispiel-start]").parentElement, optionen: w ? w.options.length : 0, vor: w ? w.value : "", vorListe: !!w && !!(w.compareDocumentPosition(document.querySelector("[data-vorgangsliste]")) & 4) }; });
-    ok("VORGÄNGE: Beispiel-Auswahl, „Laden“ und „Alle laden“ stehen sichtbar neben „Neuer Vorgang“, vor der Liste", lage.alle && lage.gleicheLeiste && lage.optionen === 10 && lage.vorListe, lage);
+    ok("VORGÄNGE: Beispiel-Auswahl, „Laden“ und „Alle laden“ stehen sichtbar neben „Neuer Vorgang“, vor der Liste", lage.alle && lage.gleicheLeiste && lage.optionen === 20 && lage.vorListe, lage);
     ok("VORGÄNGE: vorausgewählt ist das erste noch nicht geladene Beispiel (nicht die schon geladene Boutique)", lage.vor === "tomys", lage.vor);
     await s.p.selectOption("#vg-beispiel-wahl", "tomys-gesamt"); await s.p.click("#vg-beispiel-laden");
     await s.p.waitForFunction(() => /Beispiel geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
@@ -321,7 +321,7 @@ try {
     await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.id === window.WNApp.S.aktiv); v.anhaenge = v.anhaenge.filter((a) => a.id !== "A-99"); });
     await s.p.click("#vg-beispiel-alle");
     await s.p.waitForFunction(() => /Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 15000 }).catch(() => {});
-    ok("VORGÄNGE: „Alle laden“ von hier ergänzt den Rest ohne Doppel", await s.p.evaluate(() => window.WNApp.S.vorgaenge.filter((v) => v.beispiel).map((v) => v.bid).sort().join()) === "alis,bookledgerpro,boutique,eigene,familienakte,privatebrainpro,psb,tomys,tomys-gesamt,workflowpdfpro");
+    ok("VORGÄNGE: „Alle laden“ von hier ergänzt den Rest ohne Doppel", await s.p.evaluate(() => window.WNApp.S.vorgaenge.filter((v) => v.beispiel).map((v) => v.bid).sort().join()) === "alis,bookledgerpro,boutique,calculate,dateiorganizer,eigene,familienakte,kimsync,mixarium,mixariumpage,needs,privatebrainpro,proverbund,psb,rezeptbuch,tomys,tomys-gesamt,toolpoint,workflohpage,workflowpdfpro");
     ok("VORGÄNGE: Liste zeigt bei leerem Kunden nie einen Platzhalter", !(await s.p.textContent("[data-vorgangsliste]")).includes("⟦"));
     await s.ctx.close();
   }
@@ -335,7 +335,7 @@ try {
     await reiter(s.p, "einstellungen");
     await s.p.fill('[data-firma="name"]', "Werkstatt Prüf-Firma");
     const opts = await s.p.$$eval("#beispiel-wahl option", (o) => o.map((x) => x.value));
-    ok("BEISPIELE: Auswahl mit Boutique, den vier Beispielen, Tomys Hub gesamt und den vier fertigen Apps", opts.join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt,familienakte,bookledgerpro,workflowpdfpro,privatebrainpro", opts);
+    ok("BEISPIELE: Auswahl mit Boutique, den vier Beispielen, Tomys Hub gesamt und den vier fertigen Apps", opts.join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt,familienakte,bookledgerpro,workflowpdfpro,privatebrainpro,proverbund,rezeptbuch,mixarium,mixariumpage,calculate,kimsync,workflohpage,dateiorganizer,needs,toolpoint", opts);
     await s.p.selectOption("#beispiel-wahl", "tomys"); await s.p.click("#beispiel-laden");
     await s.p.waitForFunction(() => window.WNApp.S.vorgaenge.length === 2, null, { timeout: 5000 }).catch(() => {});
     ok("BEISPIELE: ein Beispiel einzeln laden", await anzahl() === 2 && await s.p.evaluate(() => window.WNApp.S.vorgaenge.some((v) => v.bid === "tomys")));
@@ -344,13 +344,13 @@ try {
     ok("BEISPIELE: zweimal laden legt keinen Doppel an", await anzahl() === 2 && /schon da/.test(await s.p.textContent("[data-meldung]")));
     await s.p.click("#beispiel-alle");
     await s.p.waitForFunction(() => /Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
-    ok("BEISPIELE: „Alle laden“ ergänzt nur die fehlenden (8 geladen, 2 schon da)", await anzahl() === 10 && /8 Beispiele geladen, 2 waren schon da/.test(await s.p.textContent("[data-meldung]")), await s.p.textContent("[data-meldung]").catch(() => ""));
+    ok("BEISPIELE: „Alle laden“ ergänzt nur die fehlenden (18 geladen, 2 schon da)", await anzahl() === 20 && /18 Beispiele geladen, 2 waren schon da/.test(await s.p.textContent("[data-meldung]")), await s.p.textContent("[data-meldung]").catch(() => ""));
     await s.p.click("#beispiel-alle");
     await s.p.waitForFunction(() => /0 Beispiele geladen/.test((document.querySelector("[data-meldung]") || {}).textContent || ""), null, { timeout: 8000 }).catch(() => {});
-    ok("BEISPIELE: zweites „Alle laden“ ohne Doppel", await anzahl() === 10);
+    ok("BEISPIELE: zweites „Alle laden“ ohne Doppel", await anzahl() === 20);
     await s.p.evaluate(() => window.WNApp.jetztSpeichern());
     await s.p.reload(); await s.p.waitForSelector("body[data-bereit]");
-    ok("BEISPIELE: alle zehn überstehen das Neuladen, jedes einmal", await s.p.evaluate(() => { const b = window.WNApp.S.vorgaenge.map((v) => v.bid).sort().join(); return b; }) === "alis,bookledgerpro,boutique,eigene,familienakte,privatebrainpro,psb,tomys,tomys-gesamt,workflowpdfpro");
+    ok("BEISPIELE: alle zwanzig überstehen das Neuladen, jedes einmal", await s.p.evaluate(() => { const b = window.WNApp.S.vorgaenge.map((v) => v.bid).sort().join(); return b; }) === "alis,bookledgerpro,boutique,calculate,dateiorganizer,eigene,familienakte,kimsync,mixarium,mixariumpage,needs,privatebrainpro,proverbund,psb,rezeptbuch,tomys,tomys-gesamt,toolpoint,workflohpage,workflowpdfpro");
     /* Tomys Hub gesamt: die erfundenen Bilder, PDFs und E-Mails hängen als echte Dateien am Vorgang
        und gehen mit der Übergabe an WorkFloh — dort werden sie wieder Dateien am Auftrag. */
     const ga = await s.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.bid === "tomys-gesamt");
