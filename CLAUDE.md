@@ -414,3 +414,22 @@ hätte gekostet. Die Familienakte und die Pro-Geschichte sollen zusammengeführt
   Proben `VERDECKT` (3), gegengeprüft (ohne Ersetzen → 2 ROT, als Teilzeichenkette → 1 ROT).
 - Gemessen: kern 499 grün, browser 194 grün, Anker 123 · 0 tot. Cache v40. ⚠ Die neuen Beispiele sind nicht rückwärts geprüft
   (Bau-Agent + Bewerter), nur mit dem Selbsttest (alle 18 Bereiche, Bauauftrag ok, keine Adressen). Am Tablet nicht gemessen.
+
+## Rahmen nach dem Rückwärtstest (Klaus 2026-11-13: Ja zu F1–F6, A1–A5, U1, U2 in der Vorschau)
+
+Vorschau mit Klaus' Wahl: https://claude.ai/artifact/UKsF4XLDoBMhFtVzSsHx8a (alle 14 Punkte Ja). Befund dazu: Datei-Organizer
+`rueckwaertstest/NEEDS-LUECKEN.md`.
+- **Neue Fragen** (`assets/kern/rahmen.js`, `WN.RAHMEN`, `WN.rahmen`): Bereich 10 Geräte (mehrfach) und „ohne Internet“ (eine Wahl),
+  Bereich 12 eigene Programme (Chips + Freitext), Bereich 13 Datenort und Sicherung, Bereich 15 Budget-Rahmen in € (nur intern) und
+  **„Nicht gewünscht“** mit eigener Kennung `N-nn`, am Bedarf (Bereich 6) „schlägt vor / macht es selbst / egal“ (`e.handeln`).
+  Gespeichert an der Fassung: `protokoll.rahmen`, `protokoll.nicht`; ältere Fassungen haben nichts davon = „nicht erfragt“, nichts vorbelegt.
+- **Bauauftrag:** Kopf `fassungsdatum` (A5), Satz „Gesamtauftrag“ ohne Vorgänger, Abschnitt **„## Rahmen“ vor „Zu tun“** (A1; ohne
+  Angaben „noch nicht erfragt … nicht annehmen“), **„### Je Baustein: Vorlage und Abnahme“** (A2/A3: Vorlage, % wiederverwendet,
+  Faktoren, Bereich-8-Sätze als Abnahme, auch die ohne Baustein), „Vollständiger Stand“ **nur noch JSON** (A4) mit `rahmen`, `nicht`,
+  `handeln`; `standAnwenden` holt sie zurück. Budget nur mit `euro: ja`.
+- **Kundenblatt:** Abschnitt „Rahmen“ (je nur bei freigegebenem Bereich), „Nicht gewünscht“ nur sichtbare; Budget nie.
+- **Umfang:** Hinweis „nicht schlüssig“ (U1: Muss ohne Baustein, verwaiste Kennung) und „Schätzung über dem Budget-Rahmen“ (F6).
+- **Katalog (U2):** `plattform`, `tresor`, `kalender`, `postfach` (Schätzungen, Vorlagen laut CLAUDE.md der Apps); gespeicherte Tabellen
+  bekommen fehlende Vorgabe-Bausteine dazu (`fehlendeDazu`), eigene Zahlen bleiben.
+- Gemessen: kern 529 grün · browser 201 grün (je einmal 1–2 ROT in BEISPIELE/ANSICHT, wechselnd, nicht wiederholbar — bekannte Schwankung) ·
+  Gegenprobe `RAHMEN26:` 9 gefangen · 0 blind · Anker 132 · 0 tot. Cache v41. ⚠ Am Tablet nicht gemessen.

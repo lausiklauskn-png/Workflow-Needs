@@ -604,6 +604,27 @@ try {
     await r.ctx.close();
   }
 
+  /* ── RAHMEN (Klaus 2026-11-13): Geräte, Datenort, nicht gewünscht, vorschlagen/selbst, Budget, Katalog ── */
+  {
+    const r = await seite(380);
+    await r.p.goto(url); await r.p.waitForSelector("body[data-bereit]");
+    await reiter(r.p, "bedarf");
+    await r.p.click('[data-rahmen="geraete:android"]'); await r.p.click('[data-rahmen="geraete:browser"]'); await r.p.click('[data-rahmen="datenort:ordner"]');
+    ok("RAHMEN: Chips für Geräte und Datenort schalten an", await r.p.getAttribute('[data-rahmen="geraete:android"]', "aria-pressed") === "true" && await r.p.getAttribute('[data-rahmen="datenort:ordner"]', "aria-pressed") === "true");
+    await r.p.fill("[data-nicht-neu]", "Keine Daten in einer fremden Cloud"); await r.p.click("[data-nicht-dazu]");
+    ok("NICHT: Eintrag mit Kennung N-01 in Bereich 15", await r.p.locator('[data-bereich="15"] [data-nicht="N-01"]').count() === 1);
+    await r.p.locator('[data-bereich="6"] [data-handeln] [data-handeln-wahl="vorschlagen"]').first().click();
+    ok("HANDELN: am Bedarf wählbar", await r.p.locator('[data-bereich="6"] [data-handeln] button.on').count() === 1);
+    await r.p.fill("[data-rahmen-budget]", "1"); await r.p.press("[data-rahmen-budget]", "Tab");
+    ok("RAHMEN: bei 380 px läuft der Bedarf nicht quer", await r.p.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
+    const blatt = await druck(r.p, "#druck-protokoll");
+    ok("KUNDENBLATT: Rahmen mit Geräten und „Nicht gewünscht“, ohne Budget", blatt.text.includes("Android-Handy") && blatt.text.includes("Nicht gewünscht: Keine Daten in einer fremden Cloud") && !/Budget/.test(blatt.text), blatt.text.slice(-400));
+    await reiter(r.p, "umfang");
+    ok("BUDGET: Schätzung über dem Budget-Rahmen wird im Umfang gemeldet", await r.p.locator("[data-budget-ueber]").count() === 1);
+    ok("KATALOG: neue Bausteine sind anklickbar", await r.p.locator('[data-katalog="plattform"]').count() === 1 && await r.p.locator('[data-katalog="postfach"]').count() === 1);
+    await r.ctx.close();
+  }
+
   /* ── Impressum und Datenschutz ── */
   {
     const r = await seite(380);

@@ -5,6 +5,21 @@
   "use strict";
   var WN = g.WN = g.WN || {};
   WN.EN = {
+    "Rahmen": "Framework",
+    "Nicht gewünscht": "Not wanted",
+    "mehrere möglich": "several possible",
+    "Welche eigenen Programme? (z. B. Buchhaltung, Ablage)": "Which own programs? (e.g. bookkeeping, filing)",
+    "Budget-Rahmen gesamt in € (Angabe des Kunden, nur intern)": "Total budget in € (customer's statement, internal only)",
+    "Nicht gewünscht — was die Lösung ausdrücklich NICHT tun soll": "Not wanted — what the solution must explicitly NOT do",
+    "z. B. keine Daten in einer fremden Cloud": "e.g. no data in someone else's cloud",
+    "Soll die Lösung vorschlagen oder selbst handeln?": "Should the solution suggest or act on its own?",
+    "Muss": "Must",
+    "hat keinen Baustein.": "has no module.",
+    "deckt": "covers",
+    "den es nicht mehr gibt.": "which no longer exists.",
+    "Die Schätzung": "The estimate",
+    "liegt über dem Budget-Rahmen des Kunden": "is above the customer's budget",
+    "Grenzlinie prüfen oder mit dem Kunden sprechen.": "Check the cut-off line or talk to the customer.",
     "Anpassung im Umfang": "Change in scope",
     "Neue Fassung zum Ändern": "New version to edit",
     "bleibt unterschrieben.": "stays signed.",

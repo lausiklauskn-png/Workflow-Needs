@@ -105,12 +105,35 @@
     var name = function (b) { return V.text(R.bausteinName(b, tabellen, "de")); };
     var L = [];
     L.push("---", "art: bauauftrag", "format: 1", "vorgang: " + v.id, "fassung: " + neu.nr,
-      "vorher: " + (alt ? alt.nr : "-"), "datum: " + opts.datum, 'kunde: "⟦KUNDE-1⟧"',
+      "vorher: " + (alt ? alt.nr : "-"), "fassungsdatum: " + (neu.datum || opts.datum), "datum: " + opts.datum, 'kunde: "⟦KUNDE-1⟧"',
       "verdeckt: " + (v.eigenesVorhaben ? "nein" : "ja"), "stunden: " + (opts.stunden ? "ja" : "nein"),
       "euro: " + (opts.euro ? "ja" : "nein"), 'repo: "Workflow-Needs"  # Werkzeug, das den Auftrag erzeugt hat — nicht das Ziel', "---", "");
     L.push("# Bauauftrag · Fassung " + neu.nr + (alt ? " (vorher " + alt.nr + ")" : ""), "");
     if (neu.anlass || neu.von) L.push("**Anlass:** " + (V.text(neu.anlass) || "–") + "  ·  **von:** " + ({ kunde: "Kunde", betrieb: "Betrieb", bau: "Befund beim Bau" }[neu.von] || "–"), "");
     if (v.titel) L.push("**Vorhaben:** " + V.text(v.titel), "");
+    /* A5 (Klaus 2026-11-13): ohne Vorgänger ist der Auftrag ein Gesamtauftrag — auch bei Fassung 4. */
+    if (!alt) L.push("**Gesamtauftrag:** keine frühere Fassung in diesem Auftrag — alles unter „Zu tun“ ist neu zu bauen. Das Datum der Fassung steht im Kopf (`fassungsdatum`), `datum` ist der Tag der Erzeugung.", "");
+
+    /* A1 · Rahmen (Klaus 2026-11-13): Geräte, Datenort, Sicherung, Zusammenspiel, vorschlagen/selbst, nicht bauen — ganz oben,
+       weil Bau-Agenten nach „Zu tun“ bauen und verstreute Angaben in Bereich 10–15 als Beiwerk lasen. */
+    L.push("## Rahmen");
+    var RA = WN.rahmen, ra = RA.von(neu.protokoll);
+    var rz = [];
+    if (RA.liste(ra, "geraete", "de")) rz.push("- Geräte: " + RA.liste(ra, "geraete", "de"));
+    if (ra.offline) rz.push("- Ohne Internet: " + RA.name("offline", ra.offline, "de"));
+    if (RA.liste(ra, "datenort", "de")) rz.push("- Daten liegen: " + RA.liste(ra, "datenort", "de"));
+    if (RA.liste(ra, "sicherung", "de")) rz.push("- Sicherung: " + RA.liste(ra, "sicherung", "de"));
+    var eig = [RA.liste(ra, "eigene", "de"), V.text(String(ra.eigeneText || "").trim())].filter(Boolean).join("; ");
+    if (eig) rz.push("- Eigene Programme: " + eig);
+    var hand = { vorschlagen: [], selbst: [], egal: [] };
+    WN.bedarf.bedarfe(neu.protokoll).forEach(function (e) { if (e.handeln && hand[e.handeln]) hand[e.handeln].push(e.id); });
+    if (hand.vorschlagen.length) rz.push("- Schlägt vor, der Kunde bestätigt: " + hand.vorschlagen.join(", "));
+    if (hand.selbst.length) rz.push("- Darf selbst handeln: " + hand.selbst.join(", "));
+    if (opts.euro && ra.budgetEuro) rz.push("- Budget-Rahmen des Kunden: " + euroG(Math.round(Number(ra.budgetEuro) * 100)) + " gesamt");
+    var nb = RA.nicht(neu.protokoll);
+    if (nb.length) rz.push("- Nicht bauen: " + nb.map(function (e) { return e.id + " " + V.text(e.text); }).join(" · "));
+    if (!rz.length) rz.push("- noch nicht erfragt (Bereich 10, 12, 13, 15) — Geräte, Datenort und Sicherung beim Kunden klären, nicht annehmen");
+    L.push.apply(L, rz); L.push("");
 
     /* Zu tun */
     L.push("## Zu tun (für die Sitzung)");
@@ -148,6 +171,29 @@
       L.push("| " + zu.join(" | ") + " |");
     }
     L.push("");
+
+    /* A2 + A3 (Klaus 2026-11-13): je Baustein Vorlage, Wiederverwendung, Faktoren und die Abnahme aus Bereich 8. */
+    var b8 = neu.protokoll.bereiche[8].eintraege, je = [], b8gedeckt = {};
+    (neu.umfang.bausteine || []).forEach(function (b, i) {
+      var z = sn.zeilen[i], teile = [];
+      (z.weg || []).forEach(function (w) {
+        if (w.art === "wv") teile.push("Vorlage " + (w.quelle ? V.text(w.quelle) : "–") + " (" + Math.round(w.anteil * 100) + " % wiederverwendet)");
+        if (w.art === "faktoren") teile.push("Faktoren " + w.ids.map(function (id) { var fk = R.faktorVon ? R.faktorVon(tabellen, id) : null; return fk ? fk.name.de + " ×" + String(fk.mal).replace(".", ",") : id; }).join(", "));
+        if (w.art === "manuell" && opts.stunden) teile.push("Stunden von Hand gesetzt");
+      });
+      var ab = b8.filter(function (e) { return (b.deckt || []).indexOf(e.id) >= 0; });
+      ab.forEach(function (e) { b8gedeckt[e.id] = 1; });
+      if (!teile.length && !ab.length) return;
+      je.push("- " + b.id + (teile.length ? " · " + teile.join(" · ") : ""));
+      ab.forEach(function (e) { je.push("  - Abnahme " + e.id + ": " + V.text(e.text)); });
+    });
+    var b8offen = b8.filter(function (e) { return !b8gedeckt[e.id]; });
+    if (je.length || b8offen.length) {
+      L.push("### Je Baustein: Vorlage und Abnahme");
+      L.push.apply(L, je);
+      if (b8offen.length) { L.push("- ohne Baustein (trotzdem abnehmen):"); b8offen.forEach(function (e) { L.push("  - " + e.id + ": " + V.text(e.text)); }); }
+      L.push("");
+    }
 
     /* Bedarfsprotokoll – Änderungen */
     L.push("## Bedarfsprotokoll – Änderungen");
@@ -206,7 +252,8 @@
     L.push("");
 
     /* Vollständiger Stand: lesbar UND als JSON zum Wiedereinlesen */
-    L.push("## Vollständiger Stand (zum Nachschlagen)");
+    /* A4 (Klaus 2026-11-13): nur noch als JSON — vorher stand jeder Bedarf dreimal im Auftrag. */
+    L.push("## Vollständiger Stand (zum Einlesen)");
     var stand = { bedarf: [], bausteine: [] };
     WN.bedarf.alleEintraege(neu.protokoll).forEach(function (x) {
       var e = x.e, o = { id: e.id, nr: x.nr, text: V.text(e.text), sichtbar: !!e.sichtbar };
@@ -214,18 +261,20 @@
       if (e.prio !== undefined) o.prio = e.prio;
       if (e.nutzen) { o.nutzen = { stundenMonat: e.nutzen.stundenMonat, text: V.text(e.nutzen.text || "") }; if (opts.euro) o.nutzen.euroMonat = e.nutzen.euroMonat; }
       if (e.wer !== undefined) { o.wer = V.text(e.wer); o.bis = e.bis; }
+      if (e.handeln) o.handeln = e.handeln;
       stand.bedarf.push(o);
-      L.push("- " + e.id + " [Bereich " + x.nr + (e.sichtbar ? "" : ", nur intern") + "]: " + o.text + (e.prio ? " (" + prioWort(e.prio) + ")" : ""));
     });
+    stand.rahmen = { geraete: ra.geraete, offline: ra.offline, eigene: ra.eigene, eigeneText: V.text(ra.eigeneText || ""), datenort: ra.datenort, sicherung: ra.sicherung };
+    if (opts.euro) stand.rahmen.budgetEuro = ra.budgetEuro;
+    stand.nicht = nb.map(function (e) { return { id: e.id, text: V.text(e.text), sichtbar: !!e.sichtbar }; });
     (neu.umfang.bausteine || []).forEach(function (b, i) {
       var z = sn.zeilen[i];
       var o = { id: b.id, katalog: b.katalog || null, name: b.name ? V.text(b.name) : "", menge: b.menge, groesse: b.groesse || null,
         faktoren: (b.faktoren || []).slice(), deckt: (b.deckt || []).slice(), ermaessigt: !!b.ermaessigt };
       if (opts.stunden && b.manuell) o.manuell = b.manuell;
       stand.bausteine.push(o);
-      L.push("- " + b.id + ": " + name(b) + (z.menge !== 1 ? " ×" + zahlH(z.menge) : "") + " · " + (z.geschaetzt ? (b.groesse || "von Hand").replace("gross", "groß") + (opts.stunden ? " · " + spanneH(z.von, z.bis) + " h" : "") : "noch nicht geschätzt") + " · deckt " + ((b.deckt || []).join(", ") || "–"));
     });
-    L.push("", "```json", JSON.stringify(stand), "```", "");
+    L.push("```json", JSON.stringify(stand), "```", "");
     var md = L.join("\n");
 
     if (!v.eigenesVorhaben) {
@@ -296,9 +345,22 @@
       if (o.prio !== undefined) e.prio = o.prio;
       if (o.nutzen) e.nutzen = { stundenMonat: o.nutzen.stundenMonat, euroMonat: o.nutzen.euroMonat !== undefined ? o.nutzen.euroMonat : (alt.nutzen ? alt.nutzen.euroMonat : null), text: auf(o.nutzen.text || "") };
       if (o.wer !== undefined) { e.wer = auf(o.wer); e.bis = o.bis; }
+      if (o.handeln) e.handeln = o.handeln;
       if (f.protokoll.bereiche[o.nr]) f.protokoll.bereiche[o.nr].eintraege.push(e);
       zaehlerNach(v, o.id);
     });
+    /* Rahmen und „nicht gewünscht“ (seit 2026-11-13); fehlen sie im Stand, bleibt der Rahmen der Basis. */
+    var raAlt = WN.rahmen.von(basis.protokoll);
+    if (stand.rahmen) {
+      var ra = WN.rahmen.sicher(f.protokoll);
+      ["geraete", "eigene", "datenort", "sicherung"].forEach(function (k) { ra[k] = Array.isArray(stand.rahmen[k]) ? stand.rahmen[k].slice() : []; });
+      ra.offline = stand.rahmen.offline || ""; ra.eigeneText = auf(stand.rahmen.eigeneText || "");
+      ra.budgetEuro = stand.rahmen.budgetEuro !== undefined ? stand.rahmen.budgetEuro : raAlt.budgetEuro;
+    } else if (basis.protokoll.rahmen) f.protokoll.rahmen = WN.fassungen.kopie(basis.protokoll.rahmen);
+    if (Array.isArray(stand.nicht)) {
+      WN.rahmen.sicher(f.protokoll);
+      f.protokoll.nicht = stand.nicht.map(function (n) { zaehlerNach(v, n.id); return { id: n.id, text: auf(n.text), sichtbar: !!n.sichtbar }; });
+    } else if (basis.protokoll.nicht) f.protokoll.nicht = WN.fassungen.kopie(basis.protokoll.nicht);
     var alteB = {};
     (basis.umfang.bausteine || []).forEach(function (b) { alteB[b.id] = b; });
     f.umfang.bausteine = stand.bausteine.map(function (o) {
@@ -315,7 +377,7 @@
     return { fassung: f, unbekannt: unbekannt };
   }
   function zaehlerNach(v, id) {
-    var m = /^([BKO])-(\d+)$/.exec(id || "");
+    var m = /^([BKON])-(\d+)$/.exec(id || "");
     if (!m) return;
     v.zaehler = v.zaehler || {};
     v.zaehler[m[1]] = Math.max(v.zaehler[m[1]] || 0, Number(m[2]));
