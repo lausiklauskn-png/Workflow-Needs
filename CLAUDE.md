@@ -378,3 +378,24 @@ Modul 04 kommt neu aus dem Kanon (Sage #1082). Der Richter prüft die Suchfrage 
 **Nachtrag 2026-10-18 · Kontrast:** am Handy stand das Erklärfenster hell auf weiß (`color:inherit` erbt helle Schrift, `--flaeche` fehlt → weiß). `assets/installieren.js` neu byte-1:1 aus Sage (#1152, sha `874d2a29…8dc4`): nach dem Einhängen wird der Kontrast gemessen, unter 4,5 steht die Meldung fest `#1a1a1a` auf `#fff`. Pin `INSTALLIEREN_SHA` nachgezogen, `installieren.js?v=3`, Cache v36. ⚠ Am Tablet nicht gemessen.
 
 **Nachtrag 2026-10-18 · Knopf in den Einstellungen:** `assets/installieren.js` neu byte-1:1 aus Sage (#1153, sha `e0644084…73c3`, enthält die Kontrast-Sicherung). Klaus: „Installieren-Button unter Einstellungen hinten.“ Das Skript-Tag trägt `data-in="#inhalt[data-reiter=einstellungen]" data-klasse="btn"`; `zeichne()` setzt dafür `data-reiter` an `#inhalt`. Im Browser gemessen (380 px): im Reiter Einstellungen steht `#installieren-einstellungen` als letztes Element, sichtbar; in anderen Reitern keiner; als App (standalone gestellt) beide weg. Ohne `data-in` von Hand gegengeprüft: 3 rote Zeilen. Pin nachgezogen, `installieren.js?v=4`, `app.js?v=13`, Cache v37. ⚠ Am Tablet nicht gemessen.
+
+## Vier fertige Apps als Beispiele · Rückwärtstest (Klaus 2026-11-13)
+
+Klaus: *„Diese Repos sollen als Beispiel für das Workflow Needs Programm sein … ergänzt durch die bereits gebauten Apps.“*
+Neu im Register (nach den bisherigen sechs, nichts ersetzt): `familienakte`, `bookledgerpro`, `workflowpdfpro`, `privatebrainpro`
+(`assets/daten/beispiel-*.js`). Inhalt aus den Repos (Merkmalslisten: Datei-Organizer `rueckwaertstest/<app>/REFERENZ.json`),
+vier Fassungen je App nach der Git-Geschichte, Ist-Stunden aus Commit-Zeiten (Untergrenze, nur das jeweilige Repo),
+Kundendaten erfunden, alles beauftragt (`grenzeManuell: "keine"`).
+
+**Rückwärts geprüft** (Datei-Organizer `rueckwaertstest/ERGEBNIS.md`): Bauauftrag aus dem Beispiel → Bau-Agent ohne App-Kenntnis →
+zwei Bewerter. Nach Korrektur Familienakte 90 %, BookLedgerPro 83 % der Kern-Merkmale, Workflow PDF Pro und Private Brain Pro 71 %.
+12 simulierte Kunden erreichten 26–73 % (Grenze 80 %); was Needs dafür fehlt: Datei-Organizer `rueckwaertstest/NEEDS-LUECKEN.md`.
+
+Aus dem Test behoben: **Namensteile des Ansprechpartners werden verdeckt** (ein Vorname stand im Klartext im Bauauftrag),
+die **Summe nennt ihre Zuschläge** (alle 20 Baupläne sprachen die Abweichung an), der Kopf sagt, dass `repo` das Werkzeug ist,
+ein Satz erklärt „Muss unter der Grenzlinie“. Neue Proben: `VERDECKT`, `SUMME` (rechnet nach), `SCHLÜSSIG` (jeder Muss-Bedarf hat
+einen Baustein, jeder Baustein zeigt auf einen vorhandenen Bedarf — über alle Beispiele). Jede von Hand gegengeprüft (Fehler
+eingebaut → genau diese Zeile rot). Gemessen: kern 357 grün, browser 194 grün (einmal von vier Läufen 1 ROT, nicht wiederholbar,
+Zeile nicht festgehalten), Anker 123 · 0 tot. Cache v39. ⚠ Am Tablet nicht gemessen.
+
+**Freibrief (Klaus 13.11.):** eigene geprüfte PRs (Proben grün) selbst nach `main` mergen und den Auftrag selbstständig zu Ende führen; sichtbare Umbauten an Needs erst als Vorschau (Brief Rückwärtstest).

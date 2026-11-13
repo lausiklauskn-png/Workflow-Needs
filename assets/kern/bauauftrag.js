@@ -29,6 +29,12 @@
       if (w.length >= 2) { values.push({ value: w, type: "KUNDE" }); seed[f.token] = w; }
     });
     namenListe(v.weitereNamen).forEach(function (n) { values.push({ value: n, type: "NAME" }); });
+    /* Rückwärtstest 2026-11-13: der Vorname des Ansprechpartners stand allein im Freitext („klärt Sabine“) und ging
+       im Klartext hinaus, obwohl der Kopf „verdeckt: ja“ sagt. Deshalb zählt jeder Namensteil (ab 3 Buchstaben) mit. */
+    String((v.kunde && v.kunde.ansprechpartner) || "").split(/[\s,]+/).forEach(function (t) {
+      t = t.replace(/^[^A-Za-zÄÖÜäöüß]+|[^A-Za-zÄÖÜäöüß-]+$/g, "");
+      if (t.length >= 3 && !/^(Herr|Frau|Dr|Prof)$/.test(t)) values.push({ value: t, type: "NAME" });
+    });
     return { values: values, seed: seed };
   }
   function zuordnungVon(v) {
@@ -87,7 +93,7 @@
     L.push("---", "art: bauauftrag", "format: 1", "vorgang: " + v.id, "fassung: " + neu.nr,
       "vorher: " + (alt ? alt.nr : "-"), "datum: " + opts.datum, 'kunde: "⟦KUNDE-1⟧"',
       "verdeckt: " + (v.eigenesVorhaben ? "nein" : "ja"), "stunden: " + (opts.stunden ? "ja" : "nein"),
-      "euro: " + (opts.euro ? "ja" : "nein"), 'repo: "Workflow-Needs"', "---", "");
+      "euro: " + (opts.euro ? "ja" : "nein"), 'repo: "Workflow-Needs"  # Werkzeug, das den Auftrag erzeugt hat — nicht das Ziel', "---", "");
     L.push("# Bauauftrag · Fassung " + neu.nr + (alt ? " (vorher " + alt.nr + ")" : ""), "");
     if (neu.anlass || neu.von) L.push("**Anlass:** " + (V.text(neu.anlass) || "–") + "  ·  **von:** " + ({ kunde: "Kunde", betrieb: "Betrieb", bau: "Befund beim Bau" }[neu.von] || "–"), "");
     if (v.titel) L.push("**Vorhaben:** " + V.text(v.titel), "");
@@ -165,6 +171,10 @@
     var gl = kn.grenze >= 0 ? (kn.grenze > 0 ? "nach " + kn.zeilen[kn.grenze - 1].id : "vor " + kn.zeilen[0].id) : "keine";
     sz.push("Kosten-Nutzen: Grenzlinie " + gl);
     L.push(sz.join(" · "), "");
+    /* Rückwärtstest 2026-11-13: alle Bau-Agenten rechneten die Zeilen nach und fanden die Summe „falsch“ —
+       sie enthält Zuschläge, die nirgends standen. */
+    if (opts.stunden) L.push("Die Summe enthält zusätzlich zu den Zeilen: " + (sn.firmenanpassung.bis ? "Anpassung an den Betrieb " + spanneH(sn.firmenanpassung.von, sn.firmenanpassung.bis) + " h, " : "") + "Abstimmung " + zahlH(sn.abstimmung.pct) + " % (" + spanneH(sn.abstimmung.von, sn.abstimmung.bis) + " h), Puffer " + zahlH(sn.puffer.pct) + " % (" + spanneH(sn.puffer.von, sn.puffer.bis) + " h)" + (sn.gewaehrleistung.stunden ? ", Fehlerbehebung nach Abnahme " + zahlH(sn.gewaehrleistung.stunden) + " h" : "") + ".", "");
+    if (kn.grenze >= 0) L.push("Unter der Grenzlinie steht, was mehr kostet, als es im Zeitraum nutzt — der Kunde entscheidet es einzeln, auch wenn dort ein Muss steht.", "");
 
     /* Rechtsblätter und Sterne (Stufe 3): nur ja/nein und Zahlen — keine Unterschriften,
        keine Namen der Mitarbeiter (Kundendaten). */

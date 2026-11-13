@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
   "assets/kern/bedarf.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
-  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
+  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/daten/beispiel-familienakte.js", "assets/daten/beispiel-bookledgerpro.js", "assets/daten/beispiel-workflowpdfpro.js", "assets/daten/beispiel-privatebrainpro.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
 console.log = stumm;
@@ -452,7 +452,7 @@ function kundenVorgang() {
 {
   const E73 = Object.assign(kopie(EINST), { satzCent: 7300, wartung: { freistunden: 4, wochen: 8, pauschaleCent: 30000 }, firma: { name: "Prüf-Firma" } });
   const L = WN.beispiel.liste();
-  ok("BEISPIELE: sechs im Register (Boutique, vier aus den Repos, Tomys Hub gesamt)", L.map((b) => b.id).join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt", L.map((b) => b.id));
+  ok("BEISPIELE: zehn im Register (Boutique, vier aus den Repos, Tomys Hub gesamt, vier fertige Apps)", L.map((b) => b.id).join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt,familienakte,bookledgerpro,workflowpdfpro,privatebrainpro", L.map((b) => b.id));
   for (const b of L.filter((x) => x.id !== "boutique")) {
     const v = b.bauen(3, E73), ff = v.fassungen, ak = F.aktuelle(v);
     ok(`BEISPIEL ${b.id}: lädt, trägt bid und beispiel`, v.bid === b.id && v.beispiel === true && WN.beispiel.bidVon(v) === b.id);
@@ -476,6 +476,34 @@ function kundenVorgang() {
     ok(`BEISPIEL ${b.id}: Bauauftrag entsteht, verdeckt ${b.id === "eigene" ? "nein" : "ja"}`, md.ok && new RegExp("\\nverdeckt: " + (b.id === "eigene" ? "nein" : "ja") + "\\n").test(md.md), md.grund || md.fund);
     if (b.id !== "eigene") ok(`BEISPIEL ${b.id}: Bauauftrag ohne Kundendaten`, md.ok && !md.md.includes(v.kunde.firma) && !md.md.includes(v.kunde.mail));
   }
+  /* Schlüssigkeit (Klaus 2026-11-13: „beim Rückwärtseinfügen müsste eine Meldung kommen, wenn etwas nicht schlüssig ist“):
+     je Fassung zeigt jeder Baustein nur auf Bedarfe, die es in DIESER Fassung gibt, und jeder Muss-Bedarf ist abgedeckt. */
+  for (const b of L) {
+    const v = b.bauen(3, E73), funde = [];
+    v.fassungen.forEach((f) => {
+      const da = new Set(BD.alleEintraege(f.protokoll).map((x) => x.e.id));
+      const gedeckt = new Set(f.umfang.bausteine.flatMap((x) => x.deckt || []));
+      f.umfang.bausteine.forEach((x) => (x.deckt || []).forEach((id) => { if (!da.has(id)) funde.push(`F${f.nr} ${x.id} deckt ${id}, das es nicht gibt`); }));
+      BD.bedarfe(f.protokoll).forEach((e) => { if (e.prio === "muss" && !gedeckt.has(e.id)) funde.push(`F${f.nr} Muss-Bedarf ${e.id} ohne Baustein`); });
+    });
+    ok(`SCHLÜSSIG ${b.id}: jeder Baustein zeigt auf einen vorhandenen Bedarf, jeder Muss-Bedarf ist abgedeckt`, funde.length === 0, funde.slice(0, 4));
+  }
+  /* Rückwärtstest 2026-11-13: Vorname des Ansprechpartners allein im Freitext */
+  { const v = vorgang(); v.kunde.ansprechpartner = "Sabine Musterfrau"; const f = v.fassungen[0];
+    BD.eintragNeu(v, f.protokoll, 18, "Wohin wird gesichert?", { wer: "Sabine", bis: "" });
+    BD.eintragNeu(v, f.protokoll, 3, "Sabine (kümmert sich um alles)");
+    const md = BA.erzeuge(v, null, f, {}, P);
+    ok("VERDECKT: Vorname des Ansprechpartners allein im Freitext geht nicht hinaus", md.ok && !/Sabine/.test(md.md), md.grund || (md.md.match(/.*Sabine.*/) || [""])[0]);
+    ok("SUMME: Zeilen + genannte Zuschläge ergeben die Summe (Beispiel BookLedgerPro)", (() => {
+      const g = WN.beispiel.liste().find((x) => x.id === "bookledgerpro").bauen(2, E73), ff = F.aktuelle(g), m = BA.erzeuge(g, null, ff, {}, P).md;
+      const zahl = (t) => Number(t.replace(".", "").replace(",", "."));
+      let v = 0, b = 0; m.split("\n").filter((z) => /^\| NEU BAUEN/.test(z)).forEach((z) => { const t = z.split("|")[5].trim().split("–"); v += zahl(t[0]); b += zahl(t[1]); });
+      const zu = [...m.match(/Die Summe enthält zusätzlich zu den Zeilen: .*/)[0].matchAll(/([\d.,]+)(?:–([\d.,]+))? h/g)];
+      zu.forEach((x) => { v += zahl(x[1]); b += zahl(x[2] || x[1]); });
+      const s = m.match(/Stunden F\d+ ([\d.,]+)–([\d.,]+)/);
+      return Math.abs(v - zahl(s[1])) < 0.6 && Math.abs(b - zahl(s[2])) < 0.6;
+    })());
+    ok("VERDECKT: … und die Summe nennt ihre Zuschläge", md.ok && /Die Summe enthält zusätzlich zu den Zeilen: .*Abstimmung 15 %/.test(md.md)); }
   const alis = WN.beispiel.liste().find((b) => b.id === "alis").bauen(4, E73);
   ok("BEISPIEL alis: offene F4 hat einen Baustein NOCH NICHT GESCHÄTZT", F.vergleich(alis.fassungen[2], alis.fassungen[3]).bausteine.some((x) => x.aktion === "NOCH NICHT GESCHÄTZT"));
   ok("BEISPIEL eigene: eigenes Vorhaben, je App eine Gruppe (Name beginnt mit dem App-Namen)", (() => { const v = WN.beispiel.liste().find((b) => b.id === "eigene").bauen(5, E73);
