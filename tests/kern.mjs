@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
   "assets/kern/bedarf.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
-  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/daten/beispiel-familienakte.js", "assets/daten/beispiel-bookledgerpro.js", "assets/daten/beispiel-workflowpdfpro.js", "assets/daten/beispiel-privatebrainpro.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
+  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/daten/beispiel-familienakte.js", "assets/daten/beispiel-bookledgerpro.js", "assets/daten/beispiel-workflowpdfpro.js", "assets/daten/beispiel-privatebrainpro.js", "assets/daten/beispiel-proverbund.js", "assets/daten/beispiel-rezeptbuch.js", "assets/daten/beispiel-mixarium.js", "assets/daten/beispiel-mixariumpage.js", "assets/daten/beispiel-calculate.js", "assets/daten/beispiel-kimsync.js", "assets/daten/beispiel-workflohpage.js", "assets/daten/beispiel-dateiorganizer.js", "assets/daten/beispiel-needs.js", "assets/daten/beispiel-toolpoint.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
 console.log = stumm;
@@ -452,7 +452,7 @@ function kundenVorgang() {
 {
   const E73 = Object.assign(kopie(EINST), { satzCent: 7300, wartung: { freistunden: 4, wochen: 8, pauschaleCent: 30000 }, firma: { name: "Prüf-Firma" } });
   const L = WN.beispiel.liste();
-  ok("BEISPIELE: zehn im Register (Boutique, vier aus den Repos, Tomys Hub gesamt, vier fertige Apps)", L.map((b) => b.id).join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt,familienakte,bookledgerpro,workflowpdfpro,privatebrainpro", L.map((b) => b.id));
+  ok("BEISPIELE: zwanzig im Register (Boutique, vier aus den Repos, Tomys Hub gesamt, vier fertige Apps, Pro-Verbund gesamt, neun weitere Repos)", L.map((b) => b.id).join() === "boutique,tomys,psb,alis,eigene,tomys-gesamt,familienakte,bookledgerpro,workflowpdfpro,privatebrainpro,proverbund,rezeptbuch,mixarium,mixariumpage,calculate,kimsync,workflohpage,dateiorganizer,needs,toolpoint", L.map((b) => b.id));
   for (const b of L.filter((x) => x.id !== "boutique")) {
     const v = b.bauen(3, E73), ff = v.fassungen, ak = F.aktuelle(v);
     ok(`BEISPIEL ${b.id}: lädt, trägt bid und beispiel`, v.bid === b.id && v.beispiel === true && WN.beispiel.bidVon(v) === b.id);
@@ -494,6 +494,11 @@ function kundenVorgang() {
     BD.eintragNeu(v, f.protokoll, 3, "Sabine (kümmert sich um alles)");
     const md = BA.erzeuge(v, null, f, {}, P);
     ok("VERDECKT: Vorname des Ansprechpartners allein im Freitext geht nicht hinaus", md.ok && !/Sabine/.test(md.md), md.grund || (md.md.match(/.*Sabine.*/) || [""])[0]);
+    { const w = vorgang(); w.kunde.ansprechpartner = "Herr Kai Beispiel"; const g = w.fassungen[0];
+      BD.eintragNeu(w, g.protokoll, 3, "Beispielwerte aus dem Altbestand übernehmen, Kai prüft sie");
+      const m2 = BA.erzeuge(w, null, g, {}, P);
+      ok("VERDECKT: ein Namensteil IN einem anderen Wort hält den Bauauftrag nicht an und bleibt stehen", m2.ok && m2.md.includes("Beispielwerte"), m2.grund || m2.fund);
+      ok("VERDECKT: … der Namensteil als ganzes Wort ist verdeckt", m2.ok && !/\bKai\b/.test(m2.md) && m2.md.includes("⟦KUNDE-2⟧ prüft"), (m2.md || "").match(/.*prüft.*/)); }
     ok("SUMME: Zeilen + genannte Zuschläge ergeben die Summe (Beispiel BookLedgerPro)", (() => {
       const g = WN.beispiel.liste().find((x) => x.id === "bookledgerpro").bauen(2, E73), ff = F.aktuelle(g), m = BA.erzeuge(g, null, ff, {}, P).md;
       const zahl = (t) => Number(t.replace(".", "").replace(",", "."));

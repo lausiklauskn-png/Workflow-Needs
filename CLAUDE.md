@@ -399,3 +399,18 @@ eingebaut → genau diese Zeile rot). Gemessen: kern 357 grün, browser 194 grü
 Zeile nicht festgehalten), Anker 123 · 0 tot. Cache v39. ⚠ Am Tablet nicht gemessen.
 
 **Freibrief (Klaus 13.11.):** eigene geprüfte PRs (Proben grün) selbst nach `main` mergen und den Auftrag selbstständig zu Ende führen; sichtbare Umbauten an Needs erst als Vorschau (Brief Rückwärtstest).
+
+## Alle Repos als Beispiele · Pro-Verbund gesamt · Mitarbeiter-Sterne (Klaus 2026-11-13)
+
+Klaus: *„Die anderen Apps … sollen ebenfalls mit eingebaut werden … die Abstimmung der Mitarbeiter … dass ich am Ende sehe, was es
+hätte gekostet. Die Familienakte und die Pro-Geschichte sollen zusammengeführt werden … die einzelnen Apps separat.“*
+- Register jetzt **20 Beispiele**. Neu: `proverbund` (Familienakte + BookLedgerPro + Workflow PDF Pro + Private Brain Pro als ein
+  Auftrag; Ist = Summe der vier, 179,0 · 312,9 · 424,9 · 517,9 h) und je ein Beispiel für `rezeptbuch`, `mixarium`, `mixariumpage`,
+  `calculate`, `kimsync`, `workflohpage`, `dateiorganizer`, `needs`, `toolpoint` (Tomys Hub war schon da). Die vier Pro-Apps bleiben einzeln.
+- **Mitarbeiter-Sterne** (`v.sterne`, Zeitpunkt Bedarf/Abnahme, Kürzel = Rolle, nie Namen, erfunden) an allen neuen und den vier Pro-Beispielen.
+- **Was es gekostet hätte:** Tabellen → „Eigene Aufträge: Schätzung und Ist“ (Ist × Satz). Ist-Stunden aus Commit-Zeiten, Untergrenze.
+- **Namensteile des Ansprechpartners** werden jetzt als **ganzes Wort** ersetzt (`teileErsetzen` in `bauauftrag.js`), nicht mehr über
+  Modul 25: dessen letzte Sicherung sucht Teilzeichenketten, ein Nachname wie „Beispiel“ in „Beispielwert“ hielt den Bauauftrag an.
+  Proben `VERDECKT` (3), gegengeprüft (ohne Ersetzen → 2 ROT, als Teilzeichenkette → 1 ROT).
+- Gemessen: kern 499 grün, browser 194 grün, Anker 123 · 0 tot. Cache v40. ⚠ Die neuen Beispiele sind nicht rückwärts geprüft
+  (Bau-Agent + Bewerter), nur mit dem Selbsttest (alle 18 Bereiche, Bauauftrag ok, keine Adressen). Am Tablet nicht gemessen.
