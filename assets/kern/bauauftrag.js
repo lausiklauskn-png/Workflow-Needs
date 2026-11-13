@@ -173,7 +173,7 @@
     L.push(sz.join(" · "), "");
     /* Rückwärtstest 2026-11-13: alle Bau-Agenten rechneten die Zeilen nach und fanden die Summe „falsch“ —
        sie enthält Zuschläge, die nirgends standen. */
-    if (opts.stunden) L.push("Die Summe enthält zusätzlich zu den Zeilen: Abstimmung " + zahlH(sn.abstimmung.pct) + " % (" + spanneH(sn.abstimmung.von, sn.abstimmung.bis) + " h), Puffer " + zahlH(sn.puffer.pct) + " % (" + spanneH(sn.puffer.von, sn.puffer.bis) + " h)" + (sn.gewaehrleistung.stunden ? ", Fehlerbehebung nach Abnahme " + zahlH(sn.gewaehrleistung.stunden) + " h" : "") + ".", "");
+    if (opts.stunden) L.push("Die Summe enthält zusätzlich zu den Zeilen: " + (sn.firmenanpassung.bis ? "Anpassung an den Betrieb " + spanneH(sn.firmenanpassung.von, sn.firmenanpassung.bis) + " h, " : "") + "Abstimmung " + zahlH(sn.abstimmung.pct) + " % (" + spanneH(sn.abstimmung.von, sn.abstimmung.bis) + " h), Puffer " + zahlH(sn.puffer.pct) + " % (" + spanneH(sn.puffer.von, sn.puffer.bis) + " h)" + (sn.gewaehrleistung.stunden ? ", Fehlerbehebung nach Abnahme " + zahlH(sn.gewaehrleistung.stunden) + " h" : "") + ".", "");
     if (kn.grenze >= 0) L.push("Unter der Grenzlinie steht, was mehr kostet, als es im Zeitraum nutzt — der Kunde entscheidet es einzeln, auch wenn dort ein Muss steht.", "");
 
     /* Rechtsblätter und Sterne (Stufe 3): nur ja/nein und Zahlen — keine Unterschriften,

@@ -494,7 +494,16 @@ function kundenVorgang() {
     BD.eintragNeu(v, f.protokoll, 3, "Sabine (kümmert sich um alles)");
     const md = BA.erzeuge(v, null, f, {}, P);
     ok("VERDECKT: Vorname des Ansprechpartners allein im Freitext geht nicht hinaus", md.ok && !/Sabine/.test(md.md), md.grund || (md.md.match(/.*Sabine.*/) || [""])[0]);
-    ok("VERDECKT: … und die Summe nennt ihre Zuschläge", md.ok && /Die Summe enthält zusätzlich zu den Zeilen: Abstimmung 15 %/.test(md.md)); }
+    ok("SUMME: Zeilen + genannte Zuschläge ergeben die Summe (Beispiel BookLedgerPro)", (() => {
+      const g = WN.beispiel.liste().find((x) => x.id === "bookledgerpro").bauen(2, E73), ff = F.aktuelle(g), m = BA.erzeuge(g, null, ff, {}, P).md;
+      const zahl = (t) => Number(t.replace(".", "").replace(",", "."));
+      let v = 0, b = 0; m.split("\n").filter((z) => /^\| NEU BAUEN/.test(z)).forEach((z) => { const t = z.split("|")[5].trim().split("–"); v += zahl(t[0]); b += zahl(t[1]); });
+      const zu = [...m.match(/Die Summe enthält zusätzlich zu den Zeilen: .*/)[0].matchAll(/([\d.,]+)(?:–([\d.,]+))? h/g)];
+      zu.forEach((x) => { v += zahl(x[1]); b += zahl(x[2] || x[1]); });
+      const s = m.match(/Stunden F\d+ ([\d.,]+)–([\d.,]+)/);
+      return Math.abs(v - zahl(s[1])) < 0.6 && Math.abs(b - zahl(s[2])) < 0.6;
+    })());
+    ok("VERDECKT: … und die Summe nennt ihre Zuschläge", md.ok && /Die Summe enthält zusätzlich zu den Zeilen: .*Abstimmung 15 %/.test(md.md)); }
   const alis = WN.beispiel.liste().find((b) => b.id === "alis").bauen(4, E73);
   ok("BEISPIEL alis: offene F4 hat einen Baustein NOCH NICHT GESCHÄTZT", F.vergleich(alis.fassungen[2], alis.fassungen[3]).bausteine.some((x) => x.aktion === "NOCH NICHT GESCHÄTZT"));
   ok("BEISPIEL eigene: eigenes Vorhaben, je App eine Gruppe (Name beginnt mit dem App-Namen)", (() => { const v = WN.beispiel.liste().find((b) => b.id === "eigene").bauen(5, E73);
