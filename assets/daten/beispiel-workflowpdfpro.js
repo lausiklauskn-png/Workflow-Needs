@@ -39,11 +39,14 @@
     var formular = H.bed(p, "Formularfelder erkennen und am Gerät ausfüllen, als festes oder ausfüllbares PDF ausgeben", "muss", { h: 5 });
     var uebers = H.bed(p, "Fremdsprachige Schreiben übersetzen, im Aufbau des Originals", "soll", { h: 2 });
     var app = H.bed(p, "Als echte App auf Android-Tablet und Windows-PC, ohne Konto", "muss", {});
-    var ablage = H.bed(p, "Ablage verschlüsselt in einem selbst gewählten Ordner, Ersatzschlüssel bei vergessenem Passwort", "muss", {});
+    var ablage = H.bed(p, "Ablage verschlüsselt, auf Wunsch in einem selbst gewählten Ordner, Ersatzschlüssel bei vergessenem Passwort", "muss", {});
     H.e(p, 7, "Ein Formular ist in Minuten ausgefüllt und verschickt, ohne Drucker");
     H.e(p, 8, "Das System muss ohne Internet arbeiten; KI nur auf Wunsch und mit eigenem Schlüssel");
     H.e(p, 8, "Das System muss Originale unverändert aufbewahren");
     H.e(p, 8, "Das System muss den vollen Funktionsumfang der bestehenden Formular-Web-App übernehmen und um Geräteanbindung und verschlüsselte Ablage ergänzen");
+    H.e(p, 8, "Das System muss die Web-App weiterführen (für iPhone und iPad) und auf demselben Stand halten wie die Apps");
+    H.e(p, 8, "Das System muss ohne Ordnerwahl mit einer internen Arbeitsablage starten; ein eigener Ordner ist freiwillig");
+    H.e(p, 15, "Windows-Installer zunächst unsigniert (Warnung beim Installieren wird erklärt)");
     H.e(p, 10, "Geräte");
     H.e(p, 10, "offline");
     H.e(p, 11, "Web-App im Browser");
@@ -55,8 +58,8 @@
     f.umfang.kundenStundenwertCent = 3000;
     H.bs(f, "scan", "Scannen, Formularfelder erkennen und ausfüllen, Ausgabe fest oder ausfüllbar", "gross", [scan.id, formular.id], { wv: 0.8, faktoren: ["druck"] });
     H.bs(f, "neu", "Übersetzen im Aufbau des Originals", "mittel", [uebers.id], { wv: 0.8, faktoren: ["sprachen"] });
-    H.bs(f, "neu", "Android-App und Windows-App mit dauerhafter Signatur", "gross", [app.id]);
-    H.bs(f, "datei", "Verschlüsselte Hauptablage im gewählten Ordner, Ersatzschlüssel 3 von 5", "mittel", [ablage.id]);
+    H.bs(f, "neu", "Android-App (dauerhaft signiert) und Windows-App (Installer zunächst unsigniert)", "gross", [app.id]);
+    H.bs(f, "datei", "Verschlüsselte Hauptablage (intern oder im gewählten Ordner), Ersatzschlüssel 3 von 5", "mittel", [ablage.id]);
     F.unterschreiben(v, f, einst && einst.ust, "2026-10-22");
 
     /* F2 — gemeinsamer Ablageort, Sicherung, Scanner */

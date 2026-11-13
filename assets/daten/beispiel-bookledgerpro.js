@@ -97,7 +97,8 @@
     var start = H.bed(p4, "Startseite mit fälliger Umsatzsteuer, Steuer-Rücklage und Kassenstand", "soll", {});
     var mehrere = H.bed(p4, "Mehrere Buchhaltungen (Laden, zweiter Laden, Haushalt) auf einem Gerät", "soll", {});
     var erkennung = H.bed(p4, "Belegerkennung ohne KI: Konto, Datum, Steuersatz, Rechnungsnummer", "soll", { h: 3, text: "kein Abtippen" });
-    H.e(p4, 18, "Kontoauszug als Text einlesen — erst nach weiterer Messung", { wer: "Inhaberin", bis: "" });
+    H.e(p4, 8, "Das System muss Kontoauszüge als Text einlesen und mit den Buchungen abgleichen (Saldo-Gegenrechnung), zunächst hinter einem Vorschau-Schalter");
+    H.e(p4, 18, "Kontoauszug-Einlesen ab Werk einschalten — erst nach weiterer Messung", { wer: "Inhaberin", bis: "" });
     H.e(p4, 8, "Das System muss vier Nutzungsmodi kennen: Privat, Kleinunternehmer, Selbstständig, Berater");
     H.e(p4, 8, "Das System muss den Tagesabschluss der offenen Ladenkasse aus dem gezählten Bestand mit Foto erstellen und festschreiben");
     H.bs(f4, "rechnung", "Kasse & Shop: Tagesabschluss, Quittungsvorlage, Rückfrage bei hoher Einnahme", "mittel", [kasse.id]);
