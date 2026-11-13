@@ -392,7 +392,7 @@ zwei Bewerter. Nach Korrektur Familienakte 90 %, BookLedgerPro 83 % der Kern-Mer
 12 simulierte Kunden erreichten 26–73 % (Grenze 80 %); was Needs dafür fehlt: Datei-Organizer `rueckwaertstest/NEEDS-LUECKEN.md`.
 
 Aus dem Test behoben: **Namensteile des Ansprechpartners werden verdeckt** (ein Vorname stand im Klartext im Bauauftrag),
-die **Summe nennt ihre Zuschläge** (alle 20 Bau-Agenten hielten sie für falsch), der Kopf sagt, dass `repo` das Werkzeug ist,
+die **Summe nennt ihre Zuschläge** (alle 20 Baupläne sprachen die Abweichung an), der Kopf sagt, dass `repo` das Werkzeug ist,
 ein Satz erklärt „Muss unter der Grenzlinie“. Neue Proben: `VERDECKT`, `SUMME` (rechnet nach), `SCHLÜSSIG` (jeder Muss-Bedarf hat
 einen Baustein, jeder Baustein zeigt auf einen vorhandenen Bedarf — über alle Beispiele). Jede von Hand gegengeprüft (Fehler
 eingebaut → genau diese Zeile rot). Gemessen: kern 357 grün, browser 194 grün (einmal von vier Läufen 1 ROT, nicht wiederholbar,
