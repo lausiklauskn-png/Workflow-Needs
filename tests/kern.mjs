@@ -493,6 +493,8 @@ function kundenVorgang() {
     const v = L.find((b) => b.id === id).bauen(4, E73), ff = v.fassungen;
     const nid = ff.map((f) => (f.protokoll.nicht || []).map((n) => n.id).join());
     ok(`RAHMEN-BSP ${id}: jede Fassung hat den Rahmen erfragt, „Nicht gewünscht“ gleich in allen Fassungen`, ff.every((f) => WN.rahmen.erfragt(f.protokoll)) && nid.every((x) => x === nid[0]) && nid[0].length > 0, nid);
+    const ueber = ff.flatMap((f) => (f.protokoll.bereiche[18].eintraege || []).filter((e) => e.bis && e.bis < f.datum).map((e) => `F${f.nr} ${e.id} ${e.bis}`));
+    ok(`RAHMEN-BSP ${id}: keine offene Frage mit einer Frist vor dem Datum ihrer Fassung`, ueber.length === 0, ueber);
     const md = BA.erzeuge(v, null, F.aktuelle(v), {}, P);
     ok(`RAHMEN-BSP ${id}: Bauauftrag hat einen ausgefüllten Rahmen`, md.ok && /## Rahmen/.test(md.md) && !/noch nicht erfragt/.test(md.md.split("## Zu tun")[0]), md.grund || md.fund);
   }
