@@ -472,3 +472,14 @@ Pro-Verbund gesamt 57 % (beschreibt den Verbund; Fachfunktionen in den vier Einz
 - ⚠ K4 ist nicht unabhängig (Muss-Sätze nach der Fehlliste geschrieben). Sechs Lücken in Needs selbst stehen im Ergebnis (u. a. offene
   Frage „geklärt“, „nur auf dem Gerät“ bei Mehrfachwahl, „ohne Internet: immer“ missverständlich) — erst Vorschau, Klaus' Ja.
 - Gemessen: kern 587 · browser 210 · Anker 139 · 0 tot. Cache v44.
+
+## Drei Widersprüche aus der Rückwärtsprüfung aufgelöst (Klaus 2026-11-14: „löse diese Widersprüche selber auf … Ja für den Bau“)
+
+- **Offene Frage abhaken:** Bereich 18 hat je Frage den Knopf „✓ geklärt?“ (`[data-geklaert]`) → `e.geklaert` (Datum) und Feld
+  „Antwort“ (`e.antwort`). Bauauftrag: unter „Offene Punkte“ nur Ungeklärte, darunter „### Geklärt“ mit Datum und Antwort (verdeckt);
+  Stand-JSON und `standAnwenden` tragen beides; Kundenblatt (`eintragExtern`) und Bedarfsanalyse zeigen „✓ geklärt …: Antwort“;
+  Abhaken ist im Fassungsvergleich eine Änderung. Beispiele haken überfällige Fragen jetzt ab (geklärt am Tag der Frist) statt sie zu entfernen.
+- **Datenort:** „nur auf dem Gerät“ heißt „auf dem Gerät“ (Mehrfachwahl neben Server/Cloud). Die KI-Wahl „nur auf dem Gerät“ bleibt (Einzelwahl).
+- **Ohne Internet:** „ja, immer“ heißt „ja, alles Wichtige geht ohne Internet (Netz nur für ausdrücklich gewählte Dienste)“.
+- Proben: kern `GEKLÄRT` (5) + `RAHMEN-TEXT`, browser `GEKLÄRT` (2); Gegenprobe (Trennung offen/geklärt weg → ROT). Gemessen: kern 593 ·
+  browser 212 · Anker 139 · 0 tot. Cache v45. ⚠ Am Tablet nicht gemessen.

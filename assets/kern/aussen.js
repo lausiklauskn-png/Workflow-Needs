@@ -36,7 +36,7 @@
     if (nr === 6 && sterne && sterne[e.id]) o.sterne = { schnitt: sterne[e.id].schnitt, anzahl: sterne[e.id].anzahl };
     if (nr === 3) o.anzahl = Number(e.anzahl) || 0;
     if (nr === 6 && e.handeln) o.handeln = String(e.handeln);
-    if (nr === 18) { o.wer = String(e.wer || ""); o.bis = String(e.bis || ""); }
+    if (nr === 18) { o.wer = String(e.wer || ""); o.bis = String(e.bis || ""); if (e.geklaert) { o.geklaert = String(e.geklaert); o.antwort = String(e.antwort || ""); } }
     return o;
   }
 

@@ -221,7 +221,10 @@
 
     /* Offene Punkte */
     L.push("## Offene Punkte");
-    var off = neu.protokoll.bereiche[18].eintraege;
+    /* Klaus 2026-11-14: eine offene Frage lässt sich als „geklärt“ abhaken (Datum, Antwort) — sie steht dann nicht mehr hier,
+       sondern unter „Geklärt“ mit ihrer Antwort. */
+    var alleO = neu.protokoll.bereiche[18].eintraege;
+    var off = alleO.filter(function (e) { return !e.geklaert; }), klar = alleO.filter(function (e) { return !!e.geklaert; });
     if (!off.length) L.push("- keine");
     off.forEach(function (e) {
       var wer = [e.wer ? "klärt " + V.text(e.wer) : "", e.bis ? "bis " + e.bis : ""].filter(Boolean).join(" ");
@@ -229,6 +232,11 @@
     });
     vg.bausteine.forEach(function (x) { if (x.aktion === "NOCH NICHT GESCHÄTZT") L.push("- " + x.id + " " + name(x.neu) + ": noch nicht geschätzt — offene Frage an Klaus"); });
     L.push("");
+    if (klar.length) {
+      L.push("### Geklärt (keine offene Frage mehr)");
+      klar.forEach(function (e) { L.push("- " + e.id + ": " + V.text(e.text) + " — geklärt " + e.geklaert + (e.antwort ? ": " + V.text(e.antwort) : "")); });
+      L.push("");
+    }
 
     /* Summe */
     L.push("## Summe");
@@ -268,6 +276,7 @@
       if (e.prio !== undefined) o.prio = e.prio;
       if (e.nutzen) { o.nutzen = { stundenMonat: e.nutzen.stundenMonat, text: V.text(e.nutzen.text || "") }; if (opts.euro) o.nutzen.euroMonat = e.nutzen.euroMonat; }
       if (e.wer !== undefined) { o.wer = V.text(e.wer); o.bis = e.bis; }
+      if (e.geklaert) { o.geklaert = e.geklaert; if (e.antwort) o.antwort = V.text(e.antwort); }
       if (e.handeln) o.handeln = e.handeln;
       stand.bedarf.push(o);
     });
@@ -353,6 +362,7 @@
       if (o.prio !== undefined) e.prio = o.prio;
       if (o.nutzen) e.nutzen = { stundenMonat: o.nutzen.stundenMonat, euroMonat: o.nutzen.euroMonat !== undefined ? o.nutzen.euroMonat : (alt.nutzen ? alt.nutzen.euroMonat : null), text: auf(o.nutzen.text || "") };
       if (o.wer !== undefined) { e.wer = auf(o.wer); e.bis = o.bis; }
+      if (o.geklaert) { e.geklaert = String(o.geklaert); if (o.antwort) e.antwort = auf(o.antwort); }
       if (o.handeln) e.handeln = o.handeln;
       if (f.protokoll.bereiche[o.nr]) f.protokoll.bereiche[o.nr].eintraege.push(e);
       zaehlerNach(v, o.id);

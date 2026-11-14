@@ -16,7 +16,7 @@
       wahl: [o("android", "Android-Handy", "Android phone"), o("iphone", "iPhone", "iPhone"), o("tablet", "Tablet", "Tablet"),
         o("windows", "Windows-PC", "Windows PC"), o("mac", "Mac", "Mac"), o("browser", "im Browser", "in the browser")] },
     offline: { bereich: 10, mehrfach: false, frage: { de: "Muss es ohne Internet gehen?", en: "Must it work without internet?" },
-      wahl: [o("immer", "ja, immer", "yes, always"), o("unterwegs", "reicht unterwegs", "on the road is enough"), o("nein", "nein", "no")] },
+      wahl: [o("immer", "ja, alles Wichtige geht ohne Internet (Netz nur für ausdrücklich gewählte Dienste)", "yes, everything important works offline (network only for services chosen on purpose)"), o("unterwegs", "reicht unterwegs", "on the road is enough"), o("nein", "nein", "no")] },
     /* Klaus 2026-11-13: Abgleich zwischen Geräten ist heute Standard (Bestellung am Tablet → sofort in der Küche). */
     abgleich: { bereich: 10, mehrfach: false, frage: { de: "Sollen mehrere Geräte dieselben Daten sehen?", en: "Should several devices see the same data?" },
       wahl: [o("sofort", "ja, sofort (z. B. Tablet → Küche)", "yes, instantly (e.g. tablet → kitchen)"), o("abundzu", "ja, Abgleich ab und zu reicht", "yes, occasional sync is enough"),
@@ -25,7 +25,7 @@
       wahl: [o("ablageort", "gemeinsamer Ablageort", "shared storage place"), o("hinher", "Dateien hin- und hergeben", "pass files back and forth"),
         o("suche", "gemeinsame Suche", "shared search")] },
     datenort: { bereich: 13, mehrfach: true, frage: { de: "Wo dürfen die Daten liegen?", en: "Where may the data be stored?" },
-      wahl: [o("geraet", "nur auf dem Gerät", "only on the device"), o("ordner", "eigener Ordner / Speicherkarte", "own folder / memory card"),
+      wahl: [o("geraet", "auf dem Gerät", "on the device"), o("ordner", "eigener Ordner / Speicherkarte", "own folder / memory card"),
         o("server", "eigener Server", "own server"), o("cloud", "Cloud eines Anbieters", "a provider's cloud")] },
     sicherung: { bereich: 13, mehrfach: true, frage: { de: "Sicherung", en: "Backup" },
       wahl: [o("verschluesselt", "verschlüsselt", "encrypted"), o("zweiterort", "an einen zweiten Ort", "to a second place"),

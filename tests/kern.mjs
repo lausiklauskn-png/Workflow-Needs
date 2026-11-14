@@ -488,13 +488,31 @@ function kundenVorgang() {
     });
     ok(`SCHLÜSSIG ${b.id}: jeder Baustein zeigt auf einen vorhandenen Bedarf, jeder Muss-Bedarf ist abgedeckt`, funde.length === 0, funde.slice(0, 4));
   }
+  /* Offene Frage abhaken (Klaus 2026-11-14: „löse diese Widersprüche selber auf“) */
+  { const v = vorgang(); const f = v.fassungen[0];
+    const o1 = BD.eintragNeu(v, f.protokoll, 18, "Welche Farben gelten?", { wer: "Inhaberin", bis: "2026-01-01" });
+    const o2 = BD.eintragNeu(v, f.protokoll, 18, "Wer pflegt die Preise?", { wer: "Inhaberin", bis: "2026-12-01" });
+    o1.geklaert = "2026-01-02"; o1.antwort = "Blau und Weiß";
+    const md = BA.erzeuge(v, null, f, {}, P);
+    const offen = (md.md.split("## Offene Punkte")[1] || "").split("### Geklärt")[0];
+    ok("GEKLÄRT: abgehakte Frage steht nicht unter „Offene Punkte“, die offene schon", md.ok && !offen.includes(o1.id) && offen.includes(o2.id), offen);
+    ok("GEKLÄRT: … sondern unter „Geklärt“ mit Datum und Antwort", md.ok && md.md.includes("- " + o1.id + ": Welche Farben gelten? — geklärt 2026-01-02: Blau und Weiß"));
+    const j = BA.einlesen(md.md, P), w = kopie(v), back = BA.standAnwenden(j.stand, F.aktuelle(w), w, P).fassung;
+    const b1 = back.protokoll.bereiche[18].eintraege.find((e) => e.id === o1.id);
+    ok("GEKLÄRT: Einlesen bringt Datum und Antwort zurück", !!b1 && b1.geklaert === "2026-01-02" && b1.antwort === "Blau und Weiß", b1);
+    const kp = JSON.stringify(A.kundenProtokoll(v, f));
+    ok("GEKLÄRT: Kundenblatt trägt geklärt und Antwort", kp.includes("\"geklaert\":\"2026-01-02\"") && kp.includes("Blau und Weiß"));
+    const nf = F.neueFassung(v, { anlass: "x", von: "betrieb" }), f2 = nf.fassung || F.aktuelle(v); const e2 = f2.protokoll.bereiche[18].eintraege.find((e) => e.id === o2.id); e2.geklaert = "2026-11-14";
+    ok("GEKLÄRT: Abhaken zählt im Vergleich der Fassungen als Änderung", JSON.stringify(F.vergleich(f, f2)).includes(o2.id));
+    ok("RAHMEN-TEXT: „Ohne Internet“ sagt, dass nur das Wichtige ohne Netz gehen muss; Datenort ohne „nur“",
+      WN.rahmen.name("offline", "immer", "de").startsWith("ja, alles Wichtige geht ohne Internet") && WN.rahmen.name("datenort", "geraet", "de") === "auf dem Gerät"); }
   /* Rahmen an den App-Beispielen (Klaus 2026-11-14): jede Fassung erfragt, „Nicht gewünscht“ mit derselben Kennung in allen Fassungen */
   for (const id of ["familienakte", "bookledgerpro", "workflowpdfpro", "privatebrainpro", "proverbund", "rezeptbuch", "mixarium", "mixariumpage", "calculate", "kimsync", "workflohpage", "dateiorganizer", "needs", "toolpoint"]) {
     const v = L.find((b) => b.id === id).bauen(4, E73), ff = v.fassungen;
     const nid = ff.map((f) => (f.protokoll.nicht || []).map((n) => n.id).join());
     ok(`RAHMEN-BSP ${id}: jede Fassung hat den Rahmen erfragt, „Nicht gewünscht“ gleich in allen Fassungen`, ff.every((f) => WN.rahmen.erfragt(f.protokoll)) && nid.every((x) => x === nid[0]) && nid[0].length > 0, nid);
-    const ueber = ff.flatMap((f) => (f.protokoll.bereiche[18].eintraege || []).filter((e) => e.bis && e.bis < f.datum).map((e) => `F${f.nr} ${e.id} ${e.bis}`));
-    ok(`RAHMEN-BSP ${id}: keine offene Frage mit einer Frist vor dem Datum ihrer Fassung`, ueber.length === 0, ueber);
+    const ueber = ff.flatMap((f) => (f.protokoll.bereiche[18].eintraege || []).filter((e) => e.bis && e.bis < f.datum && !e.geklaert).map((e) => `F${f.nr} ${e.id} ${e.bis}`));
+    ok(`RAHMEN-BSP ${id}: keine ungeklärte offene Frage mit einer Frist vor dem Datum ihrer Fassung`, ueber.length === 0, ueber);
     const md = BA.erzeuge(v, null, F.aktuelle(v), {}, P);
     ok(`RAHMEN-BSP ${id}: Bauauftrag hat einen ausgefüllten Rahmen`, md.ok && /## Rahmen/.test(md.md) && !/noch nicht erfragt/.test(md.md.split("## Zu tun")[0]), md.grund || md.fund);
   }
@@ -676,7 +694,7 @@ function kundenVorgang() {
   ok("RAHMEN: Bauauftrag wird erzeugt", r.ok, r.grund || r.fund);
   const rahmen = (md.split("## Rahmen")[1] || "").split("## Zu tun")[0];
   ok("RAHMEN: Geräte, offline, Datenort, Sicherung, eigene Programme im Rahmen",
-    /- Geräte: Android-Handy, Windows-PC, im Browser/.test(rahmen) && /- Ohne Internet: ja, immer/.test(rahmen) && /- Daten liegen: eigener Ordner/.test(rahmen) && /- Sicherung: verschlüsselt/.test(rahmen) && /- Eigene Programme: gemeinsamer Ablageort; Buchhaltung von ⟦KUNDE-1⟧/.test(rahmen), rahmen);
+    /- Geräte: Android-Handy, Windows-PC, im Browser/.test(rahmen) && /- Ohne Internet: ja, alles Wichtige geht ohne Internet/.test(rahmen) && /- Daten liegen: eigener Ordner/.test(rahmen) && /- Sicherung: verschlüsselt/.test(rahmen) && /- Eigene Programme: gemeinsamer Ablageort; Buchhaltung von ⟦KUNDE-1⟧/.test(rahmen), rahmen);
   ok("RAHMEN: Kundendaten im Freitext sind verdeckt", !md.includes("KUNDE-PRUEFWORT-4Z"));
   ok("HANDELN: „schlägt vor“ steht mit Kennung im Rahmen", rahmen.includes("- Schlägt vor, der Kunde bestätigt: " + bed[0].id));
   ok("NICHT: beide Punkte als „Nicht bauen“ im Rahmen (auch der interne — der Auftrag geht an die eigene Sitzung)", rahmen.includes("N-01 Keine Daten in einer fremden Cloud") && rahmen.includes("N-02"));

@@ -408,6 +408,13 @@ try {
     await reiter(s.p, "bedarf");
     const pr = await druck(s.p, "#druck-protokoll");
     ok("ERKLÄRUNG: das Bedarfsprotokoll nennt sie mit Datum", /Es gilt die Verschwiegenheits- und Datenschutzerklärung vom \d\d\.\d\d\.\d{4}/.test(pr.text));
+    /* Offene Frage abhaken (Klaus 2026-11-14) */
+    await s.p.fill('[data-neu-eintrag="18"]', "Welche Farben gelten?"); await s.p.click('[data-dazu="18"]');
+    await s.p.click("[data-geklaert]");
+    await s.p.fill("[data-antwort]", "Blau und Weiß"); await s.p.locator("[data-antwort]").blur();
+    ok("GEKLÄRT: Knopf hakt die Frage ab und öffnet das Antwortfeld", (await s.p.getAttribute("[data-geklaert]", "aria-pressed")) === "true" && await s.p.inputValue("[data-antwort]") === "Blau und Weiß");
+    const pg = await druck(s.p, "#druck-protokoll");
+    ok("GEKLÄRT: das Bedarfsprotokoll zeigt sie als geklärt mit Antwort", /Welche Farben gelten\? — ✓ geklärt \d\d\.\d\d\.\d{4}: Blau und Weiß/.test(pg.text), (pg.text.match(/.*Farben.*/) || [""])[0]);
     /* Sterne */
     await s.p.fill('[data-neu-eintrag="6"]', "Termine online buchen"); await s.p.click('[data-dazu="6"]');
     await s.p.fill("#sterne-bereich", "Empfang"); await s.p.click('[data-stern="4"]');
