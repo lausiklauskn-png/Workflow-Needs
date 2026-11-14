@@ -255,7 +255,26 @@
         var ids = WN.beispiel.liste().map(function (b) { return b.id; }), n = 0;
         ids.reduce(function (pr, id) { return pr.then(function () { return beispielLaden(id).then(function (r) { if (r) n++; }); }); }, Promise.resolve())
           .then(function () { melde(n + " " + t("Beispiele geladen,") + " " + (ids.length - n) + " " + t("waren schon da."), ""); });
-      }, "", { id: pre + "-alle" })];
+      }, "", { id: pre + "-alle" }),
+      /* Ausschalten (Klaus 2026-11-14: Beispiele „an- und ausschalten“ zum Testen): nimmt NUR Beispiel-Vorgänge weg (v.beispiel),
+         nie eigene und nie Kopien („Als Vorlage kopieren“ löscht die Marke). Wieder „Laden“ legt das Beispiel frisch an. */
+      knopf(t("Entfernen"), function () {
+        var n = beispieleWeg([wahl.value]);
+        melde(n ? t("Beispiel entfernt.") : t("Dieses Beispiel ist nicht geladen."), "");
+      }, "", { id: pre + "-weg" }),
+      knopf(t("Alle Beispiele entfernen"), function () {
+        if (!S.vorgaenge.some(function (x) { return WN.beispiel.bidVon(x); })) { melde(t("Es ist kein Beispiel geladen."), ""); return; }
+        if (!confirm(t("Alle Beispiel-Vorgänge entfernen? Eigene Vorgänge und Kopien bleiben."))) return;
+        var n = beispieleWeg(null);
+        melde(n + " " + t("Beispiele entfernt."), "");
+      }, "klein gefahr", { id: pre + "-alle-weg" })];
+  }
+  function beispieleWeg(ids) {
+    var weg = S.vorgaenge.filter(function (x) { var b = WN.beispiel.bidVon(x); return b && (!ids || ids.indexOf(b) >= 0); });
+    weg.forEach(function (x) { dbDel(x.id); if (S.aktiv === x.id) S.aktiv = null; });
+    S.vorgaenge = S.vorgaenge.filter(function (x) { return weg.indexOf(x) < 0; });
+    if (weg.length) zeichne();
+    return weg.length;
   }
   function zVorgaenge(main, v) {
     main.append(h("div", { class: "karte held", "data-held": "" },
