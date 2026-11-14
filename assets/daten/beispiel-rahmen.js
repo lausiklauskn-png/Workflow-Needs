@@ -88,7 +88,7 @@
     nicht: ["Kein Konto und keine Anmeldung beim Hersteller"],
   });
   setze("mixariumpage", {
-    rahmen: { geraete: ["browser"], offline: "nein", abgleich: "eins", datenort: ["server"], ki: "keine" },
+    rahmen: { geraete: ["browser"], offline: "nein", abgleich: "eins", datenort: ["geraet"], ki: "keine" },
     nicht: ["Keine fremden Dienste beim Laden der Seite"],
   });
   setze("calculate", {
@@ -122,7 +122,7 @@
       "Das System muss die Anfrage ohne Server verschicken: es öffnet das eigene E-Mail-Programm mit vorausgefülltem Betreff und Text",
       "Das System muss oben ein festes Band zeigen, dass es eine Muster-Seite ist und kein Betrieb dahintersteht",
     ],
-    rahmen: { geraete: ["browser"], offline: "unterwegs", abgleich: "eins", datenort: ["server"], ki: "keine" },
+    rahmen: { geraete: ["browser"], offline: "unterwegs", abgleich: "eins", datenort: ["geraet"], ki: "keine" },
     nicht: ["Keine echten Firmendaten in der Vorlage"],
   });
   setze("dateiorganizer", {
