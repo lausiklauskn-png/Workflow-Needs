@@ -448,3 +448,16 @@ dem Gerät, wenn gewünscht, als auch über einen Dienst … der Kunde wählt“
   Abgleich-Baustein · Faktor KI ohne Ort · Faktor KI trotz „keine KI“.
 - Gemessen: kern 545 · browser 205 grün · Gegenprobe `RAHMEN27:` 7 gefangen (einer erst aus falschem Grund — die Einlese-Probe startete
   von einer Kopie, die die Rate schon hatte; geschärft) · Anker 139 · 0 tot. Cache v42. ⚠ Am Tablet nicht gemessen.
+
+## Beispiele an- und ausschalten · Rahmen an den App-Beispielen (Klaus 2026-11-14)
+
+Klaus: *„die Beispiele für Workflow Needs, die wir an- und ausschalten können, also aus meinen gebauten Apps, dann testen“.*
+- Neben „Laden“/„Alle laden“ stehen **„Entfernen“** (das gewählte Beispiel) und **„Alle Beispiele entfernen“** (mit Rückfrage), in
+  Vorgänge und Einstellungen (`beispieleWeg` in `app.js`). Weg gehen NUR Vorgänge mit `v.beispiel`; eigene und Kopien bleiben.
+  Wieder „Laden“ legt das Beispiel frisch an.
+- `assets/daten/beispiel-rahmen.js` (lädt nach allen Beispielen) trägt für die 14 App-Beispiele Rahmen 1/2 nach: Geräte, Abgleich,
+  ohne Internet, eigene Programme, Datenort, Sicherung, Ort der KI, „Nicht gewünscht“ (eine Kennung `N-nn` in allen Fassungen) und
+  „schlägt vor / macht es selbst“ (per Muster am Bedarfstext). Budget nur bei `calculate` (einmalig) und `kimsync` (Rate) — erfunden,
+  damit der Budget-Hinweis zu sehen ist. `WN.beispiel.rahmenSetzen(id, angaben)`; `registrieren` ersetzt an derselben Stelle.
+- Proben: kern `RAHMEN-BSP` (28), browser `AUSSCHALTEN` (5); Gegenproben von Hand (neue N-Kennung je Fassung → ROT, Rahmen fehlt → ROT,
+  „Alle entfernen“ nimmt eigene mit → 2 ROT). Gemessen: kern 573 · browser 210 · Anker 139 · 0 tot. Cache v43.

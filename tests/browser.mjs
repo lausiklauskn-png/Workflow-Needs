@@ -633,6 +633,39 @@ try {
     await r.ctx.close();
   }
 
+  /* ── Beispiele an- und ausschalten (Klaus 2026-11-14) ── */
+  {
+    const r = await seite(1000);
+    r.p.on("dialog", (d) => d.accept());
+    await r.p.goto(url); await r.p.waitForSelector("body[data-bereit]");
+    await reiter(r.p, "vorgaenge"); await r.p.click("#neuer-vorgang");
+    await r.p.fill('[data-kundenfeld="firma"]', "Eigene Firma Ausschalt-Probe"); await r.p.locator('[data-kundenfeld="firma"]').blur();
+    await reiter(r.p, "vorgaenge");
+    await r.p.selectOption("#vg-beispiel-wahl", "kimsync"); await r.p.click("#vg-beispiel-laden");
+    await r.p.waitForFunction(() => window.WNApp.S.vorgaenge.some((v) => v.bid === "kimsync"));
+    await reiter(r.p, "vorgaenge");
+    await r.p.selectOption("#vg-beispiel-wahl", "familienakte"); await r.p.click("#vg-beispiel-laden");
+    await r.p.waitForFunction(() => window.WNApp.S.vorgaenge.some((v) => v.bid === "familienakte"));
+    const fa = await r.p.evaluate(() => { const v = window.WNApp.S.vorgaenge.find((x) => x.bid === "familienakte"), f = v.fassungen[v.fassungen.length - 1];
+      return { geraete: (f.protokoll.rahmen || {}).geraete || [], nicht: (f.protokoll.nicht || []).map((n) => n.id) }; });
+    ok("AUSSCHALTEN: geladenes App-Beispiel trägt den Rahmen (Geräte, Nicht gewünscht)", fa.geraete.includes("windows") && fa.nicht.length === 3 && /^N-\d+$/.test(fa.nicht[0]), fa);
+    await reiter(r.p, "vorgaenge");
+    await r.p.selectOption("#vg-beispiel-wahl", "kimsync"); await r.p.click("#vg-beispiel-weg");
+    const nach1 = await r.p.evaluate(() => window.WNApp.S.vorgaenge.map((v) => v.bid || "eigen").sort().join());
+    ok("AUSSCHALTEN: „Entfernen“ nimmt nur das gewählte Beispiel weg", !nach1.includes("kimsync") && nach1.includes("familienakte") && nach1.includes("eigen"), nach1);
+    await reiter(r.p, "vorgaenge"); await r.p.click("#vg-beispiel-alle-weg");
+    const nach2 = await r.p.evaluate(() => window.WNApp.S.vorgaenge.map((v) => v.bid || v.kunde.firma));
+    ok("AUSSCHALTEN: „Alle Beispiele entfernen“ lässt den eigenen Vorgang stehen", nach2.length === 1 && nach2[0] === "Eigene Firma Ausschalt-Probe", nach2);
+    await r.p.reload(); await r.p.waitForSelector("body[data-bereit]");
+    const nach3 = await r.p.evaluate(() => window.WNApp.S.vorgaenge.map((v) => v.bid || v.kunde.firma));
+    ok("AUSSCHALTEN: auch nach dem Neuladen sind die Beispiele weg, der eigene Vorgang bleibt", nach3.length === 1 && nach3[0] === "Eigene Firma Ausschalt-Probe", nach3);
+    await reiter(r.p, "vorgaenge");
+    await r.p.selectOption("#vg-beispiel-wahl", "kimsync"); await r.p.click("#vg-beispiel-laden");
+    await r.p.waitForFunction(() => window.WNApp.S.vorgaenge.some((v) => v.bid === "kimsync"));
+    ok("AUSSCHALTEN: wieder „Laden“ legt das Beispiel frisch an", true);
+    await r.ctx.close();
+  }
+
   /* ── Impressum und Datenschutz ── */
   {
     const r = await seite(380);

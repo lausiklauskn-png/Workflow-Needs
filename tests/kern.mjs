@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const stumm = console.log; console.log = () => {};
 for (const f of ["modules/25_pseudonym.js", "assets/kern/geld.js", "assets/daten/bausteine.js", "assets/daten/markt.js",
   "assets/kern/bedarf.js", "assets/kern/rahmen.js", "assets/kern/rechnen.js", "assets/kern/fassungen.js", "assets/kern/aussen.js",
-  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/daten/beispiel-familienakte.js", "assets/daten/beispiel-bookledgerpro.js", "assets/daten/beispiel-workflowpdfpro.js", "assets/daten/beispiel-privatebrainpro.js", "assets/daten/beispiel-proverbund.js", "assets/daten/beispiel-rezeptbuch.js", "assets/daten/beispiel-mixarium.js", "assets/daten/beispiel-mixariumpage.js", "assets/daten/beispiel-calculate.js", "assets/daten/beispiel-kimsync.js", "assets/daten/beispiel-workflohpage.js", "assets/daten/beispiel-dateiorganizer.js", "assets/daten/beispiel-needs.js", "assets/daten/beispiel-toolpoint.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
+  "assets/kern/bauauftrag.js", "assets/schluesseltresor.js", "assets/kern/sicherung.js", "assets/kern/uebergabe.js", "assets/kern/mail.js", "assets/daten/beispiel.js", "assets/daten/beispiel-tomys.js", "assets/daten/beispiel-psb.js", "assets/daten/beispiel-alis.js", "assets/daten/beispiel-eigene.js", "assets/daten/beispiel-unterschriften.js", "assets/daten/beispiel-tomys-gesamt.js", "assets/daten/beispiel-familienakte.js", "assets/daten/beispiel-bookledgerpro.js", "assets/daten/beispiel-workflowpdfpro.js", "assets/daten/beispiel-privatebrainpro.js", "assets/daten/beispiel-proverbund.js", "assets/daten/beispiel-rezeptbuch.js", "assets/daten/beispiel-mixarium.js", "assets/daten/beispiel-mixariumpage.js", "assets/daten/beispiel-calculate.js", "assets/daten/beispiel-kimsync.js", "assets/daten/beispiel-workflohpage.js", "assets/daten/beispiel-dateiorganizer.js", "assets/daten/beispiel-needs.js", "assets/daten/beispiel-toolpoint.js", "assets/daten/beispiel-rahmen.js", "assets/texte.js", "tests/pruefer-formate.js", "tests/pruefer-mail.js"]) {
   require(join(WURZEL, f));
 }
 console.log = stumm;
@@ -487,6 +487,14 @@ function kundenVorgang() {
       BD.bedarfe(f.protokoll).forEach((e) => { if (e.prio === "muss" && !gedeckt.has(e.id)) funde.push(`F${f.nr} Muss-Bedarf ${e.id} ohne Baustein`); });
     });
     ok(`SCHLÜSSIG ${b.id}: jeder Baustein zeigt auf einen vorhandenen Bedarf, jeder Muss-Bedarf ist abgedeckt`, funde.length === 0, funde.slice(0, 4));
+  }
+  /* Rahmen an den App-Beispielen (Klaus 2026-11-14): jede Fassung erfragt, „Nicht gewünscht“ mit derselben Kennung in allen Fassungen */
+  for (const id of ["familienakte", "bookledgerpro", "workflowpdfpro", "privatebrainpro", "proverbund", "rezeptbuch", "mixarium", "mixariumpage", "calculate", "kimsync", "workflohpage", "dateiorganizer", "needs", "toolpoint"]) {
+    const v = L.find((b) => b.id === id).bauen(4, E73), ff = v.fassungen;
+    const nid = ff.map((f) => (f.protokoll.nicht || []).map((n) => n.id).join());
+    ok(`RAHMEN-BSP ${id}: jede Fassung hat den Rahmen erfragt, „Nicht gewünscht“ gleich in allen Fassungen`, ff.every((f) => WN.rahmen.erfragt(f.protokoll)) && nid.every((x) => x === nid[0]) && nid[0].length > 0, nid);
+    const md = BA.erzeuge(v, null, F.aktuelle(v), {}, P);
+    ok(`RAHMEN-BSP ${id}: Bauauftrag hat einen ausgefüllten Rahmen`, md.ok && /## Rahmen/.test(md.md) && !/noch nicht erfragt/.test(md.md.split("## Zu tun")[0]), md.grund || md.fund);
   }
   /* Rückwärtstest 2026-11-13: Vorname des Ansprechpartners allein im Freitext */
   { const v = vorgang(); v.kunde.ansprechpartner = "Sabine Musterfrau"; const f = v.fassungen[0];
