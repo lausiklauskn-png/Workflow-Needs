@@ -73,7 +73,13 @@
      Programme, KI, „Nicht gewünscht“, vorschlagen/selbst) — in jeder Fassung gleich; sonst stünde dort nur „noch nicht erfragt“.
      Angabe je Beispiel: rahmen {feld: wert}, nicht [Text], handeln [[Muster, "vorschlagen"|"selbst"|"egal"]]. */
   function rahmenAnwenden(b, v) {
-    if (!b.rahmen && !b.nicht && !b.handeln) return v;
+    if (!b.rahmen && !b.nicht && !b.handeln && !b.muss) return v;
+    /* Muss-Sätze (Bereich 8) aus der Rückwärtsprüfung K3: was den Bau-Agenten fehlte, steht jetzt so im Bedarf,
+       wie ein Kunde es sagen würde — nur in der letzten Fassung (dort ist es vereinbart). */
+    if (b.muss && v.fassungen && v.fassungen.length) {
+      var letzte = v.fassungen[v.fassungen.length - 1];
+      b.muss.forEach(function (t) { WN.bedarf.eintragNeu(v, letzte.protokoll, 8, t); });
+    }
     var nichtE = null; /* eine Kennung N-nn je Punkt, in allen Fassungen dieselbe */
     (v.fassungen || []).forEach(function (f) {
       var p = f.protokoll;
@@ -85,6 +91,12 @@
         if (!nichtE) nichtE = b.nicht.map(function (t) { return WN.rahmen.nichtNeu(v, p, t); });
         else { WN.rahmen.sicher(p); nichtE.forEach(function (e) { p.nicht.push(JSON.parse(JSON.stringify(e))); }); }
       }
+      /* Rückwärtsprüfung K3 (2026-11-14): eine offene Frage, deren Frist vor dem Datum der Fassung liegt, war bis dahin
+         geklärt — sonst stünde sie in F4 noch mit einer Frist aus F1 da (8 von 14 Bau-Agenten hielten das für einen Widerspruch). */
+      if (f.datum) {
+        var o = p.bereiche && p.bereiche[18];
+        if (o && Array.isArray(o.eintraege)) o.eintraege = o.eintraege.filter(function (e) { return !e.bis || e.bis >= f.datum; });
+      }
       (b.handeln || []).forEach(function (h) {
         var re = new RegExp(h[0], "i");
         WN.bedarf.bedarfe(p).forEach(function (e) { if (!e.handeln && re.test(e.text)) e.handeln = h[1]; });
@@ -93,7 +105,7 @@
     return v;
   }
   function registrieren(b) {
-    if (b.rahmen || b.nicht || b.handeln) {
+    if (b.rahmen || b.nicht || b.handeln || b.muss) {
       var roh = b.bauen;
       b = Object.assign({}, b, { bauen: function () { return rahmenAnwenden(b, roh.apply(null, arguments)); } });
     }
