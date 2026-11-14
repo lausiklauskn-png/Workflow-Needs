@@ -92,10 +92,11 @@
         else { WN.rahmen.sicher(p); nichtE.forEach(function (e) { p.nicht.push(JSON.parse(JSON.stringify(e))); }); }
       }
       /* Rückwärtsprüfung K3 (2026-11-14): eine offene Frage, deren Frist vor dem Datum der Fassung liegt, war bis dahin
-         geklärt — sonst stünde sie in F4 noch mit einer Frist aus F1 da (8 von 14 Bau-Agenten hielten das für einen Widerspruch). */
+         geklärt — sonst stünde sie in F4 noch mit einer Frist aus F1 da (8 von 14 Bau-Agenten hielten das für einen Widerspruch).
+         Seit Klaus' Ja (14.11.) wird sie abgehakt (geklärt am Tag ihrer Frist), nicht mehr entfernt. */
       if (f.datum) {
         var o = p.bereiche && p.bereiche[18];
-        if (o && Array.isArray(o.eintraege)) o.eintraege = o.eintraege.filter(function (e) { return !e.bis || e.bis >= f.datum; });
+        if (o && Array.isArray(o.eintraege)) o.eintraege.forEach(function (e) { if (e.bis && e.bis < f.datum && !e.geklaert) e.geklaert = e.bis; });
       }
       (b.handeln || []).forEach(function (h) {
         var re = new RegExp(h[0], "i");

@@ -703,7 +703,13 @@
     if (b.nr === 3) mehr.append(t("Anzahl"), zaehler(e.anzahl || 0, ro, function (n) { e.anzahl = Math.max(0, n); merken(v); zeichne(); }, "anz-" + e.id));
     if (b.nr === 18) {
       mehr.append(h("input", { class: "mittel", placeholder: t("wer klärt"), value: e.wer || "", disabled: ro, "data-key": "wer-" + e.id, oninput: function (ev) { e.wer = ev.target.value; merken(v); } }),
-        h("input", { type: "date", value: e.bis || "", disabled: ro, "data-key": "bis-" + e.id, onchange: function (ev) { e.bis = ev.target.value; merken(v); } }));
+        h("input", { type: "date", value: e.bis || "", disabled: ro, "data-key": "bis-" + e.id, onchange: function (ev) { e.bis = ev.target.value; merken(v); } }),
+        /* Klaus 2026-11-14: abhaken statt löschen — Datum und Antwort bleiben in der Fassung stehen */
+        h("button", { type: "button", class: e.geklaert ? "klein on" : "klein", disabled: ro, "data-geklaert": e.id, "aria-pressed": e.geklaert ? "true" : "false",
+          text: e.geklaert ? "✓ " + t("geklärt") + " " + datumText(e.geklaert) : "✓ " + t("geklärt?"),
+          onclick: function () { if (e.geklaert) { delete e.geklaert; delete e.antwort; } else e.geklaert = F.heute(); merken(v); zeichne(); } }));
+      if (e.geklaert) mehr.append(h("input", { class: "lang", placeholder: t("Antwort"), value: e.antwort || "", disabled: ro, "data-key": "antwort-" + e.id, "data-antwort": e.id,
+        oninput: function (ev) { e.antwort = ev.target.value; merken(v); } }));
     }
     mehr.append(sichtSchalter(e, ro, "s-" + e.id, v));
     if (!e.sichtbar) mehr.append(h("span", { class: "intern-satz", text: t("erscheint nicht im Kundenausdruck") }));
@@ -1816,7 +1822,8 @@
         }
         if (e.sterne) txt += " — ★ " + std(e.sterne.schnitt) + " (" + e.sterne.anzahl + " " + t("Bewertungen der Mitarbeiter") + ")";
         if (e.handeln) txt += " — " + WN.rahmen.name("handeln", e.handeln, S.lang);
-        if (x.nr === 18 && (e.wer || e.bis)) txt += " — " + [e.wer ? t("klärt") + " " + e.wer : "", e.bis ? t("bis") + " " + datumText(e.bis) : ""].filter(Boolean).join(" ");
+        if (x.nr === 18 && e.geklaert) txt += " — ✓ " + t("geklärt") + " " + datumText(e.geklaert) + (e.antwort ? ": " + e.antwort : "");
+        else if (x.nr === 18 && (e.wer || e.bis)) txt += " — " + [e.wer ? t("klärt") + " " + e.wer : "", e.bis ? t("bis") + " " + datumText(e.bis) : ""].filter(Boolean).join(" ");
         ul.append(h("li", null, h("span", { class: "kenn", text: e.id }), " ", txt));
       });
       b.append(ul);
@@ -1851,7 +1858,7 @@
         var txt = e.text || "";
         if (def.art === "prio") txt += ": " + (e.prio ? nm(WN.PRIO_NAME[e.prio]) : "–");
         else if (def.art === "nutzen") { var u = e.nutzen || {}; txt += ": " + [u.stundenMonat != null && u.stundenMonat !== "" ? std(u.stundenMonat) + " h/" + t("Monat") : "", u.euroMonat != null && u.euroMonat !== "" ? euroG(u.euroMonat * 100) + "/" + t("Monat") : "", u.text || ""].filter(Boolean).join(", "); }
-        else { if (def.nr === 3) txt += " — " + (e.anzahl || 0); if (def.nr === 18) txt += " — " + [e.wer, datumText(e.bis)].filter(Boolean).join(" "); }
+        else { if (def.nr === 3) txt += " — " + (e.anzahl || 0); if (def.nr === 18) txt += " — " + (e.geklaert ? "✓ " + t("geklärt") + " " + datumText(e.geklaert) + (e.antwort ? ": " + e.antwort : "") : [e.wer, datumText(e.bis)].filter(Boolean).join(" ")); }
         ul.append(h("li", null, h("span", { class: "kenn", text: e.id }), " ", txt, e.sichtbar === false ? " · 🔒 " + t("nur intern") : ""));
       });
       if (roh.notiz) ul.append(h("li", null, h("i", { text: "🔒 " + t("Notiz") + ": " + roh.notiz })));
