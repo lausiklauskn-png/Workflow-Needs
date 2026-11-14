@@ -461,3 +461,14 @@ Klaus: *„die Beispiele für Workflow Needs, die wir an- und ausschalten könne
   damit der Budget-Hinweis zu sehen ist. `WN.beispiel.rahmenSetzen(id, angaben)`; `registrieren` ersetzt an derselben Stelle.
 - Proben: kern `RAHMEN-BSP` (28), browser `AUSSCHALTEN` (5); Gegenproben von Hand (neue N-Kennung je Fassung → ROT, Rahmen fehlt → ROT,
   „Alle entfernen“ nimmt eigene mit → 2 ROT). Gemessen: kern 573 · browser 210 · Anker 139 · 0 tot. Cache v43.
+
+## Rückwärtsprüfung aller App-Beispiele K3/K4 (Klaus 2026-11-14)
+
+Datei-Organizer `rueckwaertstest/beispiele-2026-11-14/ERGEBNIS.md`: alle 13 Einzel-Beispiele bestehen (90–100 % nach Nachbesserung),
+Pro-Verbund gesamt 57 % (beschreibt den Verbund; Fachfunktionen in den vier Einzel-Beispielen — Entscheidung bei Klaus).
+- Behoben in den Beispielen: offene Fragen mit Frist vor dem Fassungsdatum gelten in späteren Fassungen als geklärt (`rahmenAnwenden`,
+  Probe `RAHMEN-BSP … keine offene Frage mit einer Frist vor dem Datum`), Rahmen-Widersprüche, Muss-Sätze (`muss` in `beispiel-rahmen.js`,
+  nur letzte Fassung) für Kim-sync, Mixarium, Rezeptbuch, Werbetechnik-Vorlage, Workflow PDF Pro, Needs.
+- ⚠ K4 ist nicht unabhängig (Muss-Sätze nach der Fehlliste geschrieben). Sechs Lücken in Needs selbst stehen im Ergebnis (u. a. offene
+  Frage „geklärt“, „nur auf dem Gerät“ bei Mehrfachwahl, „ohne Internet: immer“ missverständlich) — erst Vorschau, Klaus' Ja.
+- Gemessen: kern 587 · browser 210 · Anker 139 · 0 tot. Cache v44.
