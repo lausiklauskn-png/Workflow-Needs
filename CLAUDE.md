@@ -483,3 +483,22 @@ Pro-Verbund gesamt 57 % (beschreibt den Verbund; Fachfunktionen in den vier Einz
 - **Ohne Internet:** „ja, immer“ heißt „ja, alles Wichtige geht ohne Internet (Netz nur für ausdrücklich gewählte Dienste)“.
 - Proben: kern `GEKLÄRT` (5) + `RAHMEN-TEXT`, browser `GEKLÄRT` (2); Gegenprobe (Trennung offen/geklärt weg → ROT). Gemessen: kern 593 ·
   browser 212 · Anker 139 · 0 tot. Cache v45. ⚠ Am Tablet nicht gemessen.
+
+## Workflow Needs Pro – Android-App und Windows-App (Klaus 2026-11-15)
+
+Klaus: *„Workflow Needs und Calculate zu einer APK und einer Windows-Version bauen und sie Pro nennen.“* Gebaut nach dem Vorbild
+Datei-Organizer Pro (Capacitor 8.5.3 bzw. Tauri 2 + Java-Engine). Die PWA bleibt unverändert („Workflow Bedarfsanalyse“).
+- **Die App wird an EINER Stelle erkannt:** `native/wn-native.js` (nur im App-Paket, vor `assets/app.js`): Name „Workflow Needs Pro“,
+  `<a download>` → Speichern-Fenster (`WnDateien.speichern`), `window.print()` → Androids Druckdienst (`WnDrucken`; Windows druckt selbst),
+  kein Installieren-Knopf, Updates vom eigenen Server (`WnUpdates`, still, Fassung im Kopf). Speicher-Namen unverändert.
+- **Web-Paket:** `tools/native/prepare-web.mjs` nimmt Laufzeit-Dateien aus `git ls-files` byte-gleich, ohne `sw.js`; index.html nur mit
+  Klebstoff und ohne Service-Worker-Anmeldung (Anker geprüft). Wer `index.html` um die SW-Anmeldung oder das app.js-Tag herum ändert,
+  zieht `SW_BLOCK`/`ANKER` dort nach – sonst bricht der App-Bau (gewollt).
+- Paket/Kennung `de.familyprojekt.workflowneeds`, Fassung 1.0.0 (versionCode 1000), Update-Feed `family-projekt.de/updates/workflow-needs/`,
+  öffentlicher Update-Schlüssel **noch leer** (Platzhalter → „nicht eingerichtet“). Signier-Freigabe `WN_SIGNING_UNLOCK` (Umgebung
+  `android-production`), noch nicht angelegt. **Nichts veröffentlichen ohne Klaus' Wort**; `signing-identity.yml` und `*-release.yml` nur von Hand.
+- `android/`, `windows/`, `tools/native`, `tools/signing` liegen mit auf Pages (Jekyll): keine Verweise, kein `node_modules`, in `.md`
+  keine doppelten geschweiften Klammern.
+- Proben: `node tools/native/test-native.mjs`, `node windows/engine/test.mjs`, `node windows/engine/protocol-test.mjs`,
+  `NODE_PATH=windows/node_modules node windows/tools/test-bruecke.mjs`; Bau nur in GitHub (`android.yml`, `windows.yml`).
+  Alles Weitere und was Klaus einmalig tun muss: `docs/ANDROID.md`, `docs/WINDOWS.md`. ⚠ Nicht am Gerät gemessen.
